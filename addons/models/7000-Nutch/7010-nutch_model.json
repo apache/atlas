@@ -1,0 +1,131 @@
+{
+    "enumDefs": [],
+    "structDefs": [],
+    "entityDefs": [
+        {
+            "name":        "nutch_crawl",
+            "superTypes":  [ "DataSet" ],
+            "serviceType": "nutch",
+            "typeVersion": "1.0",
+            "description": "A Nutch crawl identified by crawlId. Catalog owner is the CrawlDb import bridge (https://issues.apache.org/jira/browse/ATLAS-5399).",
+            "attributeDefs": [
+                { "name": "crawlId",     "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true },
+                { "name": "clusterName", "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true,  "includeInNotification": true },
+                { "name": "crawldbPath", "typeName": "string", "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false },
+                { "name": "urlCount",    "typeName": "long",   "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false }
+            ]
+        },
+        {
+            "name":        "nutch_seedlist",
+            "superTypes":  [ "Asset" ],
+            "serviceType": "nutch",
+            "typeVersion": "1.0",
+            "description": "Seed URL list for a single crawl (CLI inject directory). COMPOSITION 1:1 under nutch_crawl.",
+            "attributeDefs": [
+                { "name": "seedCount", "typeName": "long",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "seedPath",  "typeName": "string", "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false }
+            ]
+        },
+        {
+            "name":        "nutch_segment",
+            "superTypes":  [ "DataSet" ],
+            "serviceType": "nutch",
+            "typeVersion": "1.0",
+            "description": "A Nutch segment directory under {crawlId}/segments.",
+            "attributeDefs": [
+                { "name": "segmentName",   "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true },
+                { "name": "path",          "typeName": "string", "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false },
+                { "name": "generatedTime", "typeName": "date",   "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false }
+            ]
+        },
+        {
+            "name":        "nutch_domain",
+            "superTypes":  [ "Asset" ],
+            "serviceType": "nutch",
+            "typeVersion": "1.0",
+            "description": "Registrable domain / eTLD+1 (URLUtil.getDomainName / EffectiveTldFinder), not the TLD. Example: lucene.apache.org -> apache.org.",
+            "attributeDefs": [
+                { "name": "clusterName", "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true, "includeInNotification": true }
+            ]
+        },
+        {
+            "name":        "nutch_host",
+            "superTypes":  [ "Asset" ],
+            "serviceType": "nutch",
+            "typeVersion": "1.0",
+            "description": "Hostname (and optional protocol) unique per Atlas cluster. Fetch metrics live on nutch_crawl_hosts, not on this entity.",
+            "attributeDefs": [
+                { "name": "hostname",    "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true },
+                { "name": "protocol",    "typeName": "string", "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": true },
+                { "name": "clusterName", "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true, "includeInNotification": true }
+            ]
+        },
+        {
+            "name":        "nutch_index_process",
+            "superTypes":  [ "Process" ],
+            "serviceType": "nutch",
+            "typeVersion": "1.0",
+            "description": "One process per Nutch IndexingJob (https://issues.apache.org/jira/browse/NUTCH-3210). Inputs are nutch_crawl and/or nutch_segment; output is a generic DataSet for the search index.",
+            "attributeDefs": [
+                { "name": "operationType", "typeName": "string", "cardinality": "SINGLE", "isOptional": false, "isUnique": false, "isIndexable": true },
+                { "name": "queryText",     "typeName": "string", "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false },
+                { "name": "clusterName",   "typeName": "string", "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": true, "includeInNotification": true },
+                { "name": "startTime",     "typeName": "date",   "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false },
+                { "name": "endTime",       "typeName": "date",   "cardinality": "SINGLE", "isOptional": true,  "isUnique": false, "isIndexable": false }
+            ]
+        }
+    ],
+    "relationshipDefs": [
+        {
+            "name":                 "nutch_crawl_seedlist",
+            "serviceType":          "nutch",
+            "typeVersion":          "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "propagateTags":        "NONE",
+            "endDef1": { "type": "nutch_crawl",    "name": "seedlist", "isContainer": true,  "cardinality": "SINGLE" },
+            "endDef2": { "type": "nutch_seedlist", "name": "crawl",    "isContainer": false, "cardinality": "SINGLE" }
+        },
+        {
+            "name":                 "nutch_crawl_segments",
+            "serviceType":          "nutch",
+            "typeVersion":          "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "propagateTags":        "NONE",
+            "endDef1": { "type": "nutch_crawl",   "name": "segments", "isContainer": true,  "cardinality": "SET" },
+            "endDef2": { "type": "nutch_segment", "name": "crawl",    "isContainer": false, "cardinality": "SINGLE" }
+        },
+        {
+            "name":                 "nutch_domain_hosts",
+            "serviceType":          "nutch",
+            "typeVersion":          "1.0",
+            "relationshipCategory": "AGGREGATION",
+            "propagateTags":        "NONE",
+            "endDef1": { "type": "nutch_domain", "name": "hosts",  "isContainer": true,  "cardinality": "SET" },
+            "endDef2": { "type": "nutch_host",   "name": "domain", "isContainer": false, "cardinality": "SINGLE" }
+        },
+        {
+            "name":                 "nutch_crawl_hosts",
+            "serviceType":          "nutch",
+            "typeVersion":          "1.0",
+            "relationshipCategory": "ASSOCIATION",
+            "propagateTags":        "NONE",
+            "description":          "Many-to-many crawl to global host. Per-crawl fetch/index metrics live on the relationship.",
+            "attributeDefs": [
+                { "name": "fetchedCount",    "typeName": "long", "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "unfetchedCount",  "typeName": "long", "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "indexedCount",    "typeName": "long", "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "lastFetchTime",   "typeName": "date", "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "lastIndexedTime",   "typeName": "date",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "maxScore",          "typeName": "float",  "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "dnsFailures",       "typeName": "long",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "connectionFailures","typeName": "long",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "goneCount",         "typeName": "long",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "redirPermCount",    "typeName": "long",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "redirTempCount",    "typeName": "long",   "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false },
+                { "name": "homepageUrl",       "typeName": "string", "cardinality": "SINGLE", "isOptional": true, "isUnique": false, "isIndexable": false }
+            ],
+            "endDef1": { "type": "nutch_crawl", "name": "hosts",  "isContainer": false, "cardinality": "SET" },
+            "endDef2": { "type": "nutch_host",  "name": "crawls", "isContainer": false, "cardinality": "SET" }
+        }
+    ]
+}
