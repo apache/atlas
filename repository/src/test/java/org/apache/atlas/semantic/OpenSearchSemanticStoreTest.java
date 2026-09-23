@@ -27,6 +27,7 @@ import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_EMB
 import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_INGEST_PIPELINE_NAME;
 import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_TEXT_FIELD;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -104,6 +105,50 @@ public class OpenSearchSemanticStoreTest {
         assertEquals(OpenSearchSemanticStore.parseUpdateByQueryUpdatedCount("{\"updated\":1}"), 1);
         assertEquals(OpenSearchSemanticStore.parseUpdateByQueryUpdatedCount("{\"updated\":0}"), 0);
         assertEquals(OpenSearchSemanticStore.parseUpdateByQueryUpdatedCount("{}"), -1);
+    }
+
+    @Test
+    public void parseUpdateByQueryVersionConflicts() {
+        assertEquals(OpenSearchSemanticStore.parseUpdateByQueryVersionConflicts("{\"version_conflicts\":1}"), 1);
+        assertEquals(OpenSearchSemanticStore.parseUpdateByQueryVersionConflicts("{\"updated\":0}"), 0);
+        assertEquals(OpenSearchSemanticStore.parseUpdateByQueryVersionConflicts("{}"), 0);
+    }
+
+    @Test
+    public void parseKnnEnabledFromNestedSettings() {
+        String json = "{"
+                + "\"janusgraph_vertex_index\": {"
+                + "  \"settings\": {"
+                + "    \"index\": {"
+                + "      \"knn\": \"true\""
+                + "    }"
+                + "  }"
+                + "}"
+                + "}";
+
+        assertTrue(OpenSearchSemanticStore.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class)));
+    }
+
+    @Test
+    public void parseKnnEnabledFromDefaultsSection() {
+        String json = "{"
+                + "\"janusgraph_vertex_index\": {"
+                + "  \"settings\": {},"
+                + "  \"defaults\": {"
+                + "    \"index\": {"
+                + "      \"knn\": true"
+                + "    }"
+                + "  }"
+                + "}"
+                + "}";
+
+        assertTrue(OpenSearchSemanticStore.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class)));
+    }
+
+    @Test
+    public void parseKnnEnabledReturnsFalseWhenMissing() {
+        assertFalse(OpenSearchSemanticStore.parseKnnEnabledFromSettingsResponse(
+                AtlasJson.fromJson("{\"janusgraph_vertex_index\":{\"settings\":{}}}", Map.class)));
     }
 
     @Test

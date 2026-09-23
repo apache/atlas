@@ -97,13 +97,21 @@ public class OpenSearchSemanticStore {
         List<?> embedding = computeEmbedding(semanticText);
         Map<String, Object> body = buildUpdateEmbeddingByQueryBody(guid, embedding);
 
-        HttpPost post = new HttpPost(baseUrl() + "/" + indexName + "/_update_by_query");
+        // conflicts=proceed: JanusGraph may bump the vertex doc seqNo on the same Kafka event; abort returns HTTP 409.
+        HttpPost post = new HttpPost(baseUrl() + "/" + indexName + "/_update_by_query?conflicts=proceed");
         post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
 
         String responseBody = executeRequestForBody(post);
-        int updated = parseUpdateByQueryUpdatedCount(responseBody);
+        int updated          = parseUpdateByQueryUpdatedCount(responseBody);
+        int versionConflicts = parseUpdateByQueryVersionConflicts(responseBody);
         if (updated == 1) {
             return;
+        }
+
+        if (updated == 0 && versionConflicts > 0) {
+            throw new SemanticSearchException(
+                    "OpenSearch version conflict updating embedding (guid=" + guid
+                            + ", versionConflicts=" + versionConflicts + ")", true);
         }
 
         if (updated == 0) {
@@ -143,6 +151,20 @@ public class OpenSearchSemanticStore {
         }
 
         return -1;
+    }
+
+    static int parseUpdateByQueryVersionConflicts(String responseJson) {
+        Map<String, Object> root = AtlasJson.fromJson(responseJson, Map.class);
+        if (root == null) {
+            return 0;
+        }
+
+        Object versionConflicts = root.get("version_conflicts");
+        if (versionConflicts instanceof Number) {
+            return ((Number) versionConflicts).intValue();
+        }
+
+        return 0;
     }
 
     @SuppressWarnings("unchecked")
@@ -409,6 +431,7 @@ public class OpenSearchSemanticStore {
 
     private void ensureKnnEnabled(String indexName) throws SemanticSearchException {
         if (isKnnEnabled(indexName)) {
+            LOG.debug("knn already enabled on index '{}'", indexName);
             return;
         }
 
@@ -423,38 +446,87 @@ public class OpenSearchSemanticStore {
 
         HttpPut put = new HttpPut(baseUrl() + "/" + indexName + "/_settings");
         put.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
-        executeRequest(put);
+
+        try {
+            executeRequest(put);
+        } catch (SemanticSearchException e) {
+            if (isKnnAlreadyConfiguredError(e)) {
+                LOG.info("knn already enabled on index '{}' (non-dynamic index setting)", indexName);
+                return;
+            }
+            throw e;
+        }
     }
 
     private boolean isKnnEnabled(String indexName) throws SemanticSearchException {
-        HttpGet get = new HttpGet(baseUrl() + "/" + indexName + "/_settings/index.knn");
-        String  response = executeRequestForBody(get);
+        // OpenSearch default (nested) settings response; include_defaults for implicit plugin defaults.
+        HttpGet get = new HttpGet(baseUrl() + "/" + indexName + "/_settings/index.knn?include_defaults=true");
+        String response = executeRequestForBody(get);
 
         try {
             Map<String, Object> root = AtlasJson.fromJson(response, Map.class);
-            for (Object indexPayload : root.values()) {
-                if (!(indexPayload instanceof Map)) {
-                    continue;
-                }
-
-                Object settings = ((Map<?, ?>) indexPayload).get("settings");
-                if (!(settings instanceof Map)) {
-                    continue;
-                }
-
-                Object index = ((Map<?, ?>) settings).get("index");
-                if (!(index instanceof Map)) {
-                    continue;
-                }
-
-                Object knn = ((Map<?, ?>) index).get("knn");
-                return Boolean.TRUE.equals(knn) || "true".equalsIgnoreCase(String.valueOf(knn));
-            }
+            return parseKnnEnabledFromSettingsResponse(root);
         } catch (Exception e) {
             LOG.warn("Unable to read knn setting for index '{}'", indexName, e);
         }
 
         return false;
+    }
+
+    /**
+     * Parses the OpenSearch default (nested) Get Index Settings response for {@code index.knn=true}.
+     * Expects {@code settings.index.knn} and, when requested, {@code defaults.index.knn}.
+     */
+    @SuppressWarnings("unchecked")
+    static boolean parseKnnEnabledFromSettingsResponse(Map<String, Object> root) {
+        if (root == null || root.isEmpty()) {
+            return false;
+        }
+
+        for (Object indexPayload : root.values()) {
+            if (!(indexPayload instanceof Map)) {
+                continue;
+            }
+
+            Map<String, Object> payload = (Map<String, Object>) indexPayload;
+            if (parseNestedKnnFromSettingsSection(payload.get("settings"))) {
+                return true;
+            }
+            if (parseNestedKnnFromSettingsSection(payload.get("defaults"))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static boolean parseNestedKnnFromSettingsSection(Object settingsObj) {
+        if (!(settingsObj instanceof Map)) {
+            return false;
+        }
+
+        Object index = ((Map<String, Object>) settingsObj).get("index");
+        if (!(index instanceof Map)) {
+            return false;
+        }
+
+        Object knn = ((Map<?, ?>) index).get("knn");
+        return isTruthyKnnSetting(knn);
+    }
+
+    private static boolean isTruthyKnnSetting(Object value) {
+        return Boolean.TRUE.equals(value) || "true".equalsIgnoreCase(String.valueOf(value));
+    }
+
+    private static boolean isKnnAlreadyConfiguredError(SemanticSearchException e) {
+        String message = e.getMessage();
+        if (message == null) {
+            return false;
+        }
+
+        return message.contains("index.knn")
+                && (message.contains("non dynamic settings") || message.contains("non-dynamic settings"));
     }
 
     private void patchSemanticMapping(String indexName, int dimensions) throws SemanticSearchException {
@@ -720,11 +792,18 @@ public class OpenSearchSemanticStore {
         if (StringUtils.isNotEmpty(response.body)) {
             message += ": " + response.body;
         }
-        return new SemanticSearchException(message, isTransientHttpStatus(response.statusCode));
+        boolean retryable = isTransientHttpStatus(response.statusCode) || isVersionConflictResponse(response);
+        return new SemanticSearchException(message, retryable);
     }
 
     private static boolean isTransientHttpStatus(int status) {
-        return status == 429 || status == 502 || status == 503 || status == 504;
+        return status == 409 || status == 429 || status == 502 || status == 503 || status == 504;
+    }
+
+    private static boolean isVersionConflictResponse(HttpResponse response) {
+        return response.statusCode == 409
+                && response.body != null
+                && response.body.contains("version_conflict_engine_exception");
     }
 
     private static final class HttpResponse {

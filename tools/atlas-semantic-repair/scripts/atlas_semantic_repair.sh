@@ -34,7 +34,20 @@ fi
 
 JVM_OPENS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED"
 
-exec java ${JVM_OPENS} -Datlas.home="${ATLAS_HOME}" \
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOGBACK_FILE="${ATLAS_SEMANTIC_REPAIR_LOGBACK:-${ATLAS_HOME}/conf/atlas-semantic-repair-logback.xml}"
+if [ ! -f "${LOGBACK_FILE}" ] && [ -f "${SCRIPT_DIR}/../conf/atlas-semantic-repair-logback.xml" ]; then
+  LOGBACK_FILE="${SCRIPT_DIR}/../conf/atlas-semantic-repair-logback.xml"
+fi
+if [ ! -f "${LOGBACK_FILE}" ] && [ -f "${ATLAS_HOME}/conf/atlas-semantic-indexer-logback.xml" ]; then
+  LOGBACK_FILE="${ATLAS_HOME}/conf/atlas-semantic-indexer-logback.xml"
+fi
+LOGBACK_OPT=""
+if [ -f "${LOGBACK_FILE}" ]; then
+  LOGBACK_OPT="-Dlogback.configurationFile=${LOGBACK_FILE}"
+fi
+
+exec java ${JVM_OPENS} ${LOGBACK_OPT} -Datlas.home="${ATLAS_HOME}" \
   -Datlas.conf="${ATLAS_CONF}" \
   -cp "${CLASSPATH}" \
   org.apache.atlas.tools.SemanticRepair "$@"
