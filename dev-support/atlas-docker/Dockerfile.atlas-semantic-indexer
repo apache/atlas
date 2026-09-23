@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -24,16 +25,16 @@ ENV ATLAS_HOME=${ATLAS_SEMANTIC_INDEXER_HOME}
 ENV ATLAS_SCRIPTS=/home/atlas/scripts
 
 RUN groupadd -r atlas && useradd -r -g atlas -d /home/atlas -m -s /bin/bash atlas && \
-    mkdir -p /home/atlas/dist /home/atlas/scripts /home/atlas/conf/runtime && \
+    mkdir -p /home/atlas/scripts /home/atlas/conf/runtime && \
     chown -R atlas:atlas /home/atlas
 
-COPY --chown=atlas:atlas ./dist/apache-atlas-${ATLAS_VERSION}-semantic-indexer.tar.gz /home/atlas/dist/
 COPY --chown=atlas:atlas ./scripts/merge-semantic-config.sh ${ATLAS_SCRIPTS}/
 COPY --chown=atlas:atlas ./scripts/atlas-semantic-indexer.sh ${ATLAS_SCRIPTS}/
 
-RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-semantic-indexer.tar.gz --directory=/opt/ && \
+# Bind-mount tarball at build time so the compressed archive is not duplicated in image layers.
+RUN --mount=type=bind,source=dist/apache-atlas-${ATLAS_VERSION}-semantic-indexer.tar.gz,target=/tmp/semantic-indexer.tar.gz,readonly \
+    tar xfz /tmp/semantic-indexer.tar.gz --directory=/opt/ && \
     ln -sf /opt/apache-atlas-${ATLAS_VERSION}-semantic-indexer ${ATLAS_SEMANTIC_INDEXER_HOME} && \
-    rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-semantic-indexer.tar.gz && \
     chown -R atlas:atlas /opt/apache-atlas-${ATLAS_VERSION}-semantic-indexer
 
 USER atlas

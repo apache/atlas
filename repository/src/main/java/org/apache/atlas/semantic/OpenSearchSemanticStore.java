@@ -75,45 +75,74 @@ public class OpenSearchSemanticStore {
         ensureVertexIndexSemanticFields();
     }
 
-    public void updateEmbedding(String documentId, String semanticText) throws SemanticSearchException {
-        if (StringUtils.isBlank(documentId) || StringUtils.isBlank(semanticText)) {
+    /**
+     * Computes an embedding and patches {@link SemanticSearchConfiguration#SEMANTIC_EMBEDDING_FIELD} via
+     * {@code _update_by_query} on the Atlas guid (no separate document-id lookup).
+     */
+    public void updateEmbeddingByGuid(String guid, String semanticText) throws SemanticSearchException {
+        if (StringUtils.isBlank(guid) || StringUtils.isBlank(semanticText)) {
             return;
         }
 
-        SemanticRetry.run("OpenSearch update embedding (documentId=" + documentId + ")",
+        SemanticRetry.run("OpenSearch update embedding (guid=" + guid + ")",
                 () -> {
-                    executeUpdateEmbedding(documentId, semanticText);
+                    executeUpdateEmbeddingByGuid(guid, semanticText);
                     return null;
                 });
     }
 
-    private void executeUpdateEmbedding(String documentId, String semanticText) throws SemanticSearchException {
+    private void executeUpdateEmbeddingByGuid(String guid, String semanticText) throws SemanticSearchException {
         String indexName = SemanticSearchConfiguration.getVertexIndexName();
         // OpenSearch 3.x no longer accepts pipeline/conflicts on _update; embed via pipeline simulate, then patch vector.
         List<?> embedding = computeEmbedding(semanticText);
-        String url       = baseUrl() + "/" + indexName + "/_update/" + documentId;
+        Map<String, Object> body = buildUpdateEmbeddingByQueryBody(guid, embedding);
 
-        Map<String, Object> doc = new HashMap<>();
-        doc.put(SEMANTIC_EMBEDDING_FIELD, embedding);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("doc", doc);
-
-        HttpPost post = new HttpPost(url);
+        HttpPost post = new HttpPost(baseUrl() + "/" + indexName + "/_update_by_query");
         post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
-        addAuthHeader(post);
 
-        HttpResponse response = executeHttp(post);
-        if (isSuccess(response.statusCode)) {
+        String responseBody = executeRequestForBody(post);
+        int updated = parseUpdateByQueryUpdatedCount(responseBody);
+        if (updated == 1) {
             return;
         }
 
-        if (response.statusCode == 404) {
+        if (updated == 0) {
             throw new SemanticSearchException(
-                    "OpenSearch document not found for update (documentId=" + documentId + ")", true);
+                    "OpenSearch document not found for update (guid=" + guid + ")", true);
         }
 
-        throw httpFailure(response);
+        // updated > 1 → multiple documents matched the query → should not happen
+        throw new SemanticSearchException(
+                "OpenSearch update_by_query matched " + updated + " documents for guid=" + guid);
+    }
+
+    static Map<String, Object> buildUpdateEmbeddingByQueryBody(String guid, List<?> embedding) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("embedding", embedding);
+
+        Map<String, Object> script = new HashMap<>();
+        script.put("lang", "painless");
+        script.put("source", "ctx._source." + SEMANTIC_EMBEDDING_FIELD + " = params.embedding");
+        script.put("params", params);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("query", Collections.singletonMap("term", Collections.singletonMap(guidFilterField(), guid)));
+        body.put("script", script);
+        return body;
+    }
+
+    static int parseUpdateByQueryUpdatedCount(String responseJson) {
+        Map<String, Object> root = AtlasJson.fromJson(responseJson, Map.class);
+        if (root == null) {
+            return -1;
+        }
+
+        Object updated = root.get("updated");
+        if (updated instanceof Number) {
+            return ((Number) updated).intValue();
+        }
+
+        return -1;
     }
 
     @SuppressWarnings("unchecked")
@@ -228,28 +257,46 @@ public class OpenSearchSemanticStore {
      */
     @SuppressWarnings("unchecked")
     public List<?> getStoredEmbeddingByGuid(String guid) throws SemanticSearchException {
+        VertexIndexDocument document = findVertexIndexDocumentByGuid(guid,
+                Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
+        if (document == null) {
+            return null;
+        }
+
+        Object embedding = document.getSource().get(SEMANTIC_EMBEDDING_FIELD);
+        if (!(embedding instanceof List) || ((List<?>) embedding).isEmpty()) {
+            return null;
+        }
+
+        return (List<?>) embedding;
+    }
+
+    private VertexIndexDocument findVertexIndexDocumentByGuid(String guid, List<String> sourceFields)
+            throws SemanticSearchException {
         if (StringUtils.isBlank(guid)) {
             return null;
         }
 
         String indexName = SemanticSearchConfiguration.getVertexIndexName();
 
-        Map<String, Object> term = new HashMap<>();
-        term.put(guidFilterField(), guid);
-
-        Map<String, Object> query = new HashMap<>();
-        query.put("term", term);
-
         Map<String, Object> body = new HashMap<>();
         body.put("size", 1);
-        body.put("query", query);
-        body.put("_source", Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
+        body.put("query", Collections.singletonMap("term", Collections.singletonMap(guidFilterField(), guid)));
+        if (sourceFields == null || sourceFields.isEmpty()) {
+            body.put("_source", false);
+        } else {
+            body.put("_source", sourceFields);
+        }
 
         HttpPost post = new HttpPost(baseUrl() + "/" + indexName + "/_search");
         post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
 
-        String response = executeRequestForBody(post);
-        Map<String, Object> root = AtlasJson.fromJson(response, Map.class);
+        return parseVertexIndexDocumentFromSearchResponse(executeRequestForBody(post));
+    }
+
+    @SuppressWarnings("unchecked")
+    static VertexIndexDocument parseVertexIndexDocumentFromSearchResponse(String responseJson) {
+        Map<String, Object> root = AtlasJson.fromJson(responseJson, Map.class);
         if (root == null || !(root.get("hits") instanceof Map)) {
             return null;
         }
@@ -264,17 +311,37 @@ public class OpenSearchSemanticStore {
             return null;
         }
 
-        Object source = ((Map<String, Object>) firstHit).get("_source");
-        if (!(source instanceof Map)) {
+        Map<String, Object> hit = (Map<String, Object>) firstHit;
+        Object documentId = hit.get("_id");
+        if (documentId == null || StringUtils.isBlank(documentId.toString())) {
             return null;
         }
 
-        Object embedding = ((Map<String, Object>) source).get(SEMANTIC_EMBEDDING_FIELD);
-        if (!(embedding instanceof List) || ((List<?>) embedding).isEmpty()) {
-            return null;
+        Map<String, Object> source = Collections.emptyMap();
+        Object sourceObj = hit.get("_source");
+        if (sourceObj instanceof Map) {
+            source = (Map<String, Object>) sourceObj;
         }
 
-        return (List<?>) embedding;
+        return new VertexIndexDocument(documentId.toString(), source);
+    }
+
+    static final class VertexIndexDocument {
+        private final String              documentId;
+        private final Map<String, Object> source;
+
+        VertexIndexDocument(String documentId, Map<String, Object> source) {
+            this.documentId = documentId;
+            this.source     = source != null ? source : Collections.emptyMap();
+        }
+
+        String getDocumentId() {
+            return documentId;
+        }
+
+        Map<String, Object> getSource() {
+            return source;
+        }
     }
 
     private List<VectorSearchHit> executeSearch(String indexName,

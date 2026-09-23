@@ -63,6 +63,50 @@ public class OpenSearchSemanticStoreTest {
     }
 
     @Test
+    public void parseVertexIndexDocumentFromSearchResponse() {
+        String json = "{"
+                + "\"hits\": {"
+                + "  \"hits\": [{"
+                + "    \"_id\": \"doc-abc\","
+                + "    \"_source\": {"
+                + "      \"" + SEMANTIC_EMBEDDING_FIELD + "\": [0.1, 0.2]"
+                + "    }"
+                + "  }]"
+                + "}"
+                + "}";
+
+        OpenSearchSemanticStore.VertexIndexDocument document =
+                OpenSearchSemanticStore.parseVertexIndexDocumentFromSearchResponse(json);
+        assertEquals(document.getDocumentId(), "doc-abc");
+        assertEquals(((List<?>) document.getSource().get(SEMANTIC_EMBEDDING_FIELD)).size(), 2);
+    }
+
+    @Test
+    public void parseVertexIndexDocumentReturnsNullWhenMissing() {
+        assertNull(OpenSearchSemanticStore.parseVertexIndexDocumentFromSearchResponse("{\"hits\":{\"hits\":[]}}"));
+    }
+
+    @Test
+    public void buildUpdateEmbeddingByQueryBodyUsesGuidTermAndScript() {
+        Map<String, Object> body = OpenSearchSemanticStore.buildUpdateEmbeddingByQueryBody("guid-1",
+                List.of(0.1, 0.2));
+        assertTrue(body.containsKey("query"));
+        assertTrue(body.containsKey("script"));
+
+        String serialized = AtlasJson.toJson(body);
+        assertTrue(serialized.contains("guid-1"));
+        assertTrue(serialized.contains(SEMANTIC_EMBEDDING_FIELD));
+        assertTrue(serialized.contains("params.embedding"));
+    }
+
+    @Test
+    public void parseUpdateByQueryUpdatedCount() {
+        assertEquals(OpenSearchSemanticStore.parseUpdateByQueryUpdatedCount("{\"updated\":1}"), 1);
+        assertEquals(OpenSearchSemanticStore.parseUpdateByQueryUpdatedCount("{\"updated\":0}"), 0);
+        assertEquals(OpenSearchSemanticStore.parseUpdateByQueryUpdatedCount("{}"), -1);
+    }
+
+    @Test
     public void buildIngestPipelineBodyUsesVertexIndexFieldNames() {
         Map<String, Object> body = OpenSearchSemanticStore.buildIngestPipelineBody("model-123");
         assertTrue(body.containsKey("processors"));

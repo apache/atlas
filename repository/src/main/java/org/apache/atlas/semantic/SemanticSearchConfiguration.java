@@ -26,43 +26,43 @@ import org.apache.commons.lang3.StringUtils;
  * Configuration for semantic search read path, Semantic Indexer service, and repair tool.
  */
 public final class SemanticSearchConfiguration {
-    public static final String SEMANTIC_SEARCH_ENABLE_CONF              = "atlas.search.semantic.enable";
-    public static final String SEMANTIC_OPENSEARCH_MODEL_ID_CONF        = "atlas.search.semantic.opensearch.model.id";
-    public static final String SEMANTIC_OPENSEARCH_EMBEDDING_DIMENSION_CONF = "atlas.search.semantic.opensearch.embedding.dimension";
-    public static final String SEMANTIC_DEFAULT_TOP_K_CONF              = "atlas.search.semantic.default.topK";
-    public static final String SEMANTIC_MIN_SCORE_CONF                  = "atlas.search.semantic.min.score";
-    public static final String SEMANTIC_RETRY_MAX_ATTEMPTS_CONF         = "atlas.search.semantic.retry.max.attempts";
-    public static final String SEMANTIC_RETRY_SLEEP_MS_CONF             = "atlas.search.semantic.retry.sleep.ms";
+    public static final String SEMANTIC_SEARCH_ENABLE_CONF                      = "atlas.search.semantic.enable";
+    public static final String SEMANTIC_OPENSEARCH_MODEL_ID_CONF                = "atlas.search.semantic.opensearch.model.id";
+    public static final String SEMANTIC_OPENSEARCH_EMBEDDING_DIMENSION_CONF     = "atlas.search.semantic.opensearch.embedding.dimension";
+    public static final String SEMANTIC_DEFAULT_TOP_K_CONF                      = "atlas.search.semantic.default.topK";
+    public static final String SEMANTIC_MIN_SCORE_CONF                          = "atlas.search.semantic.min.score";
+    public static final String SEMANTIC_RETRY_MAX_ATTEMPTS_CONF                 = "atlas.search.semantic.retry.max.attempts";
+    public static final String SEMANTIC_RETRY_SLEEP_MS_CONF                     = "atlas.search.semantic.retry.sleep.ms";
 
-    public static final String SEMANTIC_INDEXER_KAFKA_GROUP_ID_CONF     = "atlas.semantic.indexer.kafka.group.id";
-    public static final String SEMANTIC_INDEXER_BATCH_SIZE_CONF         = "atlas.semantic.indexer.batch.size";
-    public static final String SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS_CONF = "atlas.semantic.indexer.kafka.poll.timeout.ms";
-    public static final String SEMANTIC_INDEXER_HEALTH_ENABLED_CONF     = "atlas.semantic.indexer.health.enabled";
-    public static final String SEMANTIC_INDEXER_HEALTH_PORT_CONF        = "atlas.semantic.indexer.health.port";
-    public static final String SEMANTIC_INDEXER_HEALTH_PATH_CONF        = "atlas.semantic.indexer.health.path";
+    public static final String SEMANTIC_INDEXER_KAFKA_GROUP_ID_CONF             = "atlas.semantic.indexer.kafka.group.id";
+    public static final String SEMANTIC_INDEXER_BATCH_SIZE_CONF                 = "atlas.semantic.indexer.batch.size";
+    public static final String SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS_CONF      = "atlas.semantic.indexer.kafka.poll.timeout.ms";
+    public static final String SEMANTIC_INDEXER_HEALTH_ENABLED_CONF             = "atlas.semantic.indexer.health.enabled";
+    public static final String SEMANTIC_INDEXER_HEALTH_PORT_CONF                = "atlas.semantic.indexer.health.port";
+    public static final String SEMANTIC_INDEXER_HEALTH_PATH_CONF                = "atlas.semantic.indexer.health.path";
 
-    public static final String GRAPH_INDEX_HOSTNAME_CONF                = "atlas.graph.index.search.hostname";
-    public static final String GRAPH_INDEX_PORT_CONF                    = "atlas.graph.index.search.port";
-    public static final String GRAPH_INDEX_NAME_CONF                    = "atlas.graph.index.search.index-name";
-    public static final String GRAPH_INDEX_USERNAME_CONF              = "atlas.graph.index.search.opensearch.username";
-    public static final String GRAPH_INDEX_PASSWORD_CONF                = "atlas.graph.index.search.opensearch.password";
-    public static final String GRAPH_INDEX_USE_HTTPS_CONF               = "atlas.graph.index.search.opensearch.use.https";
+    public static final String GRAPH_INDEX_HOSTNAME_CONF                        = "atlas.graph.index.search.hostname";
+    public static final String GRAPH_INDEX_PORT_CONF                            = "atlas.graph.index.search.port";
+    public static final String GRAPH_INDEX_NAME_CONF                            = "atlas.graph.index.search.index-name";
+    public static final String GRAPH_INDEX_USERNAME_CONF                        = "atlas.graph.index.search.opensearch.username";
+    public static final String GRAPH_INDEX_PASSWORD_CONF                        = "atlas.graph.index.search.opensearch.password";
+    public static final String GRAPH_INDEX_USE_HTTPS_CONF                       = "atlas.graph.index.search.opensearch.use.https";
 
-    public static final String SEMANTIC_TEXT_FIELD                      = "atlas_semantic_text";
-    public static final String SEMANTIC_EMBEDDING_FIELD                 = "atlas_semantic_embedding";
-    public static final String SEMANTIC_INGEST_PIPELINE_NAME            = "atlas-semantic-ingest";
-    public static final String VERTEX_INDEX_SUFFIX                      = "_vertex_index";
+    public static final String SEMANTIC_TEXT_FIELD                              = "atlas_semantic_text";
+    public static final String SEMANTIC_EMBEDDING_FIELD                         = "atlas_semantic_embedding";
+    public static final String SEMANTIC_INGEST_PIPELINE_NAME                    = "atlas-semantic-ingest";
+    public static final String VERTEX_INDEX_SUFFIX                              = "_vertex_index";
 
-    private static final int    DEFAULT_SEMANTIC_TOP_K                  = 25;
-    private static final double DEFAULT_SEMANTIC_MIN_SCORE              = 0.0;
-    private static final int    DEFAULT_SEMANTIC_INDEXER_BATCH_SIZE     = 25;
-    private static final int    DEFAULT_SEMANTIC_RETRY_MAX_ATTEMPTS     = 3;
-    private static final long   DEFAULT_SEMANTIC_RETRY_SLEEP_MS         = 500L;
-    private static final String DEFAULT_SEMANTIC_INDEXER_KAFKA_GROUP_ID   = "atlas_semantic_indexer";
-    private static final long   DEFAULT_SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS = 5000L;
-    private static final int    DEFAULT_SEMANTIC_INDEXER_HEALTH_PORT          = 8089;
-    private static final String DEFAULT_SEMANTIC_INDEXER_HEALTH_PATH          = "/health";
-    private static final String DEFAULT_GRAPH_INDEX_NAME                = "janusgraph";
+    private static final int    DEFAULT_SEMANTIC_TOP_K                          = 25;
+    private static final double DEFAULT_SEMANTIC_MIN_SCORE                      = 0.0;
+    private static final int    DEFAULT_SEMANTIC_INDEXER_BATCH_SIZE             = 25;
+    private static final int    DEFAULT_SEMANTIC_RETRY_MAX_ATTEMPTS             = 3;
+    private static final long   DEFAULT_SEMANTIC_RETRY_SLEEP_MS                 = 500L;
+    private static final String DEFAULT_SEMANTIC_INDEXER_KAFKA_GROUP_ID         = "atlas_semantic_indexer";
+    private static final long   DEFAULT_SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS  = 5000L;
+    private static final int    DEFAULT_SEMANTIC_INDEXER_HEALTH_PORT            = 8089;
+    private static final String DEFAULT_SEMANTIC_INDEXER_HEALTH_PATH            = "/health";
+    private static final String DEFAULT_GRAPH_INDEX_NAME                        = "janusgraph";
 
     private SemanticSearchConfiguration() {
     }

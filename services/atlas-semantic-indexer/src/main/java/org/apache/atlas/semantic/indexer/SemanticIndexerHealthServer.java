@@ -68,10 +68,11 @@ public final class SemanticIndexerHealthServer implements AutoCloseable {
 
         boolean up   = running.getAsBoolean();
         int     code = up ? 200 : 503;
-        String  body = String.format(
-                "{\"status\":\"%s\",\"service\":\"atlas-semantic-indexer\",\"uptimeMs\":%d}",
+        long uptimeSeconds = (System.currentTimeMillis() - startTimeMs) / 1000L;
+        String body = String.format(
+                "{\"status\":\"%s\",\"service\":\"atlas-semantic-indexer\",\"uptimeSeconds\":%d}",
                 up ? "UP" : "DOWN",
-                System.currentTimeMillis() - startTimeMs);
+                uptimeSeconds);
 
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json");

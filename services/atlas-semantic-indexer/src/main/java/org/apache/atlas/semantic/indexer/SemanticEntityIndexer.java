@@ -22,6 +22,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.semantic.OpenSearchSemanticStore;
 import org.apache.atlas.semantic.SemanticNotificationGuidExpander;
+import org.apache.atlas.semantic.SemanticSearchConfiguration;
 import org.apache.atlas.semantic.SemanticSearchException;
 import org.apache.atlas.semantic.SemanticTextBuilder;
 import org.apache.commons.lang3.StringUtils;
@@ -74,7 +75,7 @@ public class SemanticEntityIndexer {
         }
     }
 
-    public IndexStats indexGuids(Set<String> guids) {
+    private IndexStats indexGuids(Set<String> guids) {
         if (guids == null || guids.isEmpty()) {
             return new IndexStats(0, 0, 0);
         }
@@ -155,18 +156,13 @@ public class SemanticEntityIndexer {
         }
 
         try {
-            String documentId = JanusGraphSemanticDocumentResolver.resolveVertexIndexDocumentId(vertex);
-            if (StringUtils.isBlank(documentId)) {
-                LOG.warn("Skipping semantic update for guid={}: OpenSearch document id not found", guid);
-                return IndexOutcome.SKIPPED;
-            }
-
-            semanticStore.updateEmbedding(documentId, text);
-            LOG.debug("Updated semantic embedding for guid={} documentId={}", guid, documentId);
+            semanticStore.updateEmbeddingByGuid(guid, text);
+            LOG.debug("Updated semantic embedding for guid={}", guid);
             return IndexOutcome.INDEXED;
-        } catch (SemanticSearchException | org.apache.atlas.exception.AtlasBaseException e) {
-            LOG.error("Semantic indexing failed for guid={}", guid, e);
-            return IndexOutcome.FAILED;
+        } catch (SemanticSearchException e) {
+            LOG.error("Abandoning semantic indexing for guid={} after {} retry attempt(s): {}",
+                    guid, SemanticSearchConfiguration.getRetryMaxAttempts(), e.getMessage());
+            return IndexOutcome.SKIPPED;
         }
     }
 

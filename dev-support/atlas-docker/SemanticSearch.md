@@ -155,7 +155,7 @@ Expected response (`HTTP 200`):
 {
   "status": "UP",
   "service": "atlas-semantic-indexer",
-  "uptimeMs": 15853
+  "uptimeSeconds": 592
 }
 ```
 
