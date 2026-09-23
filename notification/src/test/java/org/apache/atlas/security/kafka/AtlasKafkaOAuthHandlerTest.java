@@ -33,7 +33,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 
-public class KubernetesOAuthHandlerTest {
+public class AtlasKafkaOAuthHandlerTest {
     @Test
     public void testHandleTokenFromFileWithoutScopeClaim() throws Exception {
         Path tokenFile = Files.createTempFile("k8s-sa-token", ".jwt");
@@ -42,10 +42,10 @@ public class KubernetesOAuthHandlerTest {
         Files.write(tokenFile, jwt.getBytes(StandardCharsets.UTF_8));
 
         try {
-            KubernetesOAuthHandler handler = new KubernetesOAuthHandler();
+            AtlasKafkaOAuthHandler handler = new AtlasKafkaOAuthHandler();
             Map<String, Object> configs = new HashMap<>();
 
-            configs.put(KubernetesOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "file://" + tokenFile);
+            configs.put(AtlasKafkaOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "file://" + tokenFile);
 
             handler.configure(configs, "OAUTHBEARER", Collections.emptyList());
 
@@ -67,10 +67,10 @@ public class KubernetesOAuthHandlerTest {
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testConfigureRejectsNonFileUrl() {
-        KubernetesOAuthHandler handler = new KubernetesOAuthHandler();
+        AtlasKafkaOAuthHandler handler = new AtlasKafkaOAuthHandler();
         Map<String, Object> configs = new HashMap<>();
 
-        configs.put(KubernetesOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "https://example.com/token");
+        configs.put(AtlasKafkaOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "https://example.com/token");
 
         handler.configure(configs, "OAUTHBEARER", Collections.emptyList());
     }
@@ -84,10 +84,10 @@ public class KubernetesOAuthHandlerTest {
         Files.write(tokenFile, jwtV1.getBytes(StandardCharsets.UTF_8));
 
         try {
-            KubernetesOAuthHandler handler = new KubernetesOAuthHandler();
+            AtlasKafkaOAuthHandler handler = new AtlasKafkaOAuthHandler();
             Map<String, Object> configs = new HashMap<>();
 
-            configs.put(KubernetesOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "file://" + tokenFile);
+            configs.put(AtlasKafkaOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "file://" + tokenFile);
 
             handler.configure(configs, "OAUTHBEARER", Collections.emptyList());
 
@@ -121,10 +121,10 @@ public class KubernetesOAuthHandlerTest {
         Files.write(tokenFile, jwt.getBytes(StandardCharsets.UTF_8));
 
         try {
-            KubernetesOAuthHandler handler = new KubernetesOAuthHandler();
+            AtlasKafkaOAuthHandler handler = new AtlasKafkaOAuthHandler();
             Map<String, Object> configs = new HashMap<>();
 
-            configs.put(KubernetesOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "file://" + tokenFile);
+            configs.put(AtlasKafkaOAuthHandler.SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL, "file://" + tokenFile);
 
             handler.configure(configs, "OAUTHBEARER", Collections.emptyList());
 

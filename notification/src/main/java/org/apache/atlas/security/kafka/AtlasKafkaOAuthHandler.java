@@ -55,8 +55,8 @@ import java.util.Set;
  * new {@link OAuthBearerToken} from the current JWT (including updated {@code exp}).
  * Token bytes are never cached between callbacks.
  */
-public class KubernetesOAuthHandler implements AuthenticateCallbackHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(KubernetesOAuthHandler.class);
+public class AtlasKafkaOAuthHandler implements AuthenticateCallbackHandler {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasKafkaOAuthHandler.class);
 
     /** Kafka client config key for the OAuth bearer token endpoint / file URL. */
     static final String SASL_OAUTHBEARER_TOKEN_ENDPOINT_URL = "sasl.oauthbearer.token.endpoint.url";
@@ -83,7 +83,7 @@ public class KubernetesOAuthHandler implements AuthenticateCallbackHandler {
     @Override
     public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
         if (tokenFilePath == null) {
-            throw new IllegalStateException("KubernetesOAuthHandler is not configured");
+            throw new IllegalStateException("AtlasKafkaOAuthHandler is not configured");
         }
 
         for (Callback callback : callbacks) {
@@ -106,9 +106,9 @@ public class KubernetesOAuthHandler implements AuthenticateCallbackHandler {
         String rawToken = readTokenFromProjectedVolume();
 
         JwtClaims claims = parseJwtClaims(rawToken);
-        callback.token(new KubernetesOAuthBearerToken(rawToken, claims));
+        callback.token(new AtlasKafkaOAuthBearerToken(rawToken, claims));
 
-        LOG.info("K8sOAuth.handle: token set OK for principal={}, lifetimeMs={}",
+        LOG.info("AtlasKafkaOAuthHandler: token set OK for principal={}, lifetimeMs={}",
                 claims.principalName, claims.lifetimeMs);
     }
 
@@ -164,7 +164,7 @@ public class KubernetesOAuthHandler implements AuthenticateCallbackHandler {
         URI uri = URI.create(tokenEndpointUrl);
 
         if (!"file".equalsIgnoreCase(uri.getScheme())) {
-            throw new IllegalArgumentException("KubernetesOAuthHandler supports only file:// token URLs, got: " + tokenEndpointUrl);
+            throw new IllegalArgumentException("AtlasKafkaOAuthHandler supports only file:// token URLs, got: " + tokenEndpointUrl);
         }
 
         Path path = Paths.get(uri);
@@ -223,13 +223,13 @@ public class KubernetesOAuthHandler implements AuthenticateCallbackHandler {
         }
     }
 
-    private static final class KubernetesOAuthBearerToken implements OAuthBearerToken {
+    private static final class AtlasKafkaOAuthBearerToken implements OAuthBearerToken {
         private final String value;
         private final String principalName;
         private final long   lifetimeMs;
         private final Long   startTimeMs;
 
-        KubernetesOAuthBearerToken(String rawJwt, JwtClaims claims) {
+        AtlasKafkaOAuthBearerToken(String rawJwt, JwtClaims claims) {
             this.value          = rawJwt;
             this.principalName  = claims.principalName;
             this.lifetimeMs     = claims.lifetimeMs;
