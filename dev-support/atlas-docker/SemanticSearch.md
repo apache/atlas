@@ -216,11 +216,25 @@ docker logs -f atlas 2>&1 | grep --line-buffered 'org.apache.atlas.semantic'
 
 ## OpenSearch bootstrap
 
-`init-opensearch-semantic-local.sh` deploys a local MiniLM model and patches:
+`init-opensearch-semantic-local.sh` ensures a local MiniLM model and patches:
 
 - `index.knn=true` on the vertex index
 - ingest pipeline `atlas-semantic-ingest`
 - `atlas_semantic_embedding` knn_vector mapping
+
+**Idempotent by default:** searches OpenSearch for a `DEPLOYED` model with the configured
+`MODEL_NAME`, verifies with `GET /_plugins/_ml/models/{id}`, and reuses it. If none is
+found, it registers a **new** model (OpenSearch assigns a new id each time — see below).
+The bootstrap artifact is written for Atlas config reference only.
+
+To deliberately register a **new** model:
+
+```bash
+./scripts/init-opensearch-semantic-local.sh --force
+# or: ATLAS_SEMANTIC_FORCE_INIT=true ./scripts/run-atlas-semantic.sh
+```
+
+After a new model id is created, run repair to re-embed existing entities.
 
 For remote embedding models, use `init-opensearch-semantic-remote.sh` (see `config/connectors/README.md`).
 
@@ -230,6 +244,6 @@ For remote embedding models, use `init-opensearch-semantic-remote.sh` (see `conf
 |---------|-----|
 | Empty semantic search results | Run repair or wait for indexer; check `curl localhost:9200/janusgraph_vertex_index/_count?q=exists:atlas_semantic_embedding` |
 | Indexer restart loop | Check `docker logs atlas-semantic-indexer`; ensure slim image has `bin/atlas_semantic_indexer.sh` |
-| Model id mismatch | Re-run `init-opensearch-semantic-local.sh`; update `atlas-semantic-docker.properties` |
+| Model id mismatch | Re-run `./scripts/init-opensearch-semantic-local.sh` (reuse) or `--force` if OpenSearch was reset; sync `atlas-semantic-docker.properties` |
 | Clear embeddings only | `./seed/udf-retail/clear-opensearch-semantic-embeddings.sh` |
 | Health endpoint unreachable | Recreate container after rebuild; confirm port `8089:8089` in `docker-compose.atlas-semantic.yml` |

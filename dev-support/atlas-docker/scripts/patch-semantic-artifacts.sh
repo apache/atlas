@@ -44,6 +44,11 @@ docker cp "${INDEXER_JAR}" "${CONTAINER}:/opt/atlas/lib/"
 docker cp "${REPAIR_JAR}" "${CONTAINER}:/opt/atlas/lib/"
 docker cp "${SRC_ROOT}/services/atlas-semantic-indexer/scripts/atlas_semantic_indexer.sh" "${CONTAINER}:/opt/atlas/bin/"
 docker cp "${SRC_ROOT}/tools/atlas-semantic-repair/scripts/atlas_semantic_repair.sh" "${CONTAINER}:/opt/atlas/bin/"
+REPAIR_LOGBACK="${SCRIPT_DIR}/../config/atlas-semantic-repair-logback.xml"
+if [ -f "${REPAIR_LOGBACK}" ]; then
+  docker exec "${CONTAINER}" mkdir -p /opt/atlas/conf
+  docker cp "${REPAIR_LOGBACK}" "${CONTAINER}:/opt/atlas/conf/atlas-semantic-repair-logback.xml"
+fi
 docker exec "${CONTAINER}" chmod +x /opt/atlas/bin/atlas_semantic_indexer.sh /opt/atlas/bin/atlas_semantic_repair.sh
 # Skip when compose bind-mounts atlas-logback.xml (docker cp fails with "device or resource busy").
 if [ -f "${SCRIPT_DIR}/../config/atlas-logback.xml" ] && ! docker inspect "${CONTAINER}" --format '{{range .Mounts}}{{if eq .Destination "/opt/atlas/conf/atlas-logback.xml"}}mounted{{end}}{{end}}' | grep -q mounted; then

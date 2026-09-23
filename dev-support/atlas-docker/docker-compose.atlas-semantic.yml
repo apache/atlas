@@ -1,4 +1,4 @@
-# Semantic search stack: Postgres + OpenSearch + standalone Semantic Indexer (no Solr).
+# Semantic search stack: Postgres + OpenSearch + standalone Semantic Indexer.
 #
 #   export ATLAS_BACKEND=postgres ATLAS_INDEX_BACKEND=opensearch COMPOSE_PROFILES=opensearch-index
 #   ./scripts/run-atlas-semantic.sh

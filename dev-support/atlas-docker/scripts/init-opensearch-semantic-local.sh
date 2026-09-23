@@ -2,8 +2,12 @@
 # Provision a local OpenSearch embedding model for Atlas semantic search (dev).
 # Also enables knn, ingest pipeline, and embedding mapping on the JanusGraph vertex index.
 #
+# Reuses a DEPLOYED model in OpenSearch with the same MODEL_NAME (search + GET verify).
+# Otherwise registers a new model. Pass --force to always register a new model.
+#
 # Usage:
 #   ./scripts/init-opensearch-semantic-local.sh
+#   ./scripts/init-opensearch-semantic-local.sh --force
 #   OPENSEARCH_URL=http://localhost:9200 PIPELINE_NAME=atlas-semantic-ingest EMBEDDING_DIMENSION=384 \
 #     ./scripts/init-opensearch-semantic-local.sh
 set -euo pipefail
@@ -20,23 +24,54 @@ MODEL_NAME="${MODEL_NAME:-huggingface/sentence-transformers/paraphrase-MiniLM-L3
 MODEL_VERSION="${MODEL_VERSION:-1.0.1}"
 EMBEDDING_DIMENSION="${EMBEDDING_DIMENSION:-384}"
 BOOTSTRAP_ARTIFACT="${BOOTSTRAP_ARTIFACT:-${DOCKER_DIR}/config/.semantic-bootstrap-last.env}"
+FORCE_REGISTER="${FORCE_REGISTER:-false}"
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [--force]
+
+Ensures a local OpenSearch ML embedding model, ingest pipeline, and vertex-index mapping exist.
+
+Options:
+  -f, --force   Always register and deploy a new model.
+
+Default (no --force):
+  - Search OpenSearch for a DEPLOYED model named ${MODEL_NAME}, verify with
+    GET /_plugins/_ml/models/{id}, and reuse it when found.
+  - Otherwise register and deploy a new model.
+
+Environment:
+  FORCE_REGISTER=true              Same as --force
+  ATLAS_SEMANTIC_FORCE_INIT=true   Used by run-atlas-semantic.sh to pass --force
+EOF
+}
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -f|--force)
+      FORCE_REGISTER=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
 
 wait_for_opensearch "${OPENSEARCH_URL}"
 
-echo "==> Registering and deploying local embedding model (${MODEL_NAME}) ..."
-REGISTER_RESPONSE=$(curl -sf -X POST "${OPENSEARCH_URL}/_plugins/_ml/models/_register?deploy=true" \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"${MODEL_NAME}\",\"version\":\"${MODEL_VERSION}\",\"model_format\":\"TORCH_SCRIPT\"}")
-
-TASK_ID=$(echo "${REGISTER_RESPONSE}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('task_id',''))")
-if [ -z "${TASK_ID}" ]; then
-  echo "Failed to register model: ${REGISTER_RESPONSE}"
-  exit 1
-fi
-
-wait_for_ml_task "${OPENSEARCH_URL}" "${TASK_ID}" MODEL_ID
-
-echo "==> Model deployed: ${MODEL_ID}"
+resolve_local_embedding_model_id \
+  "${OPENSEARCH_URL}" \
+  "${MODEL_NAME}" \
+  "${MODEL_VERSION}" \
+  "${FORCE_REGISTER}" \
+  MODEL_ID
 
 bootstrap_semantic_vertex_index "${OPENSEARCH_URL}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
 
