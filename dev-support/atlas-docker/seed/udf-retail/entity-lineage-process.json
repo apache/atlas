@@ -1,0 +1,26 @@
+{
+  "entity": {
+    "typeName": "Process",
+    "attributes": {
+      "qualifiedName": "proc.cust_segmentation@udf-retail",
+      "name": "cust_segmentation",
+      "displayName": "cust_segmentation",
+      "description": "ETL process that builds mart.seg_out customer segment assignments from raw.cust_raw profile inputs.",
+      "userDescription": "Lineage path for privacy propagation demo: raw.cust_raw -> mart.seg_out."
+    },
+    "relationshipAttributes": {
+      "inputs": [
+        {
+          "typeName": "DataSet",
+          "uniqueAttributes": { "qualifiedName": "raw.cust_raw@udf-retail" }
+        }
+      ],
+      "outputs": [
+        {
+          "typeName": "DataSet",
+          "uniqueAttributes": { "qualifiedName": "mart.seg_out@udf-retail" }
+        }
+      ]
+    }
+  }
+}

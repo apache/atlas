@@ -10,15 +10,15 @@
     "entityType": "DataSet",
     "qualifiedName": "raw.cust_raw@udf-retail",
     "classifications": [
-      { "typeName": "udf_PII", "attributes": { "piiType": "email" } },
+      { "typeName": "PII", "attributes": { "piiType": "email" } },
       { "typeName": "Sensitive", "attributes": { "controlLevel": "restricted" } }
     ]
   },
   {
     "entityType": "DataSet",
-    "qualifiedName": "mart.seg_out@udf-retail",
+    "qualifiedName": "raw.cust_raw.email_hash@udf-retail",
     "classifications": [
-      { "typeName": "udf_PII", "attributes": { "piiType": "email" } },
+      { "typeName": "PII", "attributes": { "piiType": "email" } },
       { "typeName": "Sensitive", "attributes": { "controlLevel": "restricted" } }
     ]
   },

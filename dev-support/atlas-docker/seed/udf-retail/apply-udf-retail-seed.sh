@@ -62,15 +62,62 @@ unique_attr_url() {
     "${ATLAS_URL}" "${entity_type}" "${suffix}" "${qualified_name}"
 }
 
-log "Creating typedefs from typedefs.json ..."
-if ! post_file "${ATLAS_URL}/api/atlas/v2/types/typedefs" "${SCRIPT_DIR}/typedefs.json" \
-  | jq -e '.guidAssignments // .mutatedEntities // .' >/dev/null 2>&1; then
-  echo "    (typedef create may fail if types already exist — continuing)"
-fi
+typedef_exists() {
+  local type_name="$1"
+  local http_code
+  http_code="$(curl -s -o /dev/null -w '%{http_code}' "${AUTH[@]}" "${HDR[@]}" \
+    "${ATLAS_URL}/api/atlas/v2/types/typedef/name/${type_name}")"
+  [ "${http_code}" = "200" ]
+}
+
+# Register typedef section(s) from typedefs.json, skipping names that already exist.
+# Full POST of typedefs.json fails atomically when e.g. PII already exists, leaving
+# Sensitive/Certified/Deprecated unregistered and classification apply broken.
+ensure_typedef_section() {
+  local section="$1"
+  local defs missing name i count
+  defs="$(jq -c ".[\"${section}\"] // []" "${SCRIPT_DIR}/typedefs.json")"
+  count="$(echo "${defs}" | jq 'length')"
+  missing='[]'
+  i=0
+  while [ "${i}" -lt "${count}" ]; do
+    name="$(echo "${defs}" | jq -r ".[${i}].name")"
+    if typedef_exists "${name}"; then
+      log "    typedef ${name} already exists — skip"
+    else
+      missing="$(echo "${missing}" | jq -c --argjson def "$(echo "${defs}" | jq -c ".[${i}]")" '. + [$def]')"
+      log "    typedef ${name} missing — will create"
+    fi
+    i=$((i + 1))
+  done
+  if [ "$(echo "${missing}" | jq 'length')" -eq 0 ]; then
+    return 0
+  fi
+  local payload
+  payload="$(jq -nc --arg section "${section}" --argjson defs "${missing}" '{($section): $defs}')"
+  local resp http_code
+  resp="$(curl -sS -w '\n%{http_code}' "${AUTH[@]}" "${HDR[@]}" -X POST \
+    "${ATLAS_URL}/api/atlas/v2/types/typedefs" -d "${payload}")"
+  http_code="$(echo "${resp}" | tail -1)"
+  if [ "${http_code}" -ge 400 ]; then
+    echo "    FAILED to create ${section}: $(echo "${resp}" | sed '$d' | jq -c . 2>/dev/null || echo "${resp}")" >&2
+    exit 1
+  fi
+}
+
+log "Ensuring typedefs from typedefs.json (idempotent) ..."
+ensure_typedef_section "entityDefs"
+ensure_typedef_section "classificationDefs"
+ensure_typedef_section "businessMetadataDefs"
 
 log "Creating entities from entities-bulk.json ..."
 post_file "${ATLAS_URL}/api/atlas/v2/entity/bulk" "${SCRIPT_DIR}/entities-bulk.json" \
   | jq -e '.guidAssignments // .mutatedEntities // .' >/dev/null
+
+log "Creating lineage process from entity-lineage-process.json ..."
+post_file "${ATLAS_URL}/api/atlas/v2/entity" "${SCRIPT_DIR}/entity-lineage-process.json" \
+  | jq -e '.guidAssignments // .mutatedEntities // .entity // .' >/dev/null \
+  || echo "    (lineage process may already exist — continuing)"
 
 log "Creating glossary from glossary-create.json ..."
 GLOSSARY_RESP="$(post_file "${ATLAS_URL}/api/atlas/v2/glossary" "${SCRIPT_DIR}/glossary-create.json")"
@@ -94,18 +141,54 @@ done < <(jq -c '.terms[]' "${SCRIPT_DIR}/glossary-terms.json")
 post_relationships_file "${SCRIPT_DIR}/term-relationships.json"
 post_relationships_file "${SCRIPT_DIR}/term-assignments.json"
 
+entity_has_classification() {
+  local entity_type="$1"
+  local qn="$2"
+  local class_name="$3"
+  curl -s "${AUTH[@]}" "${HDR[@]}" \
+    "${ATLAS_URL}/api/atlas/v2/entity/uniqueAttribute/type/${entity_type}?attr:qualifiedName=${qn}" \
+    | jq -e --arg c "${class_name}" '.entity.classifications[]? | select(.typeName == $c)' >/dev/null 2>&1
+}
+
+apply_classification() {
+  local entity_type="$1"
+  local qn="$2"
+  local class_json="$3"
+  local class_name
+  class_name="$(echo "${class_json}" | jq -r '.typeName')"
+  if entity_has_classification "${entity_type}" "${qn}" "${class_name}"; then
+    log "    ${class_name} on ${qn} already applied — skip"
+    return 0
+  fi
+  local resp http_code err_code
+  resp="$(curl -sS -w '\n%{http_code}' "${AUTH[@]}" "${HDR[@]}" -X POST \
+    "$(unique_attr_url "${entity_type}" "${qn}" "classifications")" \
+    -d "[${class_json}]")"
+  http_code="$(echo "${resp}" | tail -1)"
+  if [ "${http_code}" -lt 400 ]; then
+    return 0
+  fi
+  err_code="$(echo "${resp}" | sed '$d' | jq -r '.errorCode // empty' 2>/dev/null)"
+  if [ "${err_code}" = "ATLAS-400-00-01A" ]; then
+    log "    ${class_name} on ${qn} already applied — skip"
+    return 0
+  fi
+  echo "    FAILED ${class_name} on ${qn}: $(echo "${resp}" | sed '$d' | jq -c . 2>/dev/null)" >&2
+  exit 1
+}
+
 log "Applying classifications from entity-classifications.json ..."
 while IFS= read -r row; do
   entity_type="$(echo "${row}" | jq -r '.entityType')"
   qn="$(echo "${row}" | jq -r '.qualifiedName')"
-  body="$(echo "${row}" | jq -c '.classifications')"
   log "    classifications on ${qn}"
-  curl -sS "${AUTH[@]}" "${HDR[@]}" -X POST \
-    "$(unique_attr_url "${entity_type}" "${qn}" "classifications")" \
-    -d "${body}" >/dev/null \
-    || curl -sS "${AUTH[@]}" "${HDR[@]}" -X PUT \
-      "$(unique_attr_url "${entity_type}" "${qn}" "classifications")" \
-      -d "${body}" >/dev/null
+  count="$(echo "${row}" | jq '.classifications | length')"
+  i=0
+  while [ "${i}" -lt "${count}" ]; do
+    class_json="$(echo "${row}" | jq -c ".classifications[${i}]")"
+    apply_classification "${entity_type}" "${qn}" "${class_json}"
+    i=$((i + 1))
+  done
 done < <(jq -c '.[]' "${SCRIPT_DIR}/entity-classifications.json")
 
 log "Applying labels from entity-labels.json ..."
@@ -132,9 +215,14 @@ while IFS= read -r row; do
     continue
   fi
   log "    business metadata on ${qn}"
-  curl -sS "${AUTH[@]}" "${HDR[@]}" -X POST \
+  resp="$(curl -sS -w '\n%{http_code}' "${AUTH[@]}" "${HDR[@]}" -X POST \
     "${ATLAS_URL}/api/atlas/v2/entity/guid/${guid}/businessmetadata" \
-    -d "${body}" >/dev/null
+    -d "${body}")"
+  http_code="$(echo "${resp}" | tail -1)"
+  if [ "${http_code}" -ge 400 ]; then
+    echo "    FAILED business metadata on ${qn}: $(echo "${resp}" | sed '$d' | jq -c . 2>/dev/null)" >&2
+    exit 1
+  fi
 done < <(jq -c '.[]' "${SCRIPT_DIR}/entity-business-metadata.json")
 
 log "Seed apply complete."

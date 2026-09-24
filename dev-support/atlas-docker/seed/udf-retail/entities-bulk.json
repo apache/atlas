@@ -37,7 +37,7 @@
         "name": "gx_117",
         "displayName": "edw.gx_117",
         "description": "Attrition and churn-risk scoring for retail customers. Models why customers stop buying or engaging.",
-        "userDescription": "Column churn_propensity scores likelihood of disengagement. Segmentation features for retention campaigns.",
+        "userDescription": "Table hosts churn_propensity column for disengagement scoring and retention campaigns.",
         "owner": "analytics-dl"
       },
       "customAttributes": {
@@ -52,7 +52,7 @@
         "name": "cust_scr_ds",
         "displayName": "edw.cust_scr_ds",
         "description": "Customer lifetime value metrics and value bands for retail accounts.",
-        "userDescription": "Column v_band groups customers by long-term relationship value. No table name hints at LTV or lifetime.",
+        "userDescription": "Table hosts v_band column grouping customers by long-term relationship value.",
         "owner": "analytics-dl"
       },
       "customAttributes": {
@@ -107,13 +107,59 @@
         "qualifiedName": "mart.seg_out@udf-retail",
         "name": "seg_out",
         "displayName": "mart.seg_out",
-        "description": "Downstream segmentation output derived from raw.cust_raw through lineage.",
-        "userDescription": "Customer segment assignments inherit privacy classification from upstream profile source.",
+        "description": "Downstream segmentation output produced by proc.cust_segmentation from raw.cust_raw.",
+        "userDescription": "Customer segment assignments for mart.seg_out. Privacy tags propagate from upstream raw.cust_raw via lineage (not set directly on this table in the seed).",
         "owner": "privacy-dl"
       },
       "customAttributes": {
         "derivedFrom": "raw.cust_raw",
+        "lineageProcess": "proc.cust_segmentation@udf-retail",
         "outputType": "customer_segment"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.gx_117.churn_propensity@udf-retail",
+        "name": "churn_propensity",
+        "displayName": "churn_propensity",
+        "description": "Column measuring likelihood a retail customer stops buying or engaging.",
+        "userDescription": "Churn propensity score column on edw.gx_117. Used when analysts ask why customers stop buying.",
+        "owner": "analytics-dl"
+      },
+      "customAttributes": {
+        "parentTable": "edw.gx_117@udf-retail",
+        "columnType": "metric"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "edw.cust_scr_ds.v_band@udf-retail",
+        "name": "v_band",
+        "displayName": "v_band",
+        "description": "Customer value band column encoding lifetime relationship worth.",
+        "userDescription": "v_band column on edw.cust_scr_ds. Synonym-friendly for customer worth and CLV banding.",
+        "owner": "analytics-dl"
+      },
+      "customAttributes": {
+        "parentTable": "edw.cust_scr_ds@udf-retail",
+        "columnType": "dimension"
+      }
+    },
+    {
+      "typeName": "DataSet",
+      "attributes": {
+        "qualifiedName": "raw.cust_raw.email_hash@udf-retail",
+        "name": "email_hash",
+        "displayName": "email_hash",
+        "description": "Hashed customer email column containing personal contact data.",
+        "userDescription": "email_hash column on raw.cust_raw. Direct source of personal customer email data for privacy controls.",
+        "owner": "privacy-dl"
+      },
+      "customAttributes": {
+        "parentTable": "raw.cust_raw@udf-retail",
+        "columnType": "pii"
       }
     },
     {

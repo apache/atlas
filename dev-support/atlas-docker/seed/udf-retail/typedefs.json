@@ -1,4 +1,35 @@
 {
+  "entityDefs": [
+    {
+      "name": "DataSet",
+      "category": "ENTITY",
+      "superTypes": ["Referenceable", "Asset"],
+      "attributeDefs": []
+    },
+    {
+      "name": "Process",
+      "category": "ENTITY",
+      "superTypes": ["Referenceable", "Asset"],
+      "attributeDefs": [
+        {
+          "name": "inputs",
+          "typeName": "array<DataSet>",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        },
+        {
+          "name": "outputs",
+          "typeName": "array<DataSet>",
+          "cardinality": "SINGLE",
+          "isOptional": true,
+          "isUnique": false,
+          "isIndexable": false
+        }
+      ]
+    }
+  ],
   "classificationDefs": [
     {
       "name": "Certified",
@@ -16,7 +47,7 @@
       ]
     },
     {
-      "name": "udf_PII",
+      "name": "PII",
       "category": "CLASSIFICATION",
       "superTypes": [],
       "attributeDefs": [
@@ -80,7 +111,11 @@
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true,
-          "isUnique": false
+          "isUnique": false,
+          "options": {
+            "applicableEntityTypes": "[\"DataSet\"]",
+            "maxStrLength": "256"
+          }
         },
         {
           "name": "domain",
@@ -88,7 +123,11 @@
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true,
-          "isUnique": false
+          "isUnique": false,
+          "options": {
+            "applicableEntityTypes": "[\"DataSet\"]",
+            "maxStrLength": "256"
+          }
         }
       ],
       "options": {
@@ -113,7 +152,11 @@
           "cardinality": "SINGLE",
           "isIndexable": true,
           "isOptional": true,
-          "isUnique": false
+          "isUnique": false,
+          "options": {
+            "applicableEntityTypes": "[\"DataSet\"]",
+            "maxStrLength": "64"
+          }
         }
       ],
       "options": {
