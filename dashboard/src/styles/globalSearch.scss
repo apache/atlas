@@ -80,6 +80,10 @@
   gap: "0.5rem";
 }
 
+.global-search-submit-btn[disabled] {
+  cursor: not-allowed;
+}
+
 .advanced-search-label {
   text-decoration: underline;
 }

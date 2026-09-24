@@ -25,8 +25,11 @@ import AuditTableDetails from '../AuditTableDetails';
 // Mock AttributeProperties
 jest.mock('../AttributeProperties', () => ({
   __esModule: true,
-  default: ({ entity, propertiesName }: any) => (
-    <div data-testid={`attribute-properties-${propertiesName.toLowerCase()}`}>
+  default: ({ entity, propertiesName, auditDetails }: any) => (
+    <div
+      data-testid={`attribute-properties-${propertiesName.toLowerCase()}`}
+      data-audit-details={String(auditDetails)}
+    >
       AttributeProperties - {propertiesName} - {entity?.typeName || 'No Type'}
     </div>
   )
@@ -708,9 +711,31 @@ describe('AuditTableDetails', () => {
         });
       });
 
-      // AttributeProperties should receive auditDetails=true
       await waitFor(() => {
-        expect(screen.getByTestId('attribute-properties-technical')).toBeInTheDocument();
+        const technicalProps = screen.getByTestId('attribute-properties-technical');
+        expect(technicalProps).toBeInTheDocument();
+        expect(technicalProps).toHaveAttribute('data-audit-details', 'true');
+      }, { timeout: 10000 });
+    }, 30000);
+
+    it('should pass auditDetails=true for relationship audit expand', async () => {
+      const mockRow = {
+        original: {
+          details: 'Updated: {"typeName":"test","attributes":{"name":"Test"},"relationshipAttributes":{"column_families":[{"guid":"cf1"}]}}'
+        }
+      };
+
+      await act(async () => {
+        renderWithProviders({
+          componentProps: mockComponentProps,
+          row: mockRow
+        });
+      });
+
+      await waitFor(() => {
+        const relationshipProps = screen.getByTestId('attribute-properties-relationship');
+        expect(relationshipProps).toBeInTheDocument();
+        expect(relationshipProps).toHaveAttribute('data-audit-details', 'true');
       }, { timeout: 10000 });
     }, 30000);
   });

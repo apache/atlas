@@ -63,6 +63,7 @@ fi
 # log dir for applications
 ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-/var/log/atlas}"
 export ATLAS_LOG_DIR
+mkdir -p "${ATLAS_LOG_DIR}"
 LOGFILE="$ATLAS_LOG_DIR/import-hive.log"
 
 TIME=`date +%Y%m%d%H%M%s`

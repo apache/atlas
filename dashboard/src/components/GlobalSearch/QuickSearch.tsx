@@ -31,7 +31,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { getGlobalSearchResult } from "../../api/apiMethods/searchApiMethod";
 import DisplayImage from "../EntityDisplayImage";
 import SearchIcon from "@mui/icons-material/Search";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { entityStateReadOnly } from "../../utils/Enum";
 import {
 	extractKeyValueFromEntity,
@@ -85,15 +85,21 @@ const SCOPE_LABELS: Record<QuickSearchScope, string> = {
 	businessMetadata: "Business Metadata"
 };
 
+const hasValidSearchQuery = (value: string) => value.trim().length > 0;
+
 const QuickSearch = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const toastId = useRef(null);
+	const searchParams = new URLSearchParams(location.search);
 	const [options, setOptions] = useState<GlobalOptionRow[]>([]);
 	const [open, setOpen] = useState<boolean>(false);
 	const [openAdvanceSearch, setOpenAdvanceSearch] = useState<boolean>(false);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [inputText, setInputText] = useState<string>("");
 	const [scope, setScope] = useState<QuickSearchScope>("default");
+	const trimmedQuery = useMemo(() => inputText.trim(), [inputText]);
+	const isSearchEnabled = hasValidSearchQuery(inputText);
 
 	const { typeHeaderData } = useAppSelector((state: any) => state.typeHeader);
 	const { metricsData } = useAppSelector((state: any) => state.metrics);
@@ -285,7 +291,15 @@ const QuickSearch = () => {
 			if (scope !== "default") {
 				return;
 			}
-			navigateToBasicTextQuery(navigate, queryValue || "*");
+			searchParams.set("query", queryValue);
+			searchParams.set("searchType", "basic");
+			navigate(
+				{
+					pathname: `/search/searchResult`,
+					search: searchParams.toString()
+				},
+				{ replace: true }
+			);
 			return;
 		}
 
@@ -307,6 +321,9 @@ const QuickSearch = () => {
 		setOptions([]);
 		setInputText("");
 
+		searchParams.set("query", sanitizedTitle);
+		searchParams.set("searchType", "basic");
+
 		if (types === "Entities" && entityObj && entityObj.guid) {
 			navigate(
 				{
@@ -315,21 +332,26 @@ const QuickSearch = () => {
 				{ replace: true }
 			);
 		} else {
-			navigateToBasicTextQuery(navigate, sanitizedTitle);
+			navigate(
+				{
+					pathname: `/search/searchResult`,
+					search: searchParams.toString()
+				},
+				{ replace: true }
+			);
 		}
 	};
 
 	const handleSubmitSearch = () => {
-		const q = inputText.trim();
+		const q = trimmedQuery;
+		if (!hasValidSearchQuery(inputText)) {
+			return;
+		}
 		if (scope !== "default") {
 			const activeOption = options.find((o) => o.title === q);
 			if (activeOption?.scoped) {
 				handleScopedSelection(activeOption.scoped);
 			}
-			return;
-		}
-		if (!q) {
-			handleValues("*");
 			return;
 		}
 		const activeOption = options.find(
@@ -401,7 +423,9 @@ const QuickSearch = () => {
 							switch (code) {
 								case 13: {
 									e.preventDefault();
-									handleSubmitSearch();
+									if (isSearchEnabled) {
+										handleSubmitSearch();
+									}
 									break;
 								}
 								case 9:
@@ -662,11 +686,18 @@ const QuickSearch = () => {
 				<CustomButton
 					variant="contained"
 					size="small"
+					className="global-search-submit-btn"
+					disabled={!isSearchEnabled}
 					sx={{
 						backgroundColor: "#4a90e2 !important",
 						color: "#fff !important",
 						textTransform: "none",
-						fontWeight: 600
+						fontWeight: 600,
+						"&.Mui-disabled": {
+							backgroundColor: "#a8c8eb !important",
+							color: "#fff !important",
+							opacity: 0.7
+						}
 					}}
 					onClick={handleSubmitSearch}
 					aria-label="Run search"
