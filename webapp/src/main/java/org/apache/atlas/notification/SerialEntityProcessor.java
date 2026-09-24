@@ -506,6 +506,11 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                                         String.format(AtlasClientV2.API_V2.UPDATE_ENTITY_BY_ATTRIBUTE.getNormalizedPath(), partialUpdateRequest.getTypeName()));
                             }
 
+                            if (isIgnoredByConfiguredPattern(partialUpdateShell(partialUpdateRequest.getTypeName(), partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue()), kafkaMsg)
+                                    || (entities != null && CollectionUtils.isNotEmpty(entities.getEntities()) && isIgnoredByConfiguredPattern(entities.getEntities().get(0), kafkaMsg))) {
+                                break;
+                            }
+
                             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
                             String          guid       = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, Collections.singletonMap(partialUpdateRequest.getAttribute(), (Object) partialUpdateRequest.getAttributeValue()));
 
@@ -520,6 +525,10 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                             final HookNotificationV1.EntityDeleteRequest deleteRequest = (HookNotificationV1.EntityDeleteRequest) message;
 
                             requestContext.setDeleteEventMsgTime(kafkaMsg.getMsgCreated());
+
+                            if (isIgnoredByConfiguredPattern(partialUpdateShell(deleteRequest.getTypeName(), deleteRequest.getAttribute(), deleteRequest.getAttributeValue()), kafkaMsg)) {
+                                break;
+                            }
 
                             if (auditLog == null) {
                                 auditLog = new AuditFilter.AuditLog(messageUser, THREADNAME_PREFIX,
@@ -575,6 +584,10 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                             final AtlasObjectId                entityId             = partialUpdateRequest.getEntityId();
                             final AtlasEntityWithExtInfo       entity               = partialUpdateRequest.getEntity();
 
+                            if (isIgnoredByConfiguredPattern(entity != null ? entity.getEntity() : entityId, kafkaMsg)) {
+                                break;
+                            }
+
                             if (auditLog == null) {
                                 auditLog = new AuditFilter.AuditLog(messageUser, THREADNAME_PREFIX,
                                         AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(),
@@ -609,6 +622,10 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
 
                             try {
                                 for (AtlasObjectId entity : entities) {
+                                    if (isIgnoredByConfiguredPattern(entity, kafkaMsg)) {
+                                        continue;
+                                    }
+
                                     if (auditLog == null) {
                                         auditLog = new AuditFilter.AuditLog(messageUser, THREADNAME_PREFIX,
                                                 AtlasClientV2.API_V2.DELETE_ENTITY_BY_ATTRIBUTE.getMethod(),
@@ -1064,6 +1081,31 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                 LOG.warn("removed {} hive_column_lineage entities. Average # of inputs={}, threshold={}, total # of inputs={}. topic-offset={}, partition={}", numRemovedEntities, avgInputsCount, skipHiveColumnLineageHive20633InputsThreshold, lineageInputsCount, context.getKafkaMessageOffset(), context.getKafkaPartition());
             }
         }
+    }
+
+    private boolean isIgnoredByConfiguredPattern(Object entity, AtlasKafkaMessage<?> kafkaMsg) {
+        if (entity == null || (CollectionUtils.isEmpty(entityTypesToIgnore) && CollectionUtils.isEmpty(entitiesToIgnore))) {
+            return false;
+        }
+
+        if (!new GenericEntityPreprocessor(entityTypesToIgnore, entitiesToIgnore).shouldIgnore(entity)) {
+            return false;
+        }
+
+        LOG.info("ignored entity: typeName={}, qualifiedName={}. topic-offset={}, partition={}",
+                EntityPreprocessor.getTypeName(entity), EntityPreprocessor.getQualifiedName(entity),
+                kafkaMsg.getOffset(), kafkaMsg.getPartition());
+        return true;
+    }
+
+    private static AtlasEntity partialUpdateShell(String typeName, String attribute, String attributeValue) {
+        AtlasEntity shell = new AtlasEntity(typeName);
+
+        if (attribute != null && attributeValue != null) {
+            shell.setAttribute(attribute, attributeValue);
+        }
+
+        return shell;
     }
 
     private boolean isEmptyMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
