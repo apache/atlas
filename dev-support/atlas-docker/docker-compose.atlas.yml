@@ -16,7 +16,7 @@ services:
       - atlas
     volumes:
       - ./data:/home/atlas/data
-      - ./config/atlas/${ATLAS_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application.properties:ro
+      - ./config/atlas/${ATLAS_BACKEND}/${ATLAS_INDEX_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application.properties:ro
       - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties:ro
     ports:
       - "21000:21000"
@@ -25,12 +25,13 @@ services:
         condition: service_healthy
       atlas-kafka:
         condition: service_started
-      atlas-solr:
-        condition: service_started
+      atlas-index:
+        condition: service_healthy
       atlas-zk:
         condition: service_started
     environment:
       - ATLAS_BACKEND
+      - ATLAS_INDEX_BACKEND
       - ATLAS_SERVER_JAVA_VERSION
       - ATLAS_VERSION
     command:
@@ -41,14 +42,26 @@ services:
       service: ${ATLAS_BACKEND}
       file: docker-compose.atlas-backend.yml
 
+  atlas-index:
+    extends:
+      service: ${ATLAS_INDEX_BACKEND}
+      file: docker-compose.atlas-index.yml
+
+  atlas-opensearch-dashboards:
+    extends:
+      file: docker-compose.atlas-common.yml
+      service: atlas-opensearch-dashboards
+    profiles:
+      - opensearch-index
+    depends_on:
+      atlas-index:
+        condition: service_healthy
+    environment:
+      - OPENSEARCH_HOSTS=["http://atlas-index:9200"]
+
   atlas-kafka:
     extends:
       service: atlas-kafka
-      file: docker-compose.atlas-common.yml
-
-  atlas-solr:
-    extends:
-      service: atlas-solr
       file: docker-compose.atlas-common.yml
 
   atlas-zk:

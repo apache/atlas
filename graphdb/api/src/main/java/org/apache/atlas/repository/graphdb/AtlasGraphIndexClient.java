@@ -17,10 +17,12 @@
  */
 package org.apache.atlas.repository.graphdb;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a graph client work with indices used by Jansgraph.
@@ -43,6 +45,19 @@ public interface AtlasGraphIndexClient {
     List<String> getSuggestions(String prefixString, String indexFieldName);
 
     /**
+     * Weighted quick search for OpenSearch backends. Non-OpenSearch implementations return an empty result.
+     * <p>
+     * Backend failures (e.g. OpenSearch unavailable) and query-building failures (e.g. an unsupported operator)
+     * are surfaced as {@link AtlasBaseException} rather than being converted to an empty result, so that an outage
+     * is not mistaken for a legitimate zero-hit search.
+     *
+     * @param quickSearchContext quick-search inputs (query, filters, pagination)
+     * @return matching entity GUIDs in score order and total hit count
+     * @throws AtlasBaseException if the query cannot be built or the backend request fails
+     */
+    QuickSearchResult quickSearch(QuickSearchContext quickSearchContext) throws AtlasBaseException;
+
+    /**
      * The implementers should apply the search weights for the passed in properties.
      *
      * @param collectionName the name of the collection for which the search weight needs to be applied
@@ -57,6 +72,15 @@ public interface AtlasGraphIndexClient {
      * @param suggestionProperties the list of suggestion properties.
      */
     void applySuggestionFields(String collectionName, List<String> suggestionProperties);
+
+    /**
+     * Registers OpenSearch index fields that use a text mapping with a {@code keyword} subfield for terms queries.
+     * Non-OpenSearch implementations ignore this call.
+     *
+     * @param collectionName mixed index collection name
+     * @param indexFieldNames index field names that require {@code .keyword} for terms aggregations/suggestions
+     */
+    void applyKeywordSubfieldFields(String collectionName, Set<String> indexFieldNames);
 
     /**
      * Returns status of index client
