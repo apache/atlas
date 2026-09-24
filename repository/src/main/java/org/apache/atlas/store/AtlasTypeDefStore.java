@@ -34,6 +34,14 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 public interface AtlasTypeDefStore {
     void init() throws AtlasBaseException;
 
+    /**
+     * AMRA typedef-sync only. Applies the store-vs-registry delta (added / updated / deleted
+     * types) instead of rebuilding the whole catalog. Called from {@code TypeRegistryVersionGate}
+     * for Kafka {@code TypeDefSyncConsumer} and REST catch-up. Startup and other callers keep
+     * using {@link #init()}.
+     */
+    void refreshFromStore() throws AtlasBaseException;
+
     /* EnumDef operations */
 
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;

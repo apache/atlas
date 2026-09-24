@@ -24,7 +24,7 @@ import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.filters.HeadersUtil;
-import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
+import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.apache.atlas.server.common.filters.spi.AtlasAuthenticationProviderBridge;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.apache.commons.configuration2.Configuration;
@@ -163,17 +163,12 @@ public abstract class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     protected void addHaAndMigrationGuards(HttpSecurity httpSecurity) throws Exception {
-        boolean configMigrationEnabled = !StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME));
-        if (configuration.getBoolean("atlas.server.ha.enabled", false) || configMigrationEnabled) {
-            if (configMigrationEnabled) {
-                LOG.info("Atlas is in Migration Mode, enabling ActiveServerFilter");
-            } else {
-                LOG.info("Atlas is in HA Mode, enabling ActiveServerFilter");
-            }
-            ActiveServerFilter activeServerFilter = activeServerFilterProvider.getIfAvailable();
-            if (activeServerFilter != null) {
-                httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
-            }
+        // Active-active peer mode: always register ActiveServerFilter so load-balancers
+        // receive 503 while the node is BECOMING_ACTIVE during startup.
+        LOG.info("Registering ActiveServerFilter (active-active peer mode)");
+        ActiveServerFilter activeServerFilter = activeServerFilterProvider.getIfAvailable();
+        if (activeServerFilter != null) {
+            httpSecurity.addFilterAfter(activeServerFilter, BasicAuthenticationFilter.class);
         }
     }
 
@@ -215,9 +210,8 @@ public abstract class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
-    public ActiveServerFilter activeServerFilter(ActiveInstanceStateProvider activeInstanceStateProvider,
-                                                       ServiceStateProvider serviceStateProvider) {
-        return new ActiveServerFilter(activeInstanceStateProvider, serviceStateProvider);
+    public ActiveServerFilter activeServerFilter(ServiceStateProvider serviceStateProvider) {
+        return new ActiveServerFilter(serviceStateProvider);
     }
 
     @Bean

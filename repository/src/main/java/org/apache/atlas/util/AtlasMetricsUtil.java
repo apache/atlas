@@ -113,7 +113,7 @@ public class AtlasMetricsUtil {
     private static final String STATUS_NOT_CONNECTED = "not-connected";
 
     private final AtlasGraph              graph;
-    private final Map<String, TopicStats> topicStats        = new HashMap<>();
+    private final Map<String, TopicStats> topicStats        = new ConcurrentHashMap<>();
     private final AtlasMetricsCounter     messagesProcessed = new AtlasMetricsCounter("messagesProcessed");
     private final AtlasMetricsCounter     messagesFailed    = new AtlasMetricsCounter("messagesFailed");
     private final AtlasMetricsCounter     entityCreates     = new AtlasMetricsCounter("entityCreates");
@@ -173,21 +173,10 @@ public class AtlasMetricsUtil {
             messagesFailed.incr();
         }
 
-        TopicStats topicStat = topicStats.get(topicName);
+        TopicStats topicStat = topicStats.computeIfAbsent(topicName, TopicStats::new);
 
-        if (topicStat == null) {
-            topicStat = new TopicStats(topicName);
-
-            topicStats.put(topicName, topicStat);
-        }
-
-        TopicPartitionStat partitionStat = topicStat.get(partition);
-
-        if (partitionStat == null) {
-            partitionStat = new TopicPartitionStat(topicName, partition, msgOffset, msgOffset);
-
-            topicStat.set(partition, partitionStat);
-        }
+        TopicPartitionStat partitionStat = topicStat.getPartitionStats().computeIfAbsent(
+                partition, p -> new TopicPartitionStat(topicName, p, msgOffset, msgOffset));
 
         partitionStat.setCurrentOffset(msgOffset + 1);
 
@@ -309,8 +298,11 @@ public class AtlasMetricsUtil {
 
         Map<String, Map<String, Long>> topicDetails = new HashMap<>();
 
-        for (TopicStats tStat : topicStats.values()) {
-            for (TopicPartitionStat tpStat : tStat.partitionStats.values()) {
+        Map<String, TopicStats> topicStatsSnapshot = new HashMap<>(topicStats);
+
+        for (TopicStats tStat : topicStatsSnapshot.values()) {
+            Map<Integer, TopicPartitionStat> partitionSnapshot = new HashMap<>(tStat.getPartitionStats());
+            for (TopicPartitionStat tpStat : partitionSnapshot.values()) {
                 Map<String, Long> tpDetails = new HashMap<>();
 
                 tpDetails.put("offsetStart", tpStat.getStartOffset());
@@ -612,13 +604,13 @@ public class AtlasMetricsUtil {
 
     public static class TopicStats {
         private final String                              topicName;
-        private final Map<Integer, TopicPartitionStat>     partitionStats = new HashMap<>();
+        private final Map<Integer, TopicPartitionStat>     partitionStats = new ConcurrentHashMap<>();
 
         // processor-side maps
-        private final Map<String, Long> entityTypeCounts             = new HashMap<>();
-        private final Map<String, Long> routedMessagesPerOutputTopic = new HashMap<>();
-        private final Map<String, Long> failedRoutingPerOutputTopic  = new HashMap<>();
-        private final Map<String, Long> messagesFromInputTopic       = new HashMap<>();
+        private final Map<String, Long> entityTypeCounts             = new ConcurrentHashMap<>();
+        private final Map<String, Long> routedMessagesPerOutputTopic = new ConcurrentHashMap<>();
+        private final Map<String, Long> failedRoutingPerOutputTopic  = new ConcurrentHashMap<>();
+        private final Map<String, Long> messagesFromInputTopic       = new ConcurrentHashMap<>();
 
         public TopicStats(String topicName) {
             this.topicName = topicName;
@@ -665,12 +657,12 @@ public class AtlasMetricsUtil {
         private final String     topicName;
         private final int        partition;
         private final long       startOffset;
-        private       long       currentOffset;
-        private       long       lastMessageProcessedTime;
+        private volatile long    currentOffset;
+        private volatile long    lastMessageProcessedTime;
         private final AtomicLong failedMessageCount    = new AtomicLong();
         private final AtomicLong processedMessageCount = new AtomicLong();
         // processor additions
-        private long lastFailedTime;
+        private volatile long lastFailedTime;
         private final AtomicLong totalProcessingTimeMs = new AtomicLong();
 
         public TopicPartitionStat(String topicName, int partition, long startOffset, long currentOffset) {

@@ -52,6 +52,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
@@ -189,6 +190,7 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever       entityRetriever;
     private final IFullTextMapper            fullTextMapperV2;
     private final TaskManagement             taskManagement;
+    private       TypeRegistryVersionGate    typeRegistryVersionGate;
 
     private boolean deferredActionEnabled = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
@@ -206,6 +208,11 @@ public class EntityGraphMapper {
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
+    }
+
+    @Inject
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     public static List<Object> getArrayElementsProperty(AtlasType elementType, boolean isSoftReference, AtlasVertex vertex, String vertexPropertyName) {
@@ -1373,7 +1380,7 @@ public class EntityGraphMapper {
     }
 
     public void validateAndNormalizeForUpdate(AtlasClassification classification) throws AtlasBaseException {
-        AtlasClassificationType type = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+        AtlasClassificationType type = classificationType(classification.getTypeName());
 
         if (type == null) {
             throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classification.getTypeName());
@@ -1388,6 +1395,14 @@ public class EntityGraphMapper {
         }
 
         type.getNormalizedValueForUpdate(classification);
+    }
+
+    private AtlasClassificationType classificationType(String typeName) throws AtlasBaseException {
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
+
+        return typeRegistry.getClassificationTypeByName(typeName);
     }
 
     public void importActivateEntity(AtlasVertex vertex, AtlasEntity entity) {
@@ -1457,10 +1472,10 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    private AtlasVertex createClassificationVertex(AtlasClassification classification) {
+    private AtlasVertex createClassificationVertex(AtlasClassification classification) throws AtlasBaseException {
         LOG.debug("==> createVertex({})", classification.getTypeName());
 
-        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+        AtlasClassificationType classificationType = classificationType(classification.getTypeName());
 
         AtlasVertex ret = createStructVertex(classification);
 

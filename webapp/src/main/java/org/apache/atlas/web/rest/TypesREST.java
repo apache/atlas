@@ -29,6 +29,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -68,11 +69,13 @@ import java.util.Set;
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
 
-    private final AtlasTypeDefStore typeDefStore;
+    private final AtlasTypeDefStore         typeDefStore;
+    private final TypeRegistryVersionGate   typeRegistryVersionGate;
 
     @Inject
-    public TypesREST(AtlasTypeDefStore typeDefStore) {
-        this.typeDefStore = typeDefStore;
+    public TypesREST(AtlasTypeDefStore typeDefStore, TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeDefStore             = typeDefStore;
+        this.typeRegistryVersionGate  = typeRegistryVersionGate;
     }
 
     /**
@@ -88,6 +91,8 @@ public class TypesREST {
     @Timed
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getByName(name);
     }
@@ -105,6 +110,8 @@ public class TypesREST {
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getByGuid(guid);
     }
 
@@ -119,6 +126,8 @@ public class TypesREST {
     @Path("/typedefs/headers")
     @Timed
     public List<AtlasTypeDefHeader> getTypeDefHeaders(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
+        typeRegistryVersionGate.ensureUpToDate();
+
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
         AtlasTypesDef searchTypesDef = typeDefStore.searchTypesDef(searchFilter);
@@ -136,6 +145,8 @@ public class TypesREST {
     @Path("/typedefs")
     @Timed
     public AtlasTypesDef getAllTypeDefs(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
+        typeRegistryVersionGate.ensureUpToDate();
+
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
         return typeDefStore.searchTypesDef(searchFilter);
@@ -155,6 +166,8 @@ public class TypesREST {
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getEnumDefByName(name);
     }
 
@@ -171,6 +184,8 @@ public class TypesREST {
     @Timed
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getEnumDefByGuid(guid);
     }
@@ -189,6 +204,8 @@ public class TypesREST {
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getStructDefByName(name);
     }
 
@@ -205,6 +222,8 @@ public class TypesREST {
     @Timed
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getStructDefByGuid(guid);
     }
@@ -223,6 +242,8 @@ public class TypesREST {
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getClassificationDefByName(name);
     }
 
@@ -239,6 +260,8 @@ public class TypesREST {
     @Timed
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getClassificationDefByGuid(guid);
     }
@@ -257,6 +280,8 @@ public class TypesREST {
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getEntityDefByName(name);
     }
 
@@ -273,6 +298,8 @@ public class TypesREST {
     @Timed
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getEntityDefByGuid(guid);
     }
@@ -291,6 +318,8 @@ public class TypesREST {
     public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getRelationshipDefByName(name);
     }
 
@@ -307,6 +336,8 @@ public class TypesREST {
     @Timed
     public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getRelationshipDefByGuid(guid);
     }
@@ -325,6 +356,8 @@ public class TypesREST {
     public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
+        typeRegistryVersionGate.ensureUpToDate();
+
         return typeDefStore.getBusinessMetadataDefByGuid(guid);
     }
 
@@ -341,6 +374,8 @@ public class TypesREST {
     @Timed
     public AtlasBusinessMetadataDef getBusinessMetadataDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
+
+        typeRegistryVersionGate.ensureUpToDate();
 
         return typeDefStore.getBusinessMetadataDefByName(name);
     }
@@ -368,6 +403,8 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
+            typeRegistryVersionGate.ensureUpToDate();
+
             return typeDefStore.createTypesDef(typesDef);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -393,6 +430,8 @@ public class TypesREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
+
+            typeRegistryVersionGate.ensureUpToDate();
 
             return typeDefStore.updateTypesDef(typesDef);
         } finally {

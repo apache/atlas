@@ -42,6 +42,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
@@ -103,6 +104,7 @@ public class EntityREST {
     private final AtlasEntityStore       entitiesStore;
     private final EntityAuditRepository  auditRepository;
     private final AtlasInstanceConverter instanceConverter;
+    private       TypeRegistryVersionGate typeRegistryVersionGate;
 
     @Inject
     public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, EntityAuditRepository auditRepository, AtlasInstanceConverter instanceConverter) {
@@ -110,6 +112,11 @@ public class EntityREST {
         this.entitiesStore     = entitiesStore;
         this.auditRepository   = auditRepository;
         this.instanceConverter = instanceConverter;
+    }
+
+    @Inject
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     /**
@@ -1201,6 +1208,11 @@ public class EntityREST {
     private AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {
         AtlasEntityType ret = typeRegistry.getEntityTypeByName(typeName);
 
+        if (ret == null && typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+            ret = typeRegistry.getEntityTypeByName(typeName);
+        }
+
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
         }
@@ -1210,6 +1222,11 @@ public class EntityREST {
 
     private AtlasClassificationType ensureClassificationType(String typeName) throws AtlasBaseException {
         AtlasClassificationType ret = typeRegistry.getClassificationTypeByName(typeName);
+
+        if (ret == null && typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+            ret = typeRegistry.getClassificationTypeByName(typeName);
+        }
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.CLASSIFICATION.name(), typeName);
