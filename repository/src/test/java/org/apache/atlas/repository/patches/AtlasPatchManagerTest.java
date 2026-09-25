@@ -91,6 +91,7 @@ public class AtlasPatchManagerTest {
         // Mock vertex creation for createOrUpdatePatchVertex
         AtlasVertex mockVertex = mock(AtlasVertex.class);
         when(atlasGraph.addVertex()).thenReturn(mockVertex);
+        doNothing().when(atlasGraph).commit();
         patchManager = new AtlasPatchManager(atlasGraph, typeRegistry, indexer, entityGraphMapper);
     }
 
@@ -154,6 +155,24 @@ public class AtlasPatchManagerTest {
         List<AtlasPatchHandler> handlers = getHandlersFromManager();
         assertEquals(handlers.size(), 1);
         assertEquals(handlers.get(0), mockHandler);
+    }
+
+    @Test
+    public void testGetOrCreatePatchContextCreatesContextOnce() {
+        assertNotNull(patchManager.getOrCreatePatchContext());
+        PatchContext first = patchManager.getOrCreatePatchContext();
+        PatchContext second = patchManager.getOrCreatePatchContext();
+        assertEquals(first, second);
+    }
+
+    @Test
+    public void testInitDoesNotDuplicateDefaultHandlers() throws Exception {
+        patchManager.getOrCreatePatchContext();
+        invokeInitMethod();
+        int handlerCountAfterFirstInit = getHandlersFromManager().size();
+
+        invokeInitMethod();
+        assertEquals(getHandlersFromManager().size(), handlerCountAfterFirstInit);
     }
 
     @Test
