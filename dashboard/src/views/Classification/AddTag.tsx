@@ -255,6 +255,29 @@ const AddTag = (props: {
       typeName: isAdd ? tagName.label : tagName
     };
     if (!isEmpty(validityPeriod)) {
+      for (const period of validityPeriod) {
+        const hasStart =
+          period.startTime && moment(period.startTime).isValid();
+        const hasEnd = period.endTime && moment(period.endTime).isValid();
+
+        if (!hasStart && !hasEnd) {
+          toast.dismiss(toastId.current);
+          toast.warning(
+            "Each validity period must have a start time or an end time"
+          );
+          return;
+        }
+        if (
+          hasStart &&
+          hasEnd &&
+          moment(period.endTime).isBefore(moment(period.startTime))
+        ) {
+          toast.dismiss(toastId.current);
+          toast.warning("End time must be after start time");
+          return;
+        }
+      }
+
       let timeZones = validityPeriod.map(
         (obj: {
           validityPeriod: any;
@@ -263,16 +286,20 @@ const AddTag = (props: {
           timeZone: { label: any };
         }) => {
           delete obj.validityPeriod;
-          return {
-            ...obj,
-            ...{
-              startTime: moment(obj.startTime)
-                .utc()
-                .format("YYYY/MM/DD HH:mm:ss"),
-              endTime: moment(obj.endTime).utc().format("YYYY/MM/DD HH:mm:ss"),
-              timeZone: obj.timeZone.label
-            }
+          const period: Record<string, string> = {
+            timeZone: obj.timeZone.label
           };
+          if (obj.startTime && moment(obj.startTime).isValid()) {
+            period.startTime = moment(obj.startTime)
+              .utc()
+              .format("YYYY/MM/DD HH:mm:ss");
+          }
+          if (obj.endTime && moment(obj.endTime).isValid()) {
+            period.endTime = moment(obj.endTime)
+              .utc()
+              .format("YYYY/MM/DD HH:mm:ss");
+          }
+          return period;
         }
       );
       classificationDataObj["validityPeriods"] = timeZones;

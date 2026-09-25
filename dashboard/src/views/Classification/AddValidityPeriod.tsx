@@ -44,10 +44,9 @@ const StartDatePicker = ({ control, name }: StartDatePickerProps) => (
   <Controller
     control={control}
     name={name}
-    rules={{ required: true }}
     render={({ field: { onChange, value, ref } }) => (
       <Stack minWidth={210}>
-        <InputLabel required={true}>Start Time</InputLabel>
+        <InputLabel>Start Time</InputLabel>
         <CustomDatepicker
           timeIntervals={1}
           timeFormat="hh:mm aa"
@@ -55,10 +54,9 @@ const StartDatePicker = ({ control, name }: StartDatePickerProps) => (
           showPopperArrow={false}
           popperProps={{ strategy: "fixed" }}
           selected={
-            value && moment(value).isValid()
-              ? moment(value).toDate()
-              : moment().toDate()
+            value && moment(value).isValid() ? moment(value).toDate() : null
           }
+          isClearable
           ref={ref}
           onChange={(date: { toISOString: () => any }) => {
             onChange(date ? date.toISOString() : null);
@@ -81,10 +79,9 @@ const EndDatePicker = ({ control, name }: EndDatePickerProps) => (
   <Controller
     control={control}
     name={name}
-    rules={{ required: true }}
     render={({ field: { onChange, value, ref } }) => (
       <Stack minWidth={210}>
-        <InputLabel required={true}>End Time</InputLabel>
+        <InputLabel>End Time</InputLabel>
         <CustomDatepicker
           timeIntervals={1}
           timeFormat="hh:mm aa"
@@ -92,10 +89,9 @@ const EndDatePicker = ({ control, name }: EndDatePickerProps) => (
           showPopperArrow={false}
           popperProps={{ strategy: "fixed" }}
           selected={
-            value && moment(value).isValid()
-              ? moment(value).toDate()
-              : moment().toDate()
+            value && moment(value).isValid() ? moment(value).toDate() : null
           }
+          isClearable
           ref={ref}
           onChange={(date: { toISOString: () => any }) => {
             onChange(date ? date.toISOString() : null);
@@ -191,7 +187,9 @@ const AddValidityPeriod = (props: { control: any }) => {
                 size="small"
                 onClick={(_e: any) => {
                   append({
-                    validityPeriod: ""
+                    startTime: null,
+                    endTime: null,
+                    timeZone: null
                   });
                 }}
                 startIcon={<AddIcon />}
