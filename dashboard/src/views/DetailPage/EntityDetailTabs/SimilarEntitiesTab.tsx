@@ -36,8 +36,9 @@ interface SimilarEntitiesTabProps {
 
 const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
   const [loading, setLoading] = useState(true);
-  const [entities, setEntities] = useState<any[]>([]);
-  const [scores, setScores] = useState<Record<string, number>>({});
+  const [results, setResults] = useState<{ entity: any; score?: number }[]>(
+    []
+  );
   const toastId = useRef(null);
 
   useEffect(() => {
@@ -61,11 +62,8 @@ const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
           return;
         }
         const data = resp?.data || {};
-        setEntities(Array.isArray(data.entities) ? data.entities : []);
-        setScores(
-          data.similarityScores && typeof data.similarityScores === "object"
-            ? data.similarityScores
-            : {}
+        setResults(
+          Array.isArray(data.fullTextResult) ? data.fullTextResult : []
         );
       } catch (error) {
         if (!cancelled) {
@@ -91,7 +89,7 @@ const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
     );
   }
 
-  if (!entities.length) {
+  if (!results.length) {
     return (
       <Typography sx={{ p: 2 }} color="text.secondary">
         No similar entities found. Ensure semantic search is enabled and entities
@@ -102,12 +100,11 @@ const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
 
   return (
     <List data-cy="similar-entities-list">
-      {entities.map((entity) => {
+      {results.map(({ entity, score }, index) => {
         const { name } = extractKeyValueFromEntity(entity);
-        const score = scores[entity.guid];
         return (
           <ListItem
-            key={entity.guid}
+            key={`${entity.guid}-${index}`}
             sx={{ gap: 1, alignItems: "center" }}
           >
             <DisplayImage entity={entity} />

@@ -176,12 +176,12 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
 
           const searchResp = await getSemanticSearchResult({ data: body });
           const { data = {} } = searchResp || {};
-          const scores = (data as any).similarityScores || {};
-          const entities = ((data as any).entities || []).map((entity: any) => ({
+          const scoredResults = (data as any).fullTextResult || [];
+          const entities = scoredResults.map(({ entity, score }: any) => ({
             ...entity,
             attributes: {
               ...(entity.attributes || {}),
-              _similarityScore: scores[entity.guid] ?? null
+              _similarityScore: score ?? null
             }
           }));
 
@@ -1014,14 +1014,16 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   const semanticScoreColumn = isSemanticSearchMode
     ? [
         {
+          accessorFn: (row: any) => row.attributes?._similarityScore,
           accessorKey: "_similarityScore",
           header: "Similarity",
           cell: (info: any) => {
-            const score = info.row.original?.attributes?._similarityScore;
+            const score = info.getValue();
             return (
               <span>{score != null ? Number(score).toFixed(4) : "—"}</span>
             );
           },
+          sortingFn: "basic",
           show: true
         }
       ]
@@ -1104,6 +1106,9 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     if (isDslAggregate) {
       return [] as any[]; // no default sorting for DSL aggregates
     }
+    if (isSemanticSearchMode && isEmpty(latestEntitiesSortBy)) {
+      return [{ id: "_similarityScore", desc: true }];
+    }
     if (
       latestEntitiesSortBy === "__timestamp" &&
       latestEntitiesSortOrder === "DESCENDING"
@@ -1111,7 +1116,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
       return [{ id: "__timestamp", desc: true }];
     }
     return [{ id: "name", desc: false }];
-  }, [isDslAggregate, latestEntitiesSortBy, latestEntitiesSortOrder]);
+  }, [isDslAggregate, isSemanticSearchMode, latestEntitiesSortBy, latestEntitiesSortOrder]);
 
   return (
     <Stack position="relative" gap={"1rem"}>

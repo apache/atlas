@@ -15,7 +15,8 @@ semantic_search() {
   echo "--- ${label}: ${query}"
   curl -sS "${AUTH[@]}" "${HDR[@]}" -X POST "${ATLAS_URL}/api/atlas/v2/search/semantic" \
     -d "$(jq -n --arg q "${query}" '{query: $q, limit: 5, excludeDeletedEntities: true}')" \
-    | jq '(.similarityScores // {}) as $scores | {query: .queryText, count: (.entities | length), top: [.entities[:3][] | {name: .displayText, guid: .guid, score: $scores[.guid]}]}'
+    | jq 'if .errorCode then error("\(.errorCode): \(.errorMessage)") else . end
+          | {query: .queryText, count: (.fullTextResult // [] | length), top: [(.fullTextResult // [])[:3][] | {name: .entity.displayText, guid: .entity.guid, score}]}'
 }
 
 echo "==> UDF retail semantic search smoke tests (PDF Q1–Q7)"

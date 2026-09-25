@@ -18,8 +18,12 @@
 package org.apache.atlas.semantic;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.SemanticSearchParameters;
 import org.apache.atlas.model.discovery.SimilarEntitySearchParameters;
@@ -41,9 +45,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -110,8 +112,12 @@ public class SemanticSearchService {
         boolean includeSubTypes = parameters == null || parameters.getIncludeSubTypes();
 
         try {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
-            if (vertex == null || AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
+            AtlasVertex       vertex = entityRetriever.getEntityVertex(guid);
+            AtlasEntityHeader header = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+
+            AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, header), "read similar entities: guid=", guid);
+
+            if (header.getStatus() != AtlasEntity.Status.ACTIVE) {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
             }
 
@@ -137,8 +143,7 @@ public class SemanticSearchService {
                                                 boolean excludeDeletedEntities) throws AtlasBaseException {
         AtlasSearchResult result = new AtlasSearchResult(queryText, AtlasQueryType.SEMANTIC);
         result.setEntities(new ArrayList<>());
-
-        Map<String, Double> scores = new LinkedHashMap<>();
+        result.setFullTextResult(new ArrayList<>());
 
         for (VectorSearchHit hit : hits) {
             if (hit.getScore() < minScore) {
@@ -154,12 +159,9 @@ public class SemanticSearchService {
                 continue;
             }
 
+            // same header instance in both lists: scrubSearchResults masks it once for entities and scores
             result.getEntities().add(entityHeader);
-            scores.put(hit.getGuid(), hit.getScore());
-        }
-
-        if (!scores.isEmpty()) {
-            result.setSimilarityScores(scores);
+            result.getFullTextResult().add(new AtlasFullTextResult(entityHeader, hit.getScore()));
         }
 
         result.setApproximateCount(result.getEntities().size());

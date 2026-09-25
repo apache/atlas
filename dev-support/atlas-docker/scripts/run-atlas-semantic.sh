@@ -40,7 +40,7 @@ if [ "${ATLAS_SEMANTIC_SKIP_INIT:-false}" != "true" ]; then
     INIT_ARGS+=(--force)
   fi
   OPENSEARCH_URL="${OPENSEARCH_URL:-http://localhost:9200}" \
-    "${SCRIPT_DIR}/init-opensearch-semantic-local.sh" "${INIT_ARGS[@]}"
+    "${SCRIPT_DIR}/init-opensearch-semantic-local.sh" ${INIT_ARGS[@]+"${INIT_ARGS[@]}"}
 
   if [ -f "${DOCKER_DIR}/config/.semantic-bootstrap-last.env" ]; then
     # shellcheck source=/dev/null

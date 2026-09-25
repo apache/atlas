@@ -82,6 +82,13 @@ public class SemanticIndexer {
             NotificationConsumer consumer =
                     kafkaNotification.createConsumers(NotificationType.ENTITIES, 1, false).get(0);
 
+            // KafkaNotification logs and swallows failures: the consumer is null when construction fails
+            // (e.g. broker not resolvable yet) and unsubscribed when subscribe() fails
+            Set<String> subscription = consumer.subscription();
+            if (subscription == null || subscription.isEmpty()) {
+                throw new IllegalStateException("Kafka consumer could not be created or subscribed; check atlas.kafka.bootstrap.servers");
+            }
+
             int batchSize = SemanticSearchConfiguration.getSemanticIndexerBatchSize();
             LOG.info("Semantic Indexer started (batchSize={}, groupId={}, pollTimeoutMs={})", batchSize,
                     SemanticSearchConfiguration.getSemanticIndexerKafkaGroupId(),
