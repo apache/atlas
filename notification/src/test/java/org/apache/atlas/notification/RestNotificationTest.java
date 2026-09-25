@@ -48,6 +48,8 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import org.testng.Assert;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -196,6 +198,87 @@ public class RestNotificationTest {
         }
     }
 
+    @Test
+    public void testRestNotificationAuthSkipMode() throws Exception {
+        Configuration globalConf = ApplicationProperties.get();
+
+        try {
+            globalConf.setProperty("atlas.hook.rest.notification.auth.skip", true);
+
+            Configuration localConf = new BaseConfiguration();
+            localConf.setProperty("atlas.hook.rest.notification.address", "http://atlas-rest-notification.example.com:41000/");
+
+            RestNotification restNotification = new RestNotification(localConf);
+
+            String[] configuredEndpoints = getConfiguredBaseUrls(restNotification.atlasClientV2);
+
+            assertEquals(configuredEndpoints.length, 1);
+            assertEquals(configuredEndpoints[0], "http://atlas-rest-notification.example.com:41000/");
+        } finally {
+            globalConf.clearProperty("atlas.hook.rest.notification.auth.skip");
+        }
+    }
+
+    @Test
+    public void testAuthSkipModeSkipsBasicAuth() throws Exception {
+        Configuration globalConf = ApplicationProperties.get();
+
+        try {
+            globalConf.setProperty("atlas.hook.rest.notification.auth.skip", true);
+
+            Configuration localConf = new BaseConfiguration();
+            localConf.setProperty("atlas.hook.rest.notification.address", "http://atlas.example.com:41000/");
+
+            RestNotification restNotification = new RestNotification(localConf);
+
+            String basicAuthUser = getBasicAuthUser(restNotification.atlasClientV2);
+
+            Assert.assertNull(basicAuthUser, "Auth-skip mode should not set basicAuthUser");
+        } finally {
+            globalConf.clearProperty("atlas.hook.rest.notification.auth.skip");
+        }
+    }
+
+    @Test
+    public void testBasicAuthModeSetCredentials() throws Exception {
+        Configuration globalConf = ApplicationProperties.get();
+
+        try {
+            globalConf.setProperty("atlas.hook.rest.notification.auth.skip", false);
+
+            Configuration localConf = new BaseConfiguration();
+            localConf.setProperty("atlas.hook.rest.notification.address", "http://atlas.example.com:41000/");
+            localConf.setProperty("atlas.rest.basic.auth.username", "testuser");
+            localConf.setProperty("atlas.rest.basic.auth.password", "testpass");
+
+            RestNotification restNotification = new RestNotification(localConf);
+
+            String basicAuthUser = getBasicAuthUser(restNotification.atlasClientV2);
+
+            assertEquals(basicAuthUser, "testuser", "Basic auth mode should set basicAuthUser");
+        } finally {
+            globalConf.clearProperty("atlas.hook.rest.notification.auth.skip");
+        }
+    }
+
+    @Test
+    public void testAuthSkipDefaultsToFalseUsesBasicAuth() throws Exception {
+        Configuration globalConf = ApplicationProperties.get();
+
+        globalConf.clearProperty("atlas.hook.rest.notification.auth.skip");
+
+        Configuration localConf = new BaseConfiguration();
+        localConf.setProperty("atlas.hook.rest.notification.address", "http://atlas.example.com:41000/");
+        localConf.setProperty("atlas.rest.basic.auth.username", "admin");
+        localConf.setProperty("atlas.rest.basic.auth.password", "admin123");
+
+        RestNotification restNotification = new RestNotification(localConf);
+
+        String basicAuthUser = getBasicAuthUser(restNotification.atlasClientV2);
+
+        assertEquals(basicAuthUser, "admin", "When auth.skip is not set, should default to basic auth");
+    }
+
     private String[] getConfiguredBaseUrls(AtlasClientV2 atlasClientV2) throws Exception {
         Field clientContextField = AtlasBaseClient.class.getDeclaredField("atlasClientContext");
         clientContextField.setAccessible(true);
@@ -205,5 +288,12 @@ public class RestNotificationTest {
         baseUrlsField.setAccessible(true);
 
         return (String[]) baseUrlsField.get(clientContext);
+    }
+
+    private String getBasicAuthUser(AtlasClientV2 atlasClientV2) throws Exception {
+        Field basicAuthUserField = AtlasBaseClient.class.getDeclaredField("basicAuthUser");
+        basicAuthUserField.setAccessible(true);
+
+        return (String) basicAuthUserField.get(atlasClientV2);
     }
 }
