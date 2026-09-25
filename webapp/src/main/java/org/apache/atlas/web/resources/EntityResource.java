@@ -992,6 +992,8 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
+            entityREST.verifyEntityReadForAudit(guid);
+
             List<Object>           events   = entityAuditRepository.listEvents(guid, startKey, count);
             List<EntityAuditEvent> v1Events = new ArrayList<>();
 
@@ -1011,6 +1013,10 @@ public class EntityResource {
             response.put(AtlasClient.EVENTS, v1Events);
 
             return Response.ok(AtlasJson.toV1Json(response)).build();
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);
+
+            throw toWebApplicationException(e);
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);
 

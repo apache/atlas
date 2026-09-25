@@ -17,22 +17,37 @@
  */
 package org.apache.atlas.web.resources;
 
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
+import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.web.rest.EntityREST;
 import org.apache.commons.collections.CollectionUtils;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.expectThrows;
 
 /**
  * Unit test of {@link EntityResource}
@@ -41,11 +56,30 @@ public class EntityResourceTest {
     private static final String DELETED_GUID = "deleted_guid";
 
     @Mock
-    AtlasEntityStore entitiesStore;
+    private AtlasInstanceConverter restAdapters;
+
+    @Mock
+    private AtlasEntityStore entitiesStore;
+
+    @Mock
+    private AtlasTypeRegistry typeRegistry;
+
+    @Mock
+    private EntityREST entityREST;
+
+    @Mock
+    private EntityAuditRepository entityAuditRepository;
+
+    @Mock
+    private AtlasInstanceConverter instanceConverter;
+
+    private EntityResource entityResource;
 
     @BeforeMethod
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
+        entityResource = new EntityResource(restAdapters, entitiesStore, typeRegistry, entityREST, entityAuditRepository,
+                instanceConverter);
     }
 
     @Test
@@ -70,6 +104,20 @@ public class EntityResourceTest {
         List<AtlasEntityHeader> responseDeletedEntities = response.getDeletedEntities();
 
         assertEquals(responseDeletedEntities, deletedEntities);
+    }
+
+    @Test
+    public void testGetAuditEvents_deniedWhenEntityReadNotAllowed() throws Exception {
+        String guid = "test-guid";
+
+        doThrow(new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "bob", "entity-read")).when(entityREST)
+                .verifyEntityReadForAudit(guid);
+
+        WebApplicationException exception = expectThrows(WebApplicationException.class,
+                () -> entityResource.getAuditEvents(guid, null, (short) 10));
+
+        assertEquals(exception.getResponse().getStatus(), Response.Status.FORBIDDEN.getStatusCode());
+        verify(entityAuditRepository, never()).listEvents(anyString(), any(), any(Short.class));
     }
 
     private List<AtlasEntityHeader> toAtlasEntityHeaders(List<String> guids) {
