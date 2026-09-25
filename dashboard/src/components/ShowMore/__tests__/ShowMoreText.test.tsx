@@ -26,10 +26,13 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import ShowMoreText from '../ShowMoreText'
 
-jest.mock('@utils/Utils', () => ({
-	isEmpty: jest.fn((val: any) => !val || val === ''),
-	sanitizeHtmlContent: jest.fn((html: string) => html)
-}))
+jest.mock('@utils/Utils', () => {
+	const actual = jest.requireActual('@utils/Utils')
+	return {
+		...actual,
+		isEmpty: jest.fn((val: any) => !val || val === '')
+	}
+})
 
 const { isEmpty } = require('@utils/Utils')
 
@@ -141,6 +144,36 @@ describe('ShowMoreText', () => {
 		render(<ShowMoreText value={text} maxLength={160} isHtml={false} />)
 		
 		expect(screen.getByText(text)).toBeTruthy()
+	})
+
+	it('sanitizes script tags when isHtml is true (negative)', () => {
+		const { container } = render(
+			<ShowMoreText
+				value='<script>alert("xss")</script><p>Safe</p>'
+				maxLength={160}
+				isHtml={true}
+			/>
+		)
+
+		const htmlDiv = container.querySelector('.long-descriptions')
+		expect(htmlDiv?.querySelector('script')).toBeNull()
+		expect(htmlDiv?.querySelector('p')?.textContent).toBe('Safe')
+		expect(htmlDiv?.innerHTML.toLowerCase()).not.toContain('<script')
+	})
+
+	it('sanitizes img onerror when isHtml is true (negative)', () => {
+		const { container } = render(
+			<ShowMoreText
+				value='<img src=x onerror="alert(1)"><em>Notes</em>'
+				maxLength={160}
+				isHtml={true}
+			/>
+		)
+
+		const htmlDiv = container.querySelector('.long-descriptions')
+		expect(htmlDiv?.querySelector('img')).toBeNull()
+		expect(htmlDiv?.innerHTML.toLowerCase()).not.toContain('onerror')
+		expect(htmlDiv?.querySelector('em')?.textContent).toBe('Notes')
 	})
 
 	it('handles text exactly at maxLength', () => {

@@ -904,11 +904,53 @@ describe('Utils', () => {
 	});
 
 	describe('sanitizeHtmlContent', () => {
-		it('should sanitize HTML content', () => {
+		it('should strip script tags and keep allowed markup (positive)', () => {
 			const html = '<script>alert("xss")</script><p>Safe content</p>';
 			const result = sanitizeHtmlContent(html);
 			expect(result).not.toContain('<script>');
+			expect(result).not.toContain('alert');
 			expect(result).toContain('<p>');
+			expect(result).toContain('Safe content');
+		});
+
+		it('should strip img onerror event handlers (negative)', () => {
+			const html = '<img src=x onerror="alert(1)"><p>Notes</p>';
+			const result = sanitizeHtmlContent(html);
+			expect(result.toLowerCase()).not.toContain('onerror');
+			expect(result).not.toContain('<img');
+			expect(result).toContain('<p>');
+		});
+
+		it('should strip iframe tags (negative)', () => {
+			const html = '<iframe src="javascript:alert(1)"></iframe><em>text</em>';
+			const result = sanitizeHtmlContent(html);
+			expect(result).not.toContain('<iframe');
+			expect(result).toContain('<em>');
+		});
+
+		it('should strip javascript: href schemes from anchors (negative)', () => {
+			const html = '<a href="javascript:alert(1)">click</a>';
+			const result = sanitizeHtmlContent(html);
+			expect(result.toLowerCase()).not.toContain('javascript:');
+		});
+
+		it('should allow safe anchor href with https (positive)', () => {
+			const html = '<a href="https://example.com">link</a>';
+			const result = sanitizeHtmlContent(html);
+			expect(result).toContain('href="https://example.com"');
+			expect(result).toContain('link');
+		});
+
+		it('should allow basic formatting tags (positive)', () => {
+			const html = '<strong>Bold</strong> and <em>italic</em>';
+			const result = sanitizeHtmlContent(html);
+			expect(result).toContain('<strong>');
+			expect(result).toContain('<em>');
+		});
+
+		it('should return empty string for nullish input (negative)', () => {
+			expect(sanitizeHtmlContent(null)).toBe('');
+			expect(sanitizeHtmlContent(undefined)).toBe('');
 		});
 	});
 
