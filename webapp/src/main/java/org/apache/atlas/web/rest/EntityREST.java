@@ -850,18 +850,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
-            // Enforces authorization for entity-read
-            try {
-                entitiesStore.getHeaderById(guid);
-            } catch (AtlasBaseException e) {
-                if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
-                    AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
-
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
-                } else {
-                    throw e;
-                }
-            }
+            verifyEntityReadForAudit(guid);
 
             List<EntityAuditEventV2> ret = new ArrayList<>();
 
@@ -1284,6 +1273,20 @@ public class EntityREST {
 
             if (attribute == null || !attribute.getIsUnique()) {
                 throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_UNIQUE_INVALID, entityType.getTypeName(), attributeName);
+            }
+        }
+    }
+
+    public void verifyEntityReadForAudit(String guid) throws AtlasBaseException {
+        try {
+            entitiesStore.getHeaderById(guid);
+        } catch (AtlasBaseException e) {
+            if (e.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_GUID_NOT_FOUND) {
+                AtlasEntityHeader entityHeader = getEntityHeaderFromPurgedAudit(guid);
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader), "read entity audit: guid=", guid);
+            } else {
+                throw e;
             }
         }
     }
