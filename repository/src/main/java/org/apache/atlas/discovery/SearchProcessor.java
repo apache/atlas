@@ -178,6 +178,14 @@ public abstract class SearchProcessor {
 
     public abstract long getResultCount();
 
+    /**
+     * When true, {@link #getResultCount()} matches entities returned for the query without
+     * additional in-memory filtering that would reduce the index total.
+     */
+    public boolean isApproximateCountExact() {
+        return false;
+    }
+
     public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
         if (nextProcessor != null && MapUtils.isNotEmpty(offsetEntityVertexMap)) {
             return nextProcessor.filter(offsetEntityVertexMap);

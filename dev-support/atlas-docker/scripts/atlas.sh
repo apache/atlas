@@ -72,9 +72,15 @@ atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=
 atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_schema.sql
 atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository
 EOF
+    mkdir -p ${ATLAS_HOME}/libext
+    if [ -f /home/atlas/dist/postgresql-42.7.7.jar ]; then
+      cp -f /home/atlas/dist/postgresql-42.7.7.jar ${ATLAS_HOME}/libext/
+    fi
   fi
 
   chown -R atlas:atlas ${ATLAS_HOME}/
+
+  su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py -setup" atlas
 
   touch ${ATLAS_HOME}/.setupDone
 fi

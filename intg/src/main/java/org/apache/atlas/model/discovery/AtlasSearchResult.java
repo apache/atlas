@@ -53,6 +53,7 @@ public class AtlasSearchResult implements Serializable {
     private List<AtlasFullTextResult>      fullTextResult;
     private Map<String, AtlasEntityHeader> referredEntities;
     private long                           approximateCount = -1;
+    private Boolean                        approximateCountExact;
     private String                         nextMarker;
 
     public AtlasSearchResult() {
@@ -175,6 +176,14 @@ public class AtlasSearchResult implements Serializable {
         this.approximateCount = approximateCount;
     }
 
+    public Boolean getApproximateCountExact() {
+        return approximateCountExact;
+    }
+
+    public void setApproximateCountExact(Boolean approximateCountExact) {
+        this.approximateCountExact = approximateCountExact;
+    }
+
     public String getNextMarker() {
         return nextMarker;
     }
@@ -225,6 +234,7 @@ public class AtlasSearchResult implements Serializable {
                 ", fullTextResult=" + fullTextResult +
                 ", referredEntities=" + referredEntities +
                 ", approximateCount=" + approximateCount +
+                ", approximateCountExact=" + approximateCountExact +
                 ", nextMarker=" + nextMarker +
                 '}';
     }
