@@ -308,7 +308,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
               if (pendingSuperList[obj.name]) {
                 doneList[obj.name] = obj;
                 setNode(fromEntityId, obj);
-                pendingSuperList[obj.name].map(() =>
+                pendingSuperList[obj.name]?.map((guid: any) =>
                   setEdge(fromEntityId, guid)
                 );
                 delete pendingSuperList[obj.name];
@@ -336,7 +336,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
               doneList[obj.name] = obj;
               setNode(fromEntityId, obj);
               if (pendingList[obj.name]) {
-                pendingList[obj.name].map((guid) =>
+                pendingList[obj.name]?.map((guid) =>
                   setEdge(guid, fromEntityId)
                 );
                 delete pendingList[obj.name];
@@ -428,36 +428,34 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
   };
 
   const onClickSaveSvg = (_e: React.MouseEvent, _a: unknown) => {
-    lineageMethods.exportLineage({ downloadFileName: "TypeSystemView" });
+    lineageMethods?.exportLineage?.({ downloadFileName: "TypeSystemView" });
   };
 
   const onClickReset = () => {
-    lineageMethods.refresh();
+    lineageMethods?.refresh?.();
     fetchGraph({ refresh: true });
     setTypeValue("");
     setSearchTypeValue("");
   };
 
   const renderFilterSearch = () => {
-    let nodes = lineageHelperRef?.current?.getNodes() || {};
     let tempFilteMap = {};
 
-    for (let obj in nodes) {
-      if (
-        nodes?.[obj]?.serviceType &&
-        !tempFilteMap?.[nodes[obj]?.serviceType]
-      ) {
-        tempFilteMap[nodes[obj].serviceType] = {
-          label: nodes[obj].serviceType,
-          value: nodes[obj].guid
-        };
-      }
+    if (Array.isArray(entityDefs)) {
+      entityDefs.forEach((obj) => {
+        if (obj?.serviceType && !tempFilteMap?.[obj?.serviceType]) {
+          tempFilteMap[obj.serviceType] = {
+            label: obj?.serviceType,
+            value: obj?.guid
+          };
+        }
+      });
     }
 
     let options = !isEmpty(tempFilteMap)
       ? Object.values(tempFilteMap)
-          .sort()
-          .map((obj) => ({ label: obj.label, value: obj.value }))
+        .sort((a: any, b: any) => a?.label?.localeCompare(b?.label))
+        .map((obj: any) => ({ label: obj?.label, value: obj?.value }))
       : [];
     return options;
   };
@@ -467,24 +465,24 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
 
     let options = !isEmpty(nodes)
       ? Object.values(nodes)
-          .sort()
-          .filter(Boolean)
-          .map((obj) => ({ label: obj.name, value: obj.guid }))
+        .sort()
+        .filter(Boolean)
+        .map((obj: any) => ({ label: obj?.name, value: obj?.guid }))
       : [];
     return options;
   };
 
   const filterData = (value) => {
-    lineageMethods.refresh();
+    lineageMethods?.refresh?.();
     fetchGraph({ filter: value });
   };
 
   const handleFilterChange = (
     e: { stopPropagation: () => void },
-    newValue: string | null
+    newValue: any
   ) => {
-    e.stopPropagation();
-    const { label }: any = newValue;
+    e?.stopPropagation();
+    const label = newValue ? newValue.label : "";
     if (!isRefreshing) {
       filterData(label);
     } else {
@@ -495,13 +493,18 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
 
   const handleSearchChange = (
     e: { stopPropagation: () => void },
-    newValue: string | null
+    newValue: any
   ) => {
-    e.stopPropagation();
-    const { label, value: searchValue }: any = newValue;
+    e?.stopPropagation();
+    const label = newValue ? newValue.label : "";
+    const searchValue = newValue ? newValue.value : "";
 
     if (!isRefreshing) {
-      lineageMethods.searchNode({ guid: searchValue });
+      if (searchValue) {
+        lineageMethods?.searchNode?.({ guid: searchValue });
+      } else {
+        filterData(typeValue);
+      }
     } else {
       setIsRefreshing(false);
     }
@@ -509,10 +512,9 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
   };
 
   return (
-    <Stack height="100%">
+    <Stack height="100%" className={`${isFullscreen ? "fullscreen" : ""}`}>
       <Stack
         height="60px"
-        className={`${isFullscreen ? "fullscreen" : ""}`}
         direction="row"
         maxHeight="60px"
         overflow="auto"
@@ -600,17 +602,12 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
       </Stack>
       <Stack
         ref={typeSystemTreeViewPageRef}
-        top="60px"
-        className={`${isFullscreen ? "fullscreen" : ""}`}
       >
         <Stack
           className="svg typesystem-svg"
           ref={lineageDivRef}
-          // height="100%"
-          height={isFullscreen ? "calc(100vh - 60px)" : "100%"}
+          height={isFullscreen ? "calc(100vh - 60px)" : "calc(100vh - 230px)"}
           width="100%"
-          minHeight="650px"
-          flex="1"
         ></Stack>{" "}
         <Stack
           marginTop="10px"
@@ -658,48 +655,48 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
               >
                 {!isEmpty(nodeDetails?.valueObject)
                   ? Object.entries(nodeDetails.valueObject)
-                      .sort()
-                      .map(([keys, value]: [string, any]) => {
-                        return (
-                          <>
-                            <Stack
-                              direction="row"
-                              marginBottom={1}
-                              marginTop={1}
+                    .sort()
+                    .map(([keys, value]: [string, any]) => {
+                      return (
+                        <>
+                          <Stack
+                            direction="row"
+                            marginBottom={1}
+                            marginTop={1}
+                          >
+                            <div
+                              style={{
+                                flexBasis: "200px",
+                                wordBreak: "break-all",
+                                textAlign: "left",
+                                fontWeight: "600"
+                              }}
                             >
-                              <div
-                                style={{
-                                  flexBasis: "200px",
-                                  wordBreak: "break-all",
-                                  textAlign: "left",
-                                  fontWeight: "600"
-                                }}
-                              >
-                                {keys}
-                              </div>
-                              <div
-                                style={{
-                                  flex: 1,
-                                  wordBreak: "break-all",
-                                  textAlign: "left"
-                                }}
-                              >
-                                {getValues(
-                                  nodeDetails?.valueObject[keys],
-                                  undefined,
-                                  undefined,
-                                  undefined,
-                                  "properties",
-                                  undefined,
-                                  undefined,
-                                  keys
-                                )}
-                              </div>
-                            </Stack>
-                            <Divider />
-                          </>
-                        );
-                      })
+                              {keys}
+                            </div>
+                            <div
+                              style={{
+                                flex: 1,
+                                wordBreak: "break-all",
+                                textAlign: "left"
+                              }}
+                            >
+                              {getValues(
+                                nodeDetails?.valueObject[keys],
+                                undefined,
+                                undefined,
+                                undefined,
+                                "properties",
+                                undefined,
+                                undefined,
+                                keys
+                              )}
+                            </div>
+                          </Stack>
+                          <Divider />
+                        </>
+                      );
+                    })
                   : "No Record Found"}
               </Stack>
             </Stack>
@@ -757,13 +754,13 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
                 <FormControl className="advanced-search-formcontrol">
                   <Autocomplete
                     size="small"
-                    value={searchTypeValue}
+                    value={renderTypeSearch().find((opt: any) => opt?.label === searchTypeValue) || null}
                     onChange={(e: any, newValue: string | null) => {
                       handleSearchChange(e, newValue);
                     }}
-                    disableClearable
                     id="select-node"
                     options={renderTypeSearch()}
+                    isOptionEqualToValue={(option: any, value: any) => option?.value === value?.value}
                     className="advanced-search-autocomplete"
                     renderInput={(params) => (
                       <TextField
@@ -783,8 +780,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
                             height: "36px",
                             lineHeight: "1.2"
                           },
-                          ...params.InputProps,
-                          type: "search"
+                          ...params.InputProps
                         }}
                       />
                     )}
@@ -932,13 +928,13 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
                   <FormControl className="advanced-search-formcontrol">
                     <Autocomplete
                       size="small"
-                      value={typeValue}
-                      onChange={(e: any, newValue: string | null) => {
+                      value={renderFilterSearch().find((opt: any) => opt?.label === typeValue) || null}
+                      onChange={(e: any, newValue: any) => {
                         handleFilterChange(e, newValue);
                       }}
-                      disableClearable
                       id="select-node"
                       options={renderFilterSearch()}
+                      isOptionEqualToValue={(option: any, value: any) => option?.value === value?.value}
                       className="advanced-search-autocomplete"
                       renderInput={(params) => (
                         <TextField
@@ -957,8 +953,7 @@ const TypeSystemTreeView = ({ entityDefs }: any) => {
                               height: "36px",
                               lineHeight: "1.2"
                             },
-                            ...params.InputProps,
-                            type: "search"
+                            ...params.InputProps
                           }}
                         />
                       )}

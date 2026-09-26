@@ -19,7 +19,7 @@ import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import MuiLink from "@mui/material/Link";
 import { LightTooltip } from "../muiComponents";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EllipsisText } from "../commonComponents";
 import { extractKeyValueFromEntity, isEmpty, serverError } from "@utils/Utils";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
@@ -31,8 +31,9 @@ import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
 import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import ShowMoreDrawer from "./ShowMoreDrawer";
-import { openDrawer } from "@redux/slice/drawerSlice";
+import { openDrawer, closeDrawer } from "@redux/slice/drawerSlice";
 import { cloneDeep } from "@utils/Helper";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const CHIP_MAX_WIDTH = "200px";
 
@@ -72,6 +73,12 @@ const ShowMoreView = ({
   const searchParams = new URLSearchParams(location.search);
   const gType = searchParams.get("gtype");
   const dispatchApi = useAppDispatch();
+
+  useEffect(() => {
+    return () => {
+      dispatchApi(closeDrawer());
+    };
+  }, [dispatchApi]);
 
   const { classificationData = {} }: any = useAppSelector(
     (state: any) => state.classification
@@ -141,10 +148,10 @@ const ShowMoreView = ({
             relationshipGuid: selectedTerm.relationshipGuid
           });
         } else if (!isEmpty(gType)) {
-          let values = cloneDeep(currentEntity);
+          let values = cloneDeep(currentEntity) || {};
           let glossaryData;
           if (title == "Terms") {
-            glossaryData = values?.["terms"].filter(
+            glossaryData = (values["terms"] || []).filter(
               (obj: { displayText: string }) => {
                 return obj.displayText != currentValue.selectedValue;
               }
@@ -152,7 +159,7 @@ const ShowMoreView = ({
 
             values["terms"] = glossaryData;
           } else {
-            glossaryData = values?.["categories"].filter(
+            glossaryData = (values["categories"] || []).filter(
               (obj: { displayText: string }) => {
                 return obj.displayText != currentValue.selectedValue;
               }
@@ -223,7 +230,13 @@ const ShowMoreView = ({
     } else if (title == "Propagated Classifications") {
       return getTagParentList(label);
     } else {
-      return label || optionalLabel;
+      // Ensure we return a string, not an object
+      if (label) return label;
+      if (typeof optionalLabel === 'string') return optionalLabel;
+      if (optionalLabel && typeof optionalLabel === 'object') {
+        return optionalLabel.displayText || optionalLabel.text || optionalLabel.name || '';
+      }
+      return '';
     }
   };
 
@@ -304,11 +317,13 @@ const ShowMoreView = ({
                   }
                   component="a"
                   onDelete={
-                    !isEmpty(removeApiMethod) && !isDeleteIcon
+                    !isEmpty(removeApiMethod) && !isDeleteIcon && isEntityModificationAllowed(currentEntity?.status)
                       ? () => {
-                          handleDelete(obj[displayKey] || obj);
+                          // Handle undefined displayKey by extracting a string value
+                          const deleteValue = obj[displayKey] || obj.displayText || obj.text || obj.name || '';
+                          handleDelete(deleteValue);
                         }
-                      : isDeleteIcon && obj.count > 1
+                      : isDeleteIcon && obj.count > 1 && isEntityModificationAllowed(currentEntity?.status)
                       ? () => {
                           const searchParams = new URLSearchParams();
                           searchParams.set("tabActive", "classification");
@@ -387,17 +402,33 @@ const ShowMoreView = ({
             Remove:{" "}
             <Typography
               component="span"
-              display="inline"
-              sx={{ fontWeight: 600 }}
-            >
+              title={currentValue.selectedValue}
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                maxWidth: "100%",
+                verticalAlign: "bottom"
+              }}
+             noWrap>
               {currentValue.selectedValue}
             </Typography>{" "}
             assignment from{" "}
             <Typography
               component="span"
-              display="inline"
-              sx={{ fontWeight: 600 }}
-            >
+              title={!isEmpty(currentEntity)
+                ? `${currentValue.assetName} ${
+                    !isEmpty(currentEntity?.typeName)
+                      ? `(${currentEntity.typeName})`
+                      : ""
+                  }`
+                : ""}
+              sx={{
+                fontWeight: 600,
+                display: "inline-block",
+                maxWidth: "100%",
+                verticalAlign: "bottom"
+              }}
+             noWrap>
               {!isEmpty(currentEntity)
                 ? `${currentValue.assetName} ${
                     !isEmpty(currentEntity?.typeName)

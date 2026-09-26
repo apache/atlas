@@ -28,6 +28,9 @@ const TermRelationViewAttributes = ({
   control,
   currentType
 }: any) => {
+  const safeAttrObj = attrObj || {};
+  const displayText = safeAttrObj.displayText || "";
+
   const defaultColumns = useMemo(
     () => [
       {
@@ -45,13 +48,19 @@ const TermRelationViewAttributes = ({
         accessorKey: "value",
         cell: (info: any) => {
           let values: string = info.row.original;
-          const { displayText } = attrObj;
+          const rawValue = safeAttrObj[values];
+          const displayValue =
+            rawValue === 0 || rawValue === false || rawValue === true
+              ? String(rawValue)
+              : !isEmpty(rawValue)
+              ? rawValue
+              : "--";
           return editModal ? (
             <Stack direction="row" gap="2rem">
               <Controller
                 control={control}
                 name={`${currentType}.${displayText}.${values}`}
-                defaultValue={attrObj[values]}
+                defaultValue={safeAttrObj[values]}
                 render={({ field: { onChange, value } }) => (
                   <>
                     <TextField
@@ -72,16 +81,14 @@ const TermRelationViewAttributes = ({
               />
             </Stack>
           ) : (
-            <Typography>
-              {!isEmpty(attrObj[values]) ? attrObj[values] : "--"}
-            </Typography>
+            <Typography>{displayValue}</Typography>
           );
         },
         header: "Value",
         enableSorting: false
       }
     ],
-    []
+    [attrObj, control, currentType, displayText, editModal]
   );
   return (
     <>

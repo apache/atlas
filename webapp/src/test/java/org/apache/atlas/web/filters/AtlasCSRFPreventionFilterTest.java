@@ -16,6 +16,7 @@
  */
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
@@ -28,10 +29,11 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
+import static org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class AtlasCSRFPreventionFilterTest {
     private static final String EXPECTED_MESSAGE = "Missing Required Header for CSRF Vulnerability Protection";
@@ -56,7 +58,7 @@ public class AtlasCSRFPreventionFilterTest {
         filter.doFilter(mockReq, mockRes, mockChain);
 
         verify(mockRes, atLeastOnce()).setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        Mockito.verifyZeroInteractions(mockChain);
+        verifyNoInteractions(mockChain);
     }
 
     @Test
@@ -80,7 +82,7 @@ public class AtlasCSRFPreventionFilterTest {
         AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
         filter.doFilter(mockReq, mockRes, mockChain);
 
-        Mockito.verify(mockChain).doFilter(mockReq, mockRes);
+        verify(mockChain).doFilter(mockReq, mockRes);
     }
 
     @Test
@@ -102,7 +104,7 @@ public class AtlasCSRFPreventionFilterTest {
         AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
         filter.doFilter(mockReq, mockRes, mockChain);
 
-        Mockito.verify(mockChain, never()).doFilter(mockReq, mockRes);
+        verify(mockChain, never()).doFilter(mockReq, mockRes);
     }
 
     @Test
@@ -119,7 +121,7 @@ public class AtlasCSRFPreventionFilterTest {
         AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
         filter.doFilter(mockReq, mockRes, mockChain);
 
-        Mockito.verify(mockChain).doFilter(mockReq, mockRes);
+        verify(mockChain).doFilter(mockReq, mockRes);
     }
 
     @Test
@@ -139,7 +141,7 @@ public class AtlasCSRFPreventionFilterTest {
         AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
         filter.doFilter(mockReq, mockRes, mockChain);
 
-        Mockito.verifyZeroInteractions(mockChain);
+        verifyNoInteractions(mockChain);
     }
 
     @Test
@@ -159,7 +161,7 @@ public class AtlasCSRFPreventionFilterTest {
         AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
         filter.doFilter(mockReq, mockRes, mockChain);
 
-        Mockito.verify(mockChain).doFilter(mockReq, mockRes);
+        verify(mockChain).doFilter(mockReq, mockRes);
     }
 
     @Test
@@ -183,6 +185,6 @@ public class AtlasCSRFPreventionFilterTest {
         AtlasCSRFPreventionFilter filter = new AtlasCSRFPreventionFilter();
         filter.doFilter(mockReq, mockRes, mockChain);
 
-        Mockito.verifyZeroInteractions(mockChain);
+        verifyNoInteractions(mockChain);
     }
 }

@@ -40,6 +40,30 @@ const glossaryTypeUrl = (glossaryType: string, guid: string) => {
   return `${glossaryUrl()}/${glossaryType}/${guid}`;
 };
 
+const glossaryTermsUrl = (glossaryGuid: string) => {
+  return `${glossaryUrl()}/${glossaryGuid}/terms`;
+};
+
+const glossaryCategoriesUrl = (glossaryGuid: string) => {
+  return `${glossaryUrl()}/${glossaryGuid}/categories`;
+};
+
+const glossarySearchUrl = () => {
+  return `${glossaryUrl()}/search`;
+};
+
+const glossaryCreateFileUrl = () => {
+  return `${glossaryUrl()}/create_file`;
+};
+
+const glossaryDownloadStatusUrl = () => {
+  return `${glossaryUrl()}/download/status`;
+};
+
+const glossaryDownloadFileUrl = (fileName: string) => {
+  return `${glossaryUrl()}/download/${fileName}`;
+};
+
 const editGlossaryUrl = (guid: string) => {
   return `${glossaryUrl()}/${guid}`;
 };
@@ -83,6 +107,12 @@ export {
   glossaryImportTempUrl,
   glossaryImportUrl,
   glossaryTypeUrl,
+  glossaryTermsUrl,
+  glossaryCategoriesUrl,
+  glossarySearchUrl,
+  glossaryCreateFileUrl,
+  glossaryDownloadStatusUrl,
+  glossaryDownloadFileUrl,
   editGlossaryUrl,
   deleteGlossaryorTermUrl,
   createTermorCategoryUrl,

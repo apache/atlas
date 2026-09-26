@@ -87,6 +87,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     private Long          version;
     private Set<AtlasClassification> propagatedClassifications;
     private Set<AtlasClassification> blockedPropagatedClassifications;
+    private Set<String>              pendingTasks; // read-only field i.e. value provided is ignored during relationship create/update
 
     public AtlasRelationship() {
         super();
@@ -239,6 +240,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         if (other != null) {
             init(other.guid, other.homeId, other.provenanceType, other.end1, other.end2, other.label, other.propagateTags, other.status, other.createdBy, other.updatedBy,
                     other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications);
+            setPendingTasks(other.getPendingTasks());
         }
     }
 
@@ -362,6 +364,14 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         this.blockedPropagatedClassifications = blockedPropagatedClassifications;
     }
 
+    public Set<String> getPendingTasks() {
+        return pendingTasks;
+    }
+
+    public void setPendingTasks(Set<String> pendingTasks) {
+        this.pendingTasks = pendingTasks;
+    }
+
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -388,6 +398,9 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         sb.append("]");
         sb.append(", blockedPropagatedClassifications=[");
         dumpObjects(blockedPropagatedClassifications, sb);
+        sb.append("]");
+        sb.append(", pendingTasks=[");
+        dumpObjects(pendingTasks, sb);
         sb.append("]");
         sb.append('}');
 
@@ -460,6 +473,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         setVersion(version);
         setPropagatedClassifications(propagatedClassifications);
         setBlockedPropagatedClassifications(blockedPropagatedClassifications);
+        setPendingTasks(null);
     }
 
     public enum Status { ACTIVE, DELETED }

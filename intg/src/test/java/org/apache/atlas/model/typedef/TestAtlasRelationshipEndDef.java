@@ -363,4 +363,70 @@ public class TestAtlasRelationshipEndDef {
         endDef.setIsLegacyAttribute(false);
         assertFalse(endDef.getIsLegacyAttribute());
     }
+
+    @Test
+    public void testPropagateDeleteDefaultFalse() {
+        AtlasRelationshipEndDef endDef = new AtlasRelationshipEndDef();
+
+        assertFalse(endDef.getIsPropagateDelete());
+    }
+
+    @Test
+    public void testPropagateDeleteSetterGetter() {
+        AtlasRelationshipEndDef endDef = new AtlasRelationshipEndDef();
+
+        endDef.setIsPropagateDelete(true);
+        assertTrue(endDef.getIsPropagateDelete());
+
+        endDef.setIsPropagateDelete(false);
+        assertFalse(endDef.getIsPropagateDelete());
+    }
+
+    @Test
+    public void testPropagateDeleteCopyConstructor() {
+        AtlasRelationshipEndDef original = new AtlasRelationshipEndDef("Type1", "attr1", Cardinality.SINGLE);
+        original.setIsPropagateDelete(true);
+
+        AtlasRelationshipEndDef copy = new AtlasRelationshipEndDef(original);
+
+        assertTrue(copy.getIsPropagateDelete());
+    }
+
+    @Test
+    public void testPropagateDeleteEquality() {
+        AtlasRelationshipEndDef endDef1 = new AtlasRelationshipEndDef("Type1", "attr1", Cardinality.SINGLE);
+        AtlasRelationshipEndDef endDef2 = new AtlasRelationshipEndDef("Type1", "attr1", Cardinality.SINGLE);
+
+        assertEquals(endDef1, endDef2);
+
+        endDef1.setIsPropagateDelete(true);
+        assertNotEquals(endDef1, endDef2);
+
+        endDef2.setIsPropagateDelete(true);
+        assertEquals(endDef1, endDef2);
+        assertEquals(endDef1.hashCode(), endDef2.hashCode());
+    }
+
+    @Test
+    public void testPropagateDeleteSerialization() {
+        AtlasRelationshipEndDef original = new AtlasRelationshipEndDef("Database", "tables", Cardinality.SET, true);
+        original.setIsPropagateDelete(true);
+
+        String jsonString = AtlasType.toJson(original);
+        assertTrue(jsonString.contains("propagateDelete"));
+
+        AtlasRelationshipEndDef deserialized = AtlasType.fromJson(jsonString, AtlasRelationshipEndDef.class);
+        assertTrue(deserialized.getIsPropagateDelete());
+        assertEquals(deserialized, original);
+    }
+
+    @Test
+    public void testPropagateDeleteToString() {
+        AtlasRelationshipEndDef endDef = new AtlasRelationshipEndDef("Type1", "attr1", Cardinality.SINGLE);
+        endDef.setIsPropagateDelete(true);
+
+        String str = endDef.toString();
+        assertTrue(str.contains("propagateDelete"));
+        assertTrue(str.contains("true"));
+    }
 }

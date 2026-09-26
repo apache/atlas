@@ -38,9 +38,10 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class AtlasMetrics implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String PREFIX_CONNECTION_STATUS = "ConnectionStatus:";
-    public static final String PREFIX_NOTIFICATION      = "Notification:";
-    public static final String PREFIX_SERVER            = "Server:";
+    public static final String PREFIX_CONNECTION_STATUS      = "ConnectionStatus:";
+    public static final String PREFIX_NOTIFICATION           = "Notification:";
+    public static final String PREFIX_SERVER                 = "Server:";
+    public static final String PREFIX_NOTIFICATION_PROCESSOR = "NotificationProcessor:";
 
     public static final String STAT_NOTIFY_COUNT_CURR_DAY              = PREFIX_NOTIFICATION + "currentDay";
     public static final String STAT_NOTIFY_AVG_TIME_CURR_DAY           = PREFIX_NOTIFICATION + "currentDayAvgTime";
@@ -81,6 +82,17 @@ public class AtlasMetrics implements Serializable {
     public static final String STAT_SERVER_STATUS_BACKEND_STORE        = PREFIX_SERVER + "statusBackendStore";
     public static final String STAT_SERVER_STATUS_INDEX_STORE          = PREFIX_SERVER + "statusIndexStore";
     public static final String STAT_SERVER_UP_TIME                     = PREFIX_SERVER + "upTime";
+
+    public static final String STAT_TOTAL_MESSAGES_CONSUMED_TOTAL          = PREFIX_NOTIFICATION_PROCESSOR + "messagesConsumedTotal";
+    public static final String STAT_TOTAL_MESSAGES_PROCESSED_TOTAL         = PREFIX_NOTIFICATION_PROCESSOR + "messagesProcessedTotal";
+    public static final String STAT_TOTAL_MESSAGES_FAILED_TOTAL            = PREFIX_NOTIFICATION_PROCESSOR + "messagesFailedTotal";
+    public static final String STAT_AVG_PROCESSING_TIME_TOTAL              = PREFIX_NOTIFICATION_PROCESSOR + "averageTimeTotal";
+    public static final String STAT_GLOBAL_ENTITY_TYPE_COUNTS_TOTAL        = PREFIX_NOTIFICATION_PROCESSOR + "entityTypeCounts";
+    public static final String STAT_GLOBAL_FAILED_ENTITY_TYPE_COUNTS_TOTAL = PREFIX_NOTIFICATION_PROCESSOR + "failedEntityTypeCounts";
+    public static final String STAT_MESSAGES_PRODUCED_BY_TOPIC             = PREFIX_NOTIFICATION_PROCESSOR + "messagesPublishedByTopic";
+    public static final String STAT_MESSAGES_FAILED_BY_TOPIC               = PREFIX_NOTIFICATION_PROCESSOR + "messagesFailedByTopic";
+    public static final String STAT_INPUT_TOPIC_STATS                      = PREFIX_NOTIFICATION_PROCESSOR + "inputTopicStats";
+    public static final String STAT_OUTPUT_TOPIC_STATS                     = PREFIX_NOTIFICATION_PROCESSOR + "outputTopicStats";
 
     private Map<String, Map<String, Object>> data;
 

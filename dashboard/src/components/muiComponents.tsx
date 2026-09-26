@@ -90,7 +90,8 @@ const CustomButton = ({
   size,
   endIcon,
   startIcon,
-  disabled
+  disabled,
+  ...rest
 }: ButtonProps | any) => {
   let defaultStyles = {
     fontWeight: "600 !important",
@@ -114,6 +115,7 @@ const CustomButton = ({
         endIcon={endIcon}
         startIcon={startIcon}
         disabled={disabled}
+        {...rest}
       >
         {children}
       </Button>

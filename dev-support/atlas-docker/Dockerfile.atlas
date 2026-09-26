@@ -35,6 +35,10 @@ RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz --direc
     rm -rf ${ATLAS_HOME}/logs && \
     ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
     ln -s /home/atlas/data ${ATLAS_HOME}/data && \
+    mkdir -p ${ATLAS_HOME}/server/webapp/atlas && \
+    cd ${ATLAS_HOME}/server/webapp/atlas && \
+    jar -xf ../atlas.war && \
+    rm -f ../atlas.war && \
     if [ "${ATLAS_BACKEND}" = "postgres" ]; then \
       cp /home/atlas/dist/postgresql-42.7.7.jar ${ATLAS_HOME}/libext/; \
     fi && \

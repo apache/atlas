@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,8 +12,10 @@
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.useForm
+ * limitations under the License.
  */
+
+// @ts-nocheck
 
 import { CustomButton, LightTooltip } from "@components/muiComponents";
 import {
@@ -38,7 +38,6 @@ import {
   tooltipClasses,
   TooltipProps,
   styled,
-  FilterOptionsState,
   ToggleButton,
   ToggleButtonGroup
 } from "@mui/material";
@@ -74,15 +73,42 @@ const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
   }
 }));
 
+export const filterAttributeEnumOptions = (
+  options: { value: string }[],
+  inputValue: string,
+  selectedValues: { value: string }[]
+) => {
+  const lowerInputValue = inputValue ? inputValue.toLowerCase() : '';
+  const filteredOptions: { value: string }[] = [];
+
+  let selectedEnumValues = !isEmpty(selectedValues)
+    ? selectedValues.map((obj: { value: string }) => {
+        return obj.value.toLowerCase()
+      })
+    : [];
+
+  options.forEach((option: { value: string }) => {
+    const labelLower = option.value.toLowerCase();
+    if (
+      labelLower.includes(lowerInputValue) &&
+      !selectedEnumValues.includes(labelLower)
+    ) {
+      filteredOptions.push(option)
+    }
+  });
+
+  return filteredOptions
+}
+
 const BusinessMetadataAttributeForm = ({
-  fields,
+  fields = [],
   control,
   remove,
-  watched,
-  dataTypeOptions,
-  enumTypes,
-  watch: attributeDefsWatch,
-  setValue: attributeDefsSetValue
+  watched = [],
+  dataTypeOptions = [],
+  enumTypes = [],
+  watch: attributeDefsWatch = () => undefined,
+  setValue: attributeDefsSetValue = () => undefined
 }: any) => {
   const { enumObj }: any = useAppSelector((state: any) => state.enum);
   const { enumDefs } = enumObj?.data || {};
@@ -99,7 +125,7 @@ const BusinessMetadataAttributeForm = ({
   } = useForm();
   const toastId: any = useRef(null);
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: any = {}) => {
     let formData = { ...values };
     let isPutCall = false;
     let isPostCallEnum = false;
@@ -129,7 +155,7 @@ const BusinessMetadataAttributeForm = ({
       isPostCallEnum = true;
     }
     let elementValues: { ordinal: number; value: any }[] = [];
-    selectedEnumValues?.forEach((inputEnumVal: any, index: number) => {
+    selectedEnumValues.forEach((inputEnumVal: any, index: number) => {
       elementValues?.push({
         ordinal: index + 1,
         value: inputEnumVal
@@ -163,9 +189,8 @@ const BusinessMetadataAttributeForm = ({
         toast.dismiss(toastId.current);
         toastId.current = toast.success("No updated values");
       }
-      fields?.forEach((fieldItem: any, idx: number) => {
+      fields.forEach((fieldItem: any, idx: number) => {
         const fieldEnumType =
-          attributeDefsWatch &&
           attributeDefsWatch(`attributeDefs.${idx}.enumType`);
         if (fieldEnumType === enumType) {
           attributeDefsSetValue(
@@ -184,33 +209,6 @@ const BusinessMetadataAttributeForm = ({
   const handleCloseEnumModal = () => {
     reset({ enumType: "", enumValues: [] });
     setEnumModal(false);
-  };
-
-  const filterOptions = (
-    options: any[],
-    { inputValue }: FilterOptionsState<any>,
-    selectedValues: { value: string }[]
-  ) => {
-    const lowerInputValue = inputValue ? inputValue.toLowerCase() : "";
-    const filteredOptions: any[] = [];
-
-    let selectedEnumValues = !isEmpty(selectedValues)
-      ? selectedValues.map((obj: { value: string }) => {
-          return obj.value.toLowerCase();
-        })
-      : [];
-
-    options.forEach((option: { value: string }) => {
-      const labelLower = option.value.toLowerCase();
-      if (
-        labelLower.includes(lowerInputValue) &&
-        !selectedEnumValues.includes(labelLower)
-      ) {
-        filteredOptions.push(option);
-      }
-    });
-
-    return filteredOptions;
   };
 
   return fields.map(

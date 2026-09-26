@@ -20,6 +20,12 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.security.AtlasADAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasFileAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasLdapAuthenticationProvider;
+import org.apache.atlas.server.common.security.AtlasPamAuthenticationProvider;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -63,7 +69,7 @@ public class AtlasAuthenticationProviderTest {
     private AtlasPamAuthenticationProvider mockPamAuthenticationProvider;
 
     @Mock
-    private AtlasKeycloakAuthenticationProvider mockKeycloakAuthenticationProvider;
+    private org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider mockKeycloakAuthenticationProvider;
 
     @Mock
     private Authentication mockAuthentication;
@@ -578,7 +584,7 @@ public class AtlasAuthenticationProviderTest {
                 AtlasFileAuthenticationProvider.class,
                 AtlasADAuthenticationProvider.class,
                 AtlasPamAuthenticationProvider.class,
-                AtlasKeycloakAuthenticationProvider.class
+                org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider.class
         ).getAnnotation(Inject.class);
         assertNotNull(injectAnnotation);
     }
