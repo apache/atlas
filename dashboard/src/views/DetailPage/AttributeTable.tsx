@@ -44,9 +44,8 @@ const AttributeTable = ({ values }: any) => {
     (state: any) => state.classification
   );
 
-  const allClassificationData = cloneDeep(classificationData);
-
-  const { classificationDefs } = allClassificationData;
+  const allClassificationData = cloneDeep(classificationData) || {};
+  const { classificationDefs = [] } = allClassificationData;
 
   const classificationObj = !isEmpty(typeName)
     ? classificationDefs.find((obj: { name: string }) => obj.name == typeName)
@@ -69,7 +68,8 @@ const AttributeTable = ({ values }: any) => {
       )
     : [];
   const getValues = (value: any) => {
-    let val = isNull(attributes?.[value.name]) ? "-" : attributes?.[value.name];
+    const rawValue = attributes?.[value.name];
+    let val = isNull(rawValue) || rawValue === undefined ? "-" : rawValue;
 
     if (value.typeName == "boolean") {
       val = val == true ? "true" : "false";

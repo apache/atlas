@@ -28,7 +28,6 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 
@@ -225,14 +224,17 @@ public interface AtlasEntityStore {
     /*
      * Return list of purged entity guids
      */
-    EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException;
-
-    /*
-     * Returns set of auto-purged entity guids
-     */
     EntityMutationResponse purgeEntitiesInBatch(Set<String> deletedVertices) throws AtlasBaseException;
 
-    Set<AtlasVertex> accumulateDeletionCandidates(Set<String> vertices) throws AtlasBaseException;
+    /*
+     * Resolves purge/delete dependency candidates for the given entity GUIDs.
+     *
+     * INCOMPATIBLE CHANGE (ATLAS-5317): return type changed from Set<AtlasVertex> to
+     * Set<String>. The method was added in ATLAS-4920; ATLAS-5317 returns GUIDs so
+     * worker-batch purge can enqueue candidates without leaking transaction-bound vertices.
+     * Custom AtlasEntityStore implementations must match this signature.
+     */
+    Set<String> accumulateDeletionCandidates(Set<String> vertices) throws AtlasBaseException;
 
     /**
      * Add classification(s)

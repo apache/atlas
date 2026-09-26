@@ -35,6 +35,15 @@ const getDetailPageData = (guid: string, params: object, header?: string) => {
   return _get(detailpageApiUrl(guid, header), config);
 };
 
+/** Full entity GET including relationshipAttributes (for entity save payloads). */
+const getEntityWithRelationships = (guid: string) => {
+  const config = {
+    method: "GET",
+    params: { ignoreRelationships: false }
+  };
+  return _get(detailpageApiUrl(guid), config);
+};
+
 const getDetailPageAuditData = (guid: string, params: object) => {
   const config = {
     method: "GET",
@@ -204,6 +213,7 @@ const getDetailPageRelationshipAttributes = async (
 
 export {
   getDetailPageData,
+  getEntityWithRelationships,
   getDetailPageAuditData,
   getDetailPageRauditData,
   getAuditData,

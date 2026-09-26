@@ -364,21 +364,18 @@ public class ImportServiceTest extends AtlasTestBase {
         assertEntityCount("AtlasGlossaryTerm", "105533b6-c125-4a87-bed5-cdf67fb68c39", 1);
     }
 
-    @Test(dataProvider = "hdfs_path1", expectedExceptions = AtlasBaseException.class)
+    @Test(dataProvider = "hdfs_path1")
     public void importHdfs_path1(InputStream inputStream) throws IOException, AtlasBaseException {
         loadBaseModel();
         loadFsModel();
         loadModelFromResourcesJson("tag1.json", typeDefStore, typeRegistry);
 
-        try {
-            runImportWithNoParameters(importService, inputStream);
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED);
-            AtlasClassificationType tag1 = typeRegistry.getClassificationTypeByName("tag1");
-            assertNotNull(tag1);
-            assertEquals(tag1.getAllAttributes().size(), 2);
-            throw e;
-        }
+        runImportWithNoParameters(importService, inputStream);
+
+        AtlasClassificationType tag1 = typeRegistry.getClassificationTypeByName("tag1");
+        assertNotNull(tag1);
+        assertEquals(tag1.getAttribute("attrib1").getAttributeDef().getTypeName(), "string");
+        assertNotNull(tag1.getAttribute("attrib2"));
     }
 
     @Test(dataProvider = "zip-direct-3", expectedExceptions = AtlasBaseException.class)

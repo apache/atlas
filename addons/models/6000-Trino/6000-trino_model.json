@@ -34,6 +34,12 @@
       "superTypes":   [ "DataSet" ],
       "serviceType":  "trino",
       "typeVersion":  "1.0",
+      "attributeDefOverrides": [
+        {
+          "name":              "qualifiedName",
+          "autoComputeFormat": "{trinoschema.catalog.name}.{trinoschema.name}.{name}@{trinoschema.catalog.instance.name}"
+        }
+      ],
       "attributeDefs": [
         { "name": "comment",    "typeName": "string",             "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
         { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
@@ -45,6 +51,12 @@
       "superTypes":   [ "DataSet" ],
       "serviceType":  "trino",
       "typeVersion":  "1.0",
+      "attributeDefOverrides": [
+        {
+          "name":              "qualifiedName",
+          "autoComputeFormat": "{table.trinoschema.catalog.name}.{table.trinoschema.name}.{table.name}.{name}@{table.trinoschema.catalog.instance.name}"
+        }
+      ],
       "attributeDefs": [
         { "name": "data_type",        "typeName": "string",  "cardinality": "SINGLE", "isUnique": false, "isIndexable": true,  "isOptional": true },
         { "name": "ordinal_position", "typeName": "int",     "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
@@ -116,7 +128,7 @@
       "relationshipCategory": "AGGREGATION",
       "propagateTags":        "NONE",
       "endDef1": { "type": "trino_table",  "name": "trinoschema", "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": false },
-      "endDef2": { "type": "trino_schema", "name": "tables",      "isContainer": true,  "cardinality": "SET" }
+      "endDef2": { "type": "trino_schema", "name": "tables",      "isContainer": true,  "cardinality": "SET", "propagateDelete": true }
     },
     {
       "name":                 "trino_table_columns",
@@ -124,7 +136,7 @@
       "typeVersion":          "1.0",
       "relationshipCategory": "COMPOSITION",
       "propagateTags":        "NONE",
-      "endDef1": { "type": "trino_table",  "name": "columns", "isContainer": true,  "cardinality": "SET",    "isLegacyAttribute": false },
+      "endDef1": { "type": "trino_table",  "name": "columns", "isContainer": true,  "cardinality": "SET",    "isLegacyAttribute": false, "propagateRename": true },
       "endDef2": { "type": "trino_column", "name": "table",   "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": false }
     },
     {
@@ -160,7 +172,7 @@
       "typeVersion":          "1.0",
       "relationshipCategory": "ASSOCIATION",
       "propagateTags":        "BOTH",
-      "endDef1": { "type": "hive_db",      "name": "trino_schema",  "cardinality": "SET"    },
+      "endDef1": { "type": "hive_db",      "name": "trino_schema",  "cardinality": "SET", "propagateDelete": true },
       "endDef2": { "type": "trino_schema", "name": "hive_db",       "cardinality": "SINGLE" }
     },
     {
@@ -169,7 +181,7 @@
       "typeVersion":          "1.0",
       "relationshipCategory": "ASSOCIATION",
       "propagateTags":        "BOTH",
-      "endDef1": { "type": "hive_table",  "name": "trino_table", "cardinality": "SET"    },
+      "endDef1": { "type": "hive_table",  "name": "trino_table", "cardinality": "SET", "propagateRename": true, "propagateDelete": true, "propagateAttributes": [ { "source": "name", "target": "name" } ] },
       "endDef2": { "type": "trino_table", "name": "hive_table",  "cardinality": "SINGLE" }
     },
     {

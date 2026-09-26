@@ -19,6 +19,8 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.security.AtlasAuthenticationException;
+import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.configuration2.PropertiesConfiguration;
 import org.apache.commons.io.FileUtils;
@@ -27,7 +29,8 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -75,8 +78,14 @@ public class FileAuthenticationTest {
 
         System.setProperty("atlas.conf", persistDir);
 
-        applicationContext = new ClassPathXmlApplicationContext("test-spring-security.xml");
-        authProvider       = applicationContext.getBean(org.apache.atlas.web.security.AtlasAuthenticationProvider.class);
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+
+        ((ConfigurableEnvironment) ctx.getEnvironment()).setActiveProfiles("testSpringSecurityBridge");
+        ctx.register(TestSpringSecurityBridgeConfig.class);
+        ctx.refresh();
+
+        applicationContext = ctx;
+        authProvider       = applicationContext.getBean(AtlasAuthenticationProvider.class);
     }
 
     @Test

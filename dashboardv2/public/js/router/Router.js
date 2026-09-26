@@ -43,6 +43,7 @@ define([
             "!/tag/tagAttribute/(*name)": "tagAttributePageLoad",
             // Glossary
             "!/glossary": "commonAction",
+            "!/glossary/terms-list": "glossaryTermsList",
             "!/glossary/:id": "glossaryDetailPage",
             // Details
             "!/detailPage/:id": "detailPage",
@@ -270,8 +271,38 @@ define([
                 }
             });
         },
+        glossaryTermsList: function() {
+            var that = this;
+            require([
+                'views/site/Header',
+                'views/site/SideNavLayoutView',
+                'views/glossary/GlossaryTermsListLayoutView'
+            ], function(Header, SideNavLayoutView, GlossaryTermsListLayoutView) {
+                Utils.updateInternalTabState();
+                var paramObj = Utils.getUrlState.getQueryParams(),
+                    options = _.extend({}, that.preFetchedCollectionLists, that.sharedObj, that.ventObj);
+                that.renderViewIfNotExists(that.getHeaderOptions(Header));
+                that.renderViewIfNotExists({
+                    view: App.rSideNav,
+                    manualRender: function() {
+                        this.view.currentView.selectTab();
+                    },
+                    render: function() {
+                        return new SideNavLayoutView(options);
+                    }
+                });
+                if (App.rNContent.currentView && App.rNContent.currentView.destroy) {
+                    App.rNContent.currentView.destroy();
+                }
+                App.rNContent.show(new GlossaryTermsListLayoutView(options));
+            });
+        },
         glossaryDetailPage: function(id) {
             var that = this;
+            if (id === 'terms-list') {
+                this.glossaryTermsList();
+                return;
+            }
             if (id) {
                 require([
                     'views/site/Header',

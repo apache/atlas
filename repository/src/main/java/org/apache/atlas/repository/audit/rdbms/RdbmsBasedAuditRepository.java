@@ -278,6 +278,8 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
         ret.setAction(dbEntityAudit.getAction() != null ? EntityAuditEventV2.EntityAuditActionV2.valueOf(dbEntityAudit.getAction()) : null);
         ret.setDetails(dbEntityAudit.getDetails());
         ret.setType(EntityAuditEventV2.EntityAuditType.values()[dbEntityAudit.getAuditType()]);
+        ret.setEventKey(dbEntityAudit.getEntityId() + FIELD_SEPARATOR + dbEntityAudit.getEventTime()
+                + FIELD_SEPARATOR + dbEntityAudit.getEventIndex());
 
         if (PERSIST_ENTITY_DEFINITION) {
             ret.setEntityDefinition(dbEntityAudit.getEntity());

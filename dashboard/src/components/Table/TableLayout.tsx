@@ -356,7 +356,8 @@ const TableLayout: FC<TableProps> = ({
   showGoToPage,
   customLeftButton,
   defaultPageSize,
-  onClientPageSizeChange
+  onClientPageSizeChange,
+  paginationSummaryVariant
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
@@ -735,6 +736,7 @@ const TableLayout: FC<TableProps> = ({
               totalCount={totalCount}
               approximateCountExact={approximateCountExact}
               onClientPageSizeChange={onClientPageSizeChange}
+              paginationSummaryVariant={paginationSummaryVariant}
             />
           )}
         </Paper>

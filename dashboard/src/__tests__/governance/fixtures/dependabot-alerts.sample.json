@@ -1,0 +1,49 @@
+[
+	{
+		"number": 1001,
+		"state": "open",
+		"dependency": {
+			"package": {
+				"ecosystem": "npm",
+				"name": "axios"
+			},
+			"manifest_path": "dashboard/package.json"
+		},
+		"security_advisory": {
+			"severity": "high",
+			"cve_id": "CVE-2024-SAMPLE-AXIOS",
+			"summary": "Sample advisory for governance fixture (axios patched below current lock)"
+		},
+		"security_vulnerability": {
+			"package": {
+				"ecosystem": "npm",
+				"name": "axios"
+			},
+			"vulnerable_version_range": "< 1.6.0",
+			"first_patched_version": "1.6.0"
+		}
+	},
+	{
+		"number": 1002,
+		"state": "open",
+		"dependency": {
+			"package": {
+				"ecosystem": "npm",
+				"name": "not-a-dashboard-direct-dependency"
+			},
+			"manifest_path": "other/package.json"
+		},
+		"security_advisory": {
+			"severity": "critical",
+			"cve_id": "CVE-2024-SAMPLE-OTHER"
+		},
+		"security_vulnerability": {
+			"package": {
+				"ecosystem": "npm",
+				"name": "not-a-dashboard-direct-dependency"
+			},
+			"vulnerable_version_range": "< 1.0.0",
+			"first_patched_version": "1.0.0"
+		}
+	}
+]

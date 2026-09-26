@@ -17,11 +17,11 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -82,7 +82,6 @@ import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_K
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
 @Component
 public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
@@ -90,7 +89,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private static final Long    DEFAULT_RELATIONSHIP_VERSION = 0L;
     private static final boolean NOTIFICATIONS_ENABLED        = NOTIFICATION_RELATIONSHIPS_ENABLED.getBoolean();
-    private static final boolean DEFERRED_ACTION_ENABLED      = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     private final AtlasGraph                 graph;
     private final AtlasTypeRegistry          typeRegistry;
@@ -214,6 +212,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         LOG.debug("==> getById({})", guid);
 
         AtlasEdge         edge = graphHelper.getEdgeForGUID(guid);
+        verifyRelationshipReadAccess(edge);
         AtlasRelationship ret  = entityRetriever.mapEdgeToAtlasRelationship(edge);
 
         LOG.debug("<== getById({}): {}", guid, ret);
@@ -227,6 +226,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         LOG.debug("==> getExtInfoById({})", guid);
 
         AtlasEdge                    edge = graphHelper.getEdgeForGUID(guid);
+        verifyRelationshipReadAccess(edge);
         AtlasRelationshipWithExtInfo ret  = entityRetriever.mapEdgeToAtlasRelationshipWithExtInfo(edge);
 
         LOG.debug("<== getExtInfoById({}): {}", guid, ret);
@@ -446,11 +446,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private void updateTagPropagations(AtlasEdge relationshipEdge, AtlasRelationship relationship) throws AtlasBaseException {
-        if (DEFERRED_ACTION_ENABLED) {
-            createAndQueueTask(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE, relationshipEdge, relationship);
-        } else {
-            deleteDelegate.getHandler().updateTagPropagations(relationshipEdge, relationship);
-        }
+        deleteDelegate.getHandler().updateTagPropagations(relationshipEdge, relationship);
     }
 
     private void validateRelationship(AtlasRelationship relationship) throws AtlasBaseException {
@@ -768,7 +764,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
     }
 
-    private void createAndQueueTask(String taskType, AtlasEdge relationshipEdge, AtlasRelationship relationship) {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, relationshipEdge, relationship);
+    private void verifyRelationshipReadAccess(AtlasEdge edge) throws AtlasBaseException {
+        AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getOutVertex());
+        AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(edge.getInVertex());
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, end1Entity),
+                "read relationship: end1 guid=", end1Entity.getGuid());
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, end2Entity),
+                "read relationship: end2 guid=", end2Entity.getGuid());
     }
 }

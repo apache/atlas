@@ -19,6 +19,7 @@
 package org.apache.atlas.web.service;
 
 import com.google.common.base.Charsets;
+import org.apache.atlas.server.common.service.AtlasZookeeperSecurityProperties;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
