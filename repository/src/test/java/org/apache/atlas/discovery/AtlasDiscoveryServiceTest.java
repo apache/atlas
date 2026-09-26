@@ -58,6 +58,7 @@ import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES
 import static org.apache.atlas.model.discovery.SearchParameters.NO_CLASSIFICATIONS;
 import static org.apache.atlas.model.discovery.SearchParameters.Operator;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -102,6 +103,46 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         createSpecialCharTestEntities();
         setupRelationshipTestData();
         createJapaneseEntityWithDescription();
+    }
+
+    @Test
+    public void basicSearchSetsApproximateCountExactForIndexOnlyQuery() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE);
+        params.setLimit(20);
+
+        AtlasSearchResult result = discoveryService.searchWithParameters(params);
+
+        assertTrue(Boolean.TRUE.equals(result.getApproximateCountExact()));
+        assertTrue(result.getApproximateCount() >= result.getEntities().size());
+    }
+
+    @Test
+    public void basicSearchOmitsExactCountWhenInMemoryFilterApplied() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setEntityFilters(
+                getSingleFilterCondition("tableType", Operator.NEQ, "Managed"));
+        params.setLimit(20);
+
+        AtlasSearchResult result = discoveryService.searchWithParameters(params);
+
+        assertFalse(Boolean.TRUE.equals(result.getApproximateCountExact()));
+    }
+
+    @Test
+    public void approximateCountIncreasesWhenNewMatchingEntityAdded() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setLimit(500);
+
+        long countBefore = discoveryService.searchWithParameters(params).getApproximateCount();
+
+        createDummyEntity("cdpd40161_approx_count_table", HIVE_TABLE_TYPE);
+
+        long countAfter = discoveryService.searchWithParameters(params).getApproximateCount();
+
+        assertTrue(countAfter > countBefore);
     }
 
     @Test
