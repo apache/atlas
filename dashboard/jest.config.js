@@ -32,6 +32,7 @@ const config = {
   ],
   
   // Setup files
+  setupFiles: ['<rootDir>/src/setupTests.polyfills.ts'],
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.simple.ts'],
   
   // Module name mapping for path aliases
