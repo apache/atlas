@@ -19,11 +19,14 @@ package org.apache.atlas.model.discovery;
 
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.utils.AtlasJson;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -66,7 +69,7 @@ public class TestQuickSearchParameters {
         boolean excludeDeletedEntities = true;
         int offset = 10;
         int limit = 100;
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("attr1");
         String sortBy = "name";
         SortOrder sortOrder = SortOrder.ASCENDING;
@@ -82,7 +85,7 @@ public class TestQuickSearchParameters {
         assertTrue(params.getExcludeDeletedEntities());
         assertEquals(params.getOffset(), offset);
         assertEquals(params.getLimit(), limit);
-        assertSame(params.getAttributes(), attributes);
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(attributes));
         assertEquals(params.getSortBy(), sortBy);
         assertEquals(params.getSortOrder(), sortOrder);
     }
@@ -183,13 +186,13 @@ public class TestQuickSearchParameters {
     public void testAttributesGetterSetter() {
         assertNull(searchParameters.getAttributes());
 
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("name");
         attributes.add("description");
         attributes.add("owner");
 
         searchParameters.setAttributes(attributes);
-        assertSame(searchParameters.getAttributes(), attributes);
+        assertEquals(searchParameters.getAttributes(), new LinkedHashSet<>(attributes));
 
         searchParameters.setAttributes(null);
         assertNull(searchParameters.getAttributes());
@@ -244,7 +247,7 @@ public class TestQuickSearchParameters {
         boolean excludeDeletedEntities = true;
         int offset = 25;
         int limit = 500;
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("name");
         attributes.add("qualifiedName");
         attributes.add("owner");
@@ -271,7 +274,7 @@ public class TestQuickSearchParameters {
         assertTrue(searchParameters.getExcludeDeletedEntities());
         assertEquals(searchParameters.getOffset(), offset);
         assertEquals(searchParameters.getLimit(), limit);
-        assertSame(searchParameters.getAttributes(), attributes);
+        assertEquals(searchParameters.getAttributes(), new LinkedHashSet<>(attributes));
         assertEquals(searchParameters.getSortBy(), sortBy);
         assertEquals(searchParameters.getSortOrder(), sortOrder);
         assertTrue(searchParameters.getExcludeHeaderAttributes());
@@ -296,7 +299,7 @@ public class TestQuickSearchParameters {
 
     @Test
     public void testEmptyAttributesSet() {
-        Set<String> emptyAttributes = new HashSet<>();
+        List<String> emptyAttributes = new ArrayList<>();
         searchParameters.setAttributes(emptyAttributes);
 
         assertNotNull(searchParameters.getAttributes());
@@ -306,15 +309,15 @@ public class TestQuickSearchParameters {
 
     @Test
     public void testAttributesSetModification() {
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("initialAttribute");
         searchParameters.setAttributes(attributes);
 
         attributes.add("additionalAttribute");
 
-        assertEquals(searchParameters.getAttributes().size(), 2);
+        assertEquals(searchParameters.getAttributes().size(), 1);
         assertTrue(searchParameters.getAttributes().contains("initialAttribute"));
-        assertTrue(searchParameters.getAttributes().contains("additionalAttribute"));
+        assertFalse(searchParameters.getAttributes().contains("additionalAttribute"));
     }
 
     @Test
@@ -413,7 +416,7 @@ public class TestQuickSearchParameters {
 
     @Test
     public void testAttributesWithVariousTypes() {
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("stringAttribute");
         attributes.add("numericAttribute");
         attributes.add("dateAttribute");
@@ -472,7 +475,7 @@ public class TestQuickSearchParameters {
         searchParameters.setOffset(0);
         searchParameters.setLimit(50);
 
-        Set<String> attributes = new HashSet<>();
+        List<String> attributes = new ArrayList<>();
         attributes.add("qualifiedName");
         attributes.add("owner");
         attributes.add("createTime");
@@ -499,5 +502,25 @@ public class TestQuickSearchParameters {
         assertEquals(searchParameters.getSortOrder(), SortOrder.DESCENDING);
         assertFalse(searchParameters.getExcludeHeaderAttributes());
         assertNotNull(searchParameters.getEntityFilters());
+    }
+
+    @Test
+    public void testAttributesJsonDeserializationPreservesOrder() {
+        String json = "{\"query\":\"*\",\"typeName\":\"hive_table\",\"attributes\":[\"qualifiedName\",\"createTime\"]}";
+
+        QuickSearchParameters params = AtlasJson.fromJson(json, QuickSearchParameters.class);
+
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
+        assertEquals(new ArrayList<>(params.getAttributes()), Arrays.asList("qualifiedName", "createTime"));
+    }
+
+    @Test
+    public void testAttributesJsonDeserializationDedupes() {
+        String json = "{\"query\":\"*\",\"typeName\":\"hive_table\",\"attributes\":[\"qualifiedName\",\"createTime\",\"qualifiedName\"]}";
+
+        QuickSearchParameters params = AtlasJson.fromJson(json, QuickSearchParameters.class);
+
+        assertEquals(params.getAttributes(), new LinkedHashSet<>(Arrays.asList("qualifiedName", "createTime")));
+        assertEquals(new ArrayList<>(params.getAttributes()), Arrays.asList("qualifiedName", "createTime"));
     }
 }
