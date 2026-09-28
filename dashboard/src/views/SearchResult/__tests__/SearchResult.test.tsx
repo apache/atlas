@@ -30,9 +30,14 @@ const theme = createTheme();
 const mockSetSearchParams = jest.fn();
 
 let capturedColumns: any[] = [];
+let capturedTableLayoutProps: Record<string, unknown> = {};
 
 function setCapturedColumns(columns: any[] = []) {
 	capturedColumns = columns;
+}
+
+function setCapturedTableLayoutProps(props: Record<string, unknown> = {}) {
+	capturedTableLayoutProps = props;
 }
 
 // Mock API URL configuration
@@ -93,6 +98,7 @@ jest.mock('@components/Table/TableLayout', () => {
 		...actual,
 		TableLayout: (props: any) => {
 			setCapturedColumns(props.columns || []);
+			setCapturedTableLayoutProps(props);
 			return actual.TableLayout(props);
 		}
 	};
@@ -535,6 +541,7 @@ describe('SearchResult', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     capturedColumns = [];
+    capturedTableLayoutProps = {};
     (globalThis as any).__tableLayoutCaptureColumns = setCapturedColumns;
     (searchApiMethod.getBasicSearchResult as jest.Mock).mockResolvedValue({
       data: {
@@ -1824,6 +1831,68 @@ describe('SearchResult', () => {
   });
 
   describe('TableLayout Props', () => {
+    it('passes approximateCountExact=false to TableLayout when API omits exact flag', async () => {
+      (searchApiMethod.getBasicSearchResult as jest.Mock).mockResolvedValueOnce({
+        data: {
+          entities: [
+            {
+              guid: 'guid-1',
+              typeName: 'hive_column',
+              attributes: { name: 'col1', qualifiedName: 'q1' },
+              classificationNames: [],
+              meanings: [],
+              status: 'ACTIVE'
+            }
+          ],
+          referredEntities: {},
+          approximateCount: 50,
+          approximateCountExact: false
+        }
+      });
+
+      await act(async () => {
+        renderWithProviders(<SearchResult />, {
+          searchParams: new URLSearchParams({ type: 'hive_column' })
+        });
+      });
+
+      await waitFor(() => {
+        expect(capturedTableLayoutProps.approximateCountExact).toBe(false);
+        expect(capturedTableLayoutProps.totalCount).toBe(50);
+      }, { timeout: 15000 });
+    }, 30000);
+
+    it('passes approximateCountExact=true to TableLayout when API marks count exact', async () => {
+      (searchApiMethod.getBasicSearchResult as jest.Mock).mockResolvedValueOnce({
+        data: {
+          entities: [
+            {
+              guid: 'guid-1',
+              typeName: 'hive_db',
+              attributes: { name: 'db1', qualifiedName: 'q1' },
+              classificationNames: [],
+              meanings: [],
+              status: 'ACTIVE'
+            }
+          ],
+          referredEntities: {},
+          approximateCount: 10,
+          approximateCountExact: true
+        }
+      });
+
+      await act(async () => {
+        renderWithProviders(<SearchResult />, {
+          searchParams: new URLSearchParams({ type: 'hive_db' })
+        });
+      });
+
+      await waitFor(() => {
+        expect(capturedTableLayoutProps.approximateCountExact).toBe(true);
+        expect(capturedTableLayoutProps.totalCount).toBe(10);
+      }, { timeout: 15000 });
+    }, 30000);
+
     it('should render table with filters and pagination', async () => {
       await act(async () => {
         renderWithProviders(<SearchResult />);
