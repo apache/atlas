@@ -179,32 +179,32 @@ describe('TablePagination', () => {
 		expect(screen.getByRole('navigation')).toBeTruthy();
 	});
 
-	it('should handle server-side pagination', () => {
+	const renderServerSidePagination = (extraProps: Record<string, unknown> = {}) =>
 		render(
-			<MemoryRouter>
+			<MemoryRouter initialEntries={['/?pageLimit=25&pageOffset=0']}>
 				<TestWrapper>
-					<TablePagination {...defaultProps} isServerSide={true} />
+					<TablePagination
+						{...defaultProps}
+						isServerSide={true}
+						{...extraProps}
+					/>
 				</TestWrapper>
-			</MemoryRouter>
+			</MemoryRouter>,
+			{ withRouter: false }
 		);
+
+	it('should handle server-side pagination', () => {
+		renderServerSidePagination();
 
 		expect(screen.getByRole('navigation')).toBeTruthy();
 	});
 
 	it('shows approximate total hint when server-side count is not exact', () => {
-		render(
-			<MemoryRouter>
-				<TestWrapper>
-					<TablePagination
-						{...defaultProps}
-						isServerSide={true}
-						approximateCountExact={false}
-						totalCount={100}
-						memoizedData={Array.from({ length: 25 }, (_, i) => ({ id: i }))}
-					/>
-				</TestWrapper>
-			</MemoryRouter>
-		);
+		renderServerSidePagination({
+			approximateCountExact: false,
+			totalCount: 100,
+			memoizedData: Array.from({ length: 25 }, (_, i) => ({ id: i }))
+		});
 
 		expect(screen.getByText('(approx.)')).toBeInTheDocument();
 		expect(screen.getByRole('navigation')).toHaveTextContent(
@@ -213,19 +213,11 @@ describe('TablePagination', () => {
 	});
 
 	it('omits approximate hint when server-side count is exact', () => {
-		render(
-			<MemoryRouter>
-				<TestWrapper>
-					<TablePagination
-						{...defaultProps}
-						isServerSide={true}
-						approximateCountExact={true}
-						totalCount={100}
-						memoizedData={Array.from({ length: 25 }, (_, i) => ({ id: i }))}
-					/>
-				</TestWrapper>
-			</MemoryRouter>
-		);
+		renderServerSidePagination({
+			approximateCountExact: true,
+			totalCount: 100,
+			memoizedData: Array.from({ length: 25 }, (_, i) => ({ id: i }))
+		});
 
 		expect(screen.queryByText('(approx.)')).not.toBeInTheDocument();
 		expect(screen.getByRole('navigation')).toHaveTextContent('Showing 1-25 of 100 records');
