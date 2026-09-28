@@ -420,10 +420,10 @@ const TablePagination: React.FC<PaginationProps> = ({
           ) : (
             <>
               Showing {footerRangeStart.toLocaleString()}-
-              {footerRangeEnd.toLocaleString()} of{" "}
-              {!approximateCountExact && isServerSide ? "~" : ""}
-              {totalDatasetRows.toLocaleString()}{" "}
-              {totalDatasetRows === 1 ? "record" : "records"}
+              {footerRangeEnd.toLocaleString()} of{' '}
+              {!approximateCountExact && isServerSide ? '~' : ''}
+              {totalDatasetRows.toLocaleString()}{' '}
+              {totalDatasetRows === 1 ? 'record' : 'records'}
               {!approximateCountExact && isServerSide ? (
                 <LightTooltip title="Count is approximate when search applies in-memory filtering beyond the index query.">
                   <span> (approx.)</span>

@@ -20,8 +20,6 @@ ARG ATLAS_BACKEND
 ARG ATLAS_SERVER_JAVA_VERSION
 ARG ATLAS_VERSION
 ARG TARGETARCH
-# Matches postgresql.version in the root pom; used only when ATLAS_BACKEND=postgres.
-ARG POSTGRESQL_JDBC_VERSION=42.7.7
 
 ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_SERVER_JAVA_VERSION}-openjdk-${TARGETARCH}
 RUN update-java-alternatives --set /usr/lib/jvm/java-1.${ATLAS_SERVER_JAVA_VERSION}.0-openjdk-${TARGETARCH}
@@ -32,7 +30,7 @@ COPY ./dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz /home/atlas/dist/
 RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz --directory=/opt/ && \
     ln -s /opt/apache-atlas-${ATLAS_VERSION} ${ATLAS_HOME} && \
     rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz && \
-    mkdir -p /var/run/atlas /var/log/atlas /home/atlas/data ${ATLAS_HOME}/hbase/conf ${ATLAS_HOME}/libext && \
+    mkdir -p /var/run/atlas /var/log/atlas /home/atlas/data ${ATLAS_HOME}/hbase/conf && \
     rm -rf ${ATLAS_HOME}/logs && \
     ln -s /var/log/atlas ${ATLAS_HOME}/logs && \
     ln -s /home/atlas/data ${ATLAS_HOME}/data && \
@@ -40,10 +38,6 @@ RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz --direc
     cd ${ATLAS_HOME}/server/webapp/atlas && \
     jar -xf ../atlas.war && \
     rm -f ../atlas.war && \
-    if [ "${ATLAS_BACKEND}" = "postgres" ]; then \
-      curl -fsSL -o ${ATLAS_HOME}/libext/postgresql-${POSTGRESQL_JDBC_VERSION}.jar \
-        https://repo1.maven.org/maven2/org/postgresql/postgresql/${POSTGRESQL_JDBC_VERSION}/postgresql-${POSTGRESQL_JDBC_VERSION}.jar; \
-    fi && \
     chown -R atlas:atlas ${ATLAS_HOME}/ /var/run/atlas/ /var/log/atlas/
 
 COPY ./scripts/hbase-site.xml ${ATLAS_HOME}/hbase/conf/
