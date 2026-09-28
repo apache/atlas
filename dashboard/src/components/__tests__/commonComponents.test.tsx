@@ -438,6 +438,35 @@ describe('commonComponents', () => {
 		expect(container.textContent).toContain('text')
 	})
 
+	it('getValues renders malicious string as text without executing HTML (negative)', () => {
+		const xssPayload = '<img src=x onerror="alert(1)">'
+		const result = getValues(
+			{ getValue: () => xssPayload },
+			{},
+			{ name: 'bm1.notes' }
+		)
+		const { container } = render(<>{result}</>)
+
+		expect(container.querySelector('img')).toBeNull()
+		expect(container.textContent).toContain('<img')
+		// React escapes markup — payload visible as text, not parsed as HTML
+		expect(container.innerHTML).toContain('&lt;img')
+		expect(container.innerHTML).not.toMatch(/<img[\s>]/)
+	})
+
+	it('getValues renders plain metadata string unchanged (positive)', () => {
+		const plainText = 'Sales & Marketing notes'
+		const result = getValues(
+			{ getValue: () => plainText },
+			{},
+			{ name: 'bm1.notes' }
+		)
+		const { container } = render(<>{result}</>)
+
+		expect(container.textContent).toContain(plainText)
+		expect(container.querySelector('img')).toBeNull()
+	})
+
 	it('getValues renders direct string value when properties param is set', () => {
 		const result = getValues(
 			'audit-label-value',
