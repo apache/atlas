@@ -489,8 +489,8 @@ define([
                 var nameValue = item && item.attributes && item.attributes.name ? item.attributes.name : "";
                 var searchText = _.escape((displayText + " " + qualifiedName + " " + nameValue).toLowerCase());
                 return "<li class='relationship-card-item' data-search='" + searchText + "'>" +
-                    (href ? "<a class='relationship-card-link" + deletedClass + "' href='" + href + "'>" + _.escape(displayLabel) + "</a>" :
-                        "<span class='relationship-card-link" + deletedClass + "'>" + _.escape(displayLabel) + "</span>") +
+                    (href ? "<a class='relationship-card-link" + deletedClass + "' href='" + href + "' title='" + _.escape(displayLabel) + "'>" + _.escape(displayLabel) + "</a>" :
+                        "<span class='relationship-card-link" + deletedClass + "' title='" + _.escape(displayLabel) + "'>" + _.escape(displayLabel) + "</span>") +
                     "</li>";
             }).join("");
 
@@ -691,10 +691,26 @@ define([
             }
             
             if (this.$el && this.$el.length) {
+                if ($.fn.tooltip) {
+                    this.$el.find('[title]').tooltip('destroy');
+                }
                 this.$el.html(html);
                 this.bindCardEvents();
+                if ($.fn.tooltip) {
+                    this.$el.find('[title]').tooltip({
+                        placement: 'bottom',
+                        container: 'body',
+                        template: '<div class="tooltip relationship-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+                    });
+                }
             } else {
                 console.warn("[RelationshipCardsLayoutView] $el not available, cannot render cards");
+            }
+        },
+
+        onDestroy: function() {
+            if ($.fn.tooltip && this.$el) {
+                this.$el.find('[title]').tooltip('destroy');
             }
         }
     });
