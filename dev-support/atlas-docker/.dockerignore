@@ -4,6 +4,5 @@
 !dist/apache-atlas-*-hive-hook.tar.gz
 !dist/apache-atlas-*-kafka-hook.tar.gz
 !dist/apache-atlas-*-server.tar.gz
-!dist/postgresql-*.jar
 !downloads/*
 !scripts/*
