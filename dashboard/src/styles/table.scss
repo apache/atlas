@@ -253,6 +253,10 @@ td:has(.searchTableName) {
   height: 24px;
 }
 
+.entity-name-deleted {
+  color: #bb5838;
+}
+
 .table-filter-column {
   font-size: 1rem;
   cursor: pointer;

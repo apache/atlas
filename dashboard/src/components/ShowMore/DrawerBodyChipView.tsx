@@ -37,6 +37,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import { Link as MuiLink } from "@mui/material";
 import { cloneDeep } from "@utils/Helper";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const CHIP_MAX_WIDTH = "200px";
 
@@ -328,11 +329,11 @@ const DrawerBodyChipView = ({
                         </EllipsisText>
                       }
                       onDelete={
-                        !isEmpty(removeApiMethod) && !isDeleteIcon
+                        isEntityModificationAllowed(currentEntity?.status) && !isEmpty(removeApiMethod) && !isDeleteIcon
                           ? () => {
                             handleDelete(obj[displayKey] || obj);
                           }
-                          : isDeleteIcon && obj.count > 1
+                          : isEntityModificationAllowed(currentEntity?.status) && isDeleteIcon && obj.count > 1
                             ? () => {
                               const searchParams = new URLSearchParams();
                               searchParams.set("tabActive", "classification");

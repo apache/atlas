@@ -28,8 +28,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Supplier;
 
-public class JwTokenRetrieverDefault implements TokenRetriever<String> {
+public class JwTokenRetrieverDefault implements Supplier<String> {
     private static final Logger LOG = LoggerFactory.getLogger(JwTokenRetrieverDefault.class);
 
     public static final String JWT_SOURCE     = "atlas.jwt.source";
@@ -66,21 +67,33 @@ public class JwTokenRetrieverDefault implements TokenRetriever<String> {
     }
 
     @Override
-    public synchronized Optional<String> retrieve() {
+    public synchronized String get() {
         String source = StringUtils.lowerCase(jwtSource);
+
+        final Optional<String> ret;
+
         switch (source) {
             case SOURCE_ENV:
-                return getJwtFromEnv();
+                ret = getJwtFromEnv();
+                break;
+
             case SOURCE_FILE:
-                return getJwtFromFile();
+                ret = getJwtFromFile();
+                break;
+
             case SOURCE_CRED:
-                return getJwtFromCredProvider();
+                ret = getJwtFromCredProvider();
+                break;
+
             default:
                 if (StringUtils.isNotBlank(source)) {
-                    LOG.warn("JwTokenRetrieverDefault.retrieve(): unsupported source='{}'", source);
+                    LOG.warn("JwTokenRetrieverDefault.get(): unsupported source='{}'", source);
                 }
-                return Optional.empty();
+
+                ret = Optional.empty();
         }
+
+        return ret.orElse(null);
     }
 
     private Optional<String> getJwtFromEnv() {

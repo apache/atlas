@@ -45,8 +45,13 @@ afterAll(() => {
 })
 
 jest.mock('@components/muiComponents', () => ({
-	CustomButton: ({ onClick, children }: any) => (
-		<button data-testid="adv-btn" onClick={onClick}>
+	CustomButton: ({ onClick, children, disabled, 'aria-label': ariaLabel }: any) => (
+		<button
+			data-testid={ariaLabel === 'Run search' ? 'search-btn' : 'adv-btn'}
+			onClick={onClick}
+			disabled={disabled}
+			aria-label={ariaLabel}
+		>
 			{children}
 		</button>
 	)
@@ -506,12 +511,76 @@ describe('QuickSearch', () => {
 		mockExtractKeyValueFromEntity.mockReturnValue({ name: 'EntityName', found: true, key: 'k' })
 	})
 
+	describe('Search Button Validation', () => {
+		it('disables search button when input is empty', () => {
+			render(<QuickSearch />)
+
+			expect(screen.getByTestId('search-btn')).toBeDisabled()
+		})
+
+		it('enables search button when input has at least one character', () => {
+			render(<QuickSearch />)
+
+			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.change(input, { target: { value: 'a' } })
+
+			expect(screen.getByTestId('search-btn')).not.toBeDisabled()
+		})
+
+		it('keeps search button disabled for whitespace-only input', () => {
+			render(<QuickSearch />)
+
+			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.change(input, { target: { value: '   ' } })
+
+			expect(screen.getByTestId('search-btn')).toBeDisabled()
+		})
+
+		it('does not navigate when search button is clicked with empty input', () => {
+			render(<QuickSearch />)
+
+			fireEvent.click(screen.getByTestId('search-btn'))
+
+			expect(mockNavigate).not.toHaveBeenCalled()
+		})
+
+		it('navigates when search button is clicked with valid query', () => {
+			render(<QuickSearch />)
+
+			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.change(input, { target: { value: 'my-query' } })
+			fireEvent.click(screen.getByTestId('search-btn'))
+
+			expect(mockNavigate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					pathname: '/search/searchResult',
+					search: expect.stringContaining('query=my-query')
+				}),
+				{ replace: true }
+			)
+		})
+
+		it('does not navigate on Enter when input is empty', () => {
+			render(<QuickSearch />)
+
+			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.keyDown(input, {
+				keyCode: 13,
+				which: 13,
+				preventDefault: jest.fn()
+			})
+
+			expect(mockNavigate).not.toHaveBeenCalled()
+		})
+	})
+
 	describe('Component Rendering', () => {
 		it('renders autocomplete and advanced search button', () => {
 			render(<QuickSearch />)
 
 			expect(screen.getByTestId('autocomplete')).toBeTruthy()
-			expect(screen.getAllByTestId('adv-btn').length).toBeGreaterThanOrEqual(1)
+			expect(screen.getByTestId('search-btn')).toBeTruthy()
+			expect(screen.getByTestId('adv-btn')).toBeTruthy()
 		})
 
 		it('renders search scope dropdown (Select All / entity / glossary …)', () => {
@@ -813,6 +882,7 @@ describe('QuickSearch', () => {
 			render(<QuickSearch />)
 
 			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.change(input, { target: { value: 'search-query' } })
 			fireEvent.keyDown(input, {
 				keyCode: 13,
 				which: 13,
@@ -834,7 +904,7 @@ describe('QuickSearch', () => {
 				target: { value: '   ' }
 			})
 
-			expect(mockNavigate).toHaveBeenCalled()
+			expect(mockNavigate).not.toHaveBeenCalled()
 		})
 
 		it('handles handleValues with null option', () => {
@@ -983,7 +1053,7 @@ describe('QuickSearch', () => {
 			expect(screen.getByTestId('autocomplete')).toBeTruthy()
 		})
 
-		it('handles string option with wildcard search for empty input', () => {
+		it('does not wildcard search for empty input on Enter', () => {
 			render(<QuickSearch />)
 
 			const input = screen.getByTestId('autocomplete-input')
@@ -994,10 +1064,10 @@ describe('QuickSearch', () => {
 				target: { value: '' }
 			})
 
-			expect(mockNavigate).toHaveBeenCalled()
+			expect(mockNavigate).not.toHaveBeenCalled()
 		})
 
-		it('handles handleValues with string option that has empty value after trim', () => {
+		it('does not wildcard search for whitespace-only input on Enter', () => {
 			render(<QuickSearch />)
 
 			const input = screen.getByTestId('autocomplete-input')
@@ -1008,8 +1078,7 @@ describe('QuickSearch', () => {
 				target: { value: '   ' }
 			})
 
-			// Should navigate with wildcard
-			expect(mockNavigate).toHaveBeenCalled()
+			expect(mockNavigate).not.toHaveBeenCalled()
 		})
 
 		it('handles handleValues with option that has whitespace-only title', () => {
@@ -1105,7 +1174,7 @@ describe('QuickSearch', () => {
 			expect(mockNavigate).toHaveBeenCalled()
 		})
 
-		it('handles Enter key with empty input - uses wildcard', () => {
+		it('handles Enter key with empty input without navigating', () => {
 			render(<QuickSearch />)
 
 			const input = screen.getByTestId('autocomplete-input')
@@ -1116,7 +1185,7 @@ describe('QuickSearch', () => {
 				target: { value: '' }
 			})
 
-			expect(mockNavigate).toHaveBeenCalled()
+			expect(mockNavigate).not.toHaveBeenCalled()
 		})
 
 		it('handles Tab key - closes autocomplete', () => {
@@ -2020,6 +2089,7 @@ describe('QuickSearch', () => {
 			render(<QuickSearch />)
 
 			const input = screen.getByTestId('autocomplete-input')
+			fireEvent.change(input, { target: { value: 'test' } })
 			fireEvent.keyDown(input, {
 				keyCode: 13,
 				which: 13,

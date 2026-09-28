@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -83,7 +82,6 @@ import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_K
 import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getTypeName;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
 
 @Component
 public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
@@ -91,7 +89,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private static final Long    DEFAULT_RELATIONSHIP_VERSION = 0L;
     private static final boolean NOTIFICATIONS_ENABLED        = NOTIFICATION_RELATIONSHIPS_ENABLED.getBoolean();
-    private static final boolean DEFERRED_ACTION_ENABLED      = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     private final AtlasGraph                 graph;
     private final AtlasTypeRegistry          typeRegistry;
@@ -449,11 +446,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     private void updateTagPropagations(AtlasEdge relationshipEdge, AtlasRelationship relationship) throws AtlasBaseException {
-        if (DEFERRED_ACTION_ENABLED) {
-            createAndQueueTask(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE, relationshipEdge, relationship);
-        } else {
-            deleteDelegate.getHandler().updateTagPropagations(relationshipEdge, relationship);
-        }
+        deleteDelegate.getHandler().updateTagPropagations(relationshipEdge, relationship);
     }
 
     private void validateRelationship(AtlasRelationship relationship) throws AtlasBaseException {
@@ -769,10 +762,6 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         if (NOTIFICATIONS_ENABLED) {
             entityChangeNotifier.notifyRelationshipMutation(ret, relationshipUpdate);
         }
-    }
-
-    private void createAndQueueTask(String taskType, AtlasEdge relationshipEdge, AtlasRelationship relationship) {
-        deleteDelegate.getHandler().createAndQueueTask(taskType, relationshipEdge, relationship);
     }
 
     private void verifyRelationshipReadAccess(AtlasEdge edge) throws AtlasBaseException {

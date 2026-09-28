@@ -52,10 +52,10 @@ import java.util.UUID;
 public class AtlasHeaderPreAuthFilter implements Filter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasHeaderPreAuthFilter.class);
 
-    public static final String PROP_HEADER_AUTH_ENABLED = "atlas.authn.header.enabled";
-    public static final String PROP_USERNAME_HEADER     = "atlas.authn.header.username";
-    public static final String PROP_ROLES_HEADER        = "atlas.authn.header.roles";
-    public static final String PROP_REQUEST_ID_HEADER   = "atlas.authn.header.requestid";
+    public static final String PROP_HEADER_AUTH_ENABLED = "atlas.authentication.method.header.enabled";
+    public static final String PROP_USERNAME_HEADER     = "atlas.authentication.method.header.username";
+    public static final String PROP_ROLES_HEADER        = "atlas.authentication.method.header.roles";
+    public static final String PROP_REQUEST_ID_HEADER   = "atlas.authentication.method.header.request-id";
     public static final String REQUEST_ID_ATTRIBUTE     = "atlas.request.id";
 
     private Configuration configuration;
@@ -140,7 +140,7 @@ public class AtlasHeaderPreAuthFilter implements Filter {
                 }
             }
 
-            Authentication auth     = SecurityContextHolder.getContext().getAuthentication();
+            Authentication auth      = SecurityContextHolder.getContext().getAuthentication();
             String         requestId = getRequestId(auth, httpRequest);
             httpRequest.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
 

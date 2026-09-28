@@ -870,7 +870,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         LOG.info("adding a Java patch to update entities of {} with new mandatory attributes", typeName);
 
                         // Java patch handler to add mandatory attributes
-                        patchManager.addPatchHandler(new AddMandatoryAttributesPatch(patchManager.getContext(), patch.getId(), typeName, attributesToAdd));
+                        patchManager.addPatchHandler(new AddMandatoryAttributesPatch(patchManager.getOrCreatePatchContext(), patch.getId(), typeName, attributesToAdd));
 
                         ret = APPLIED;
                     } finally {
@@ -1534,7 +1534,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                     LOG.info("Update entities of {} with new supertypes", typeName);
 
                     // add to java patch handlers to update entity supertypes
-                    patchManager.addPatchHandler(new SuperTypesUpdatePatch(patchManager.getContext(), patch.getId(), typeName));
+                    patchManager.addPatchHandler(new SuperTypesUpdatePatch(patchManager.getOrCreatePatchContext(), patch.getId(), typeName));
 
                     ret = APPLIED;
                 } else {

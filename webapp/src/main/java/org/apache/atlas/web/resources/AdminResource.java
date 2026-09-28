@@ -1175,14 +1175,31 @@ public class AdminResource {
     @GET
     @Path("activeSearches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Set<String> getActiveSearches() {
+    public Set<String> getActiveSearches() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "active searches");
+
         return activeSearches.getActiveSearches();
     }
 
     @DELETE
     @Path("activeSearches/{id}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public boolean terminateActiveSearch(@PathParam("id") String searchId) {
+    public boolean terminateActiveSearch(@PathParam("id") String searchId) throws AtlasBaseException {
+        String  currentUser = AtlasAuthorizationUtils.getCurrentUserName();
+        boolean isAdmin     = AtlasAuthorizationUtils.isAccessAllowed(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT));
+
+        if (!isAdmin) {
+            String searchOwner = activeSearches.getSearchOwner(searchId);
+
+            if (searchOwner == null) {
+                return false;
+            }
+
+            if (!StringUtils.equals(currentUser, searchOwner)) {
+                AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "terminate active search");
+            }
+        }
+
         SearchContext terminate = activeSearches.terminate(searchId);
 
         return null != terminate;

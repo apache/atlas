@@ -172,6 +172,13 @@ const getBaseUrl = (url: string, noPop?: boolean | undefined) => {
   return path;
 };
 
+const getDisplayNameFromQualifiedName = (qualifiedName: string): string => {
+  const base = qualifiedName.split("@")[0] || qualifiedName;
+  const afterColon = base.includes(":") ? base.split(":").pop()! : base;
+  const segments = afterColon.split(".");
+  return segments.length > 1 ? segments[segments.length - 1] : afterColon;
+};
+
 const extractKeyValueFromEntity = (
   data: any,
   priorityAttribute?: any,
@@ -226,6 +233,14 @@ const extractKeyValueFromEntity = (
     "guid",
     "id"
   ];
+
+  const snapshotQualifiedName =
+    collectionJSON?.uniqueAttributes?.qualifiedName;
+  if (snapshotQualifiedName) {
+    returnObj.name = getDisplayNameFromQualifiedName(snapshotQualifiedName);
+    returnObj.key = "qualifiedName";
+    return returnObj;
+  }
 
   for (const property of propertyOrder) {
     if (collectionJSON?.[property]) {

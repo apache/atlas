@@ -18,9 +18,12 @@
 import {
 	areEnumOptionsEqual,
 	buildEnumOptionsForTypeName,
+	getEnumOptionLabel,
 	getInnerTypeName,
 	isArrayTypeName,
 	isEnumTypeName,
+	isPotentialEnumTypeName,
+	isPrimitiveTypeName,
 	normalizeMultiEnumValue,
 	serializeMultiEnumValue
 } from "@utils/enumTypeUtils";
@@ -154,5 +157,69 @@ describe("enumTypeUtils", () => {
 		expect(
 			buildEnumOptionsForTypeName("unknown_enum_type", mockEnumDefs)
 		).toEqual([]);
+	});
+
+	it("identifies primitive and potential enum type names", () => {
+		expect(isPrimitiveTypeName("string")).toBe(true);
+		expect(isPrimitiveTypeName("array<int>")).toBe(true);
+		expect(isPrimitiveTypeName("byte")).toBe(true);
+		expect(isPrimitiveTypeName("array<byte>")).toBe(true);
+		expect(isPrimitiveTypeName("adls_gen2_replication")).toBe(false);
+		expect(isPotentialEnumTypeName("array<adls_gen2_replication>")).toBe(true);
+		expect(isPotentialEnumTypeName("array<string>")).toBe(false);
+	});
+
+	it("returns false for empty primitive type name (negative)", () => {
+		expect(isPrimitiveTypeName("")).toBe(false);
+		expect(isPotentialEnumTypeName("")).toBe(false);
+	});
+
+	it("builds boolean array options (positive)", () => {
+		expect(buildEnumOptionsForTypeName("array<boolean>", mockEnumDefs)).toEqual([
+			{ label: "true", value: "true" },
+			{ label: "false", value: "false" }
+		]);
+	});
+
+	it("returns empty options when enum defs are missing (negative)", () => {
+		expect(buildEnumOptionsForTypeName("adls_gen2_replication", undefined)).toEqual(
+			[]
+		);
+	});
+
+	it("normalizes unknown enum object values using fallback labels (positive)", () => {
+		const options = buildEnumOptionsForTypeName(
+			"array<adls_gen2_replication>",
+			mockEnumDefs
+		);
+
+		expect(
+			normalizeMultiEnumValue([{ label: "CUSTOM", value: "CUSTOM" }], options)
+		).toEqual([{ label: "CUSTOM", value: "CUSTOM" }]);
+	});
+
+	it("normalizes plain string enum values not present in options (negative)", () => {
+		const options = buildEnumOptionsForTypeName(
+			"array<adls_gen2_replication>",
+			mockEnumDefs
+		);
+
+		expect(normalizeMultiEnumValue(["UNKNOWN"], options)).toEqual([
+			{ label: "UNKNOWN", value: "UNKNOWN" }
+		]);
+	});
+
+	it("returns enum option label for string values (positive)", () => {
+		expect(getEnumOptionLabel("LRS")).toBe("LRS");
+		expect(getEnumOptionLabel({ label: "LRS", value: "LRS" })).toBe("LRS");
+	});
+
+	it("handles malformed array type names in getInnerTypeName (negative)", () => {
+		expect(getInnerTypeName("array<>")).toBe("array<>");
+		expect(getInnerTypeName("")).toBe("");
+	});
+
+	it("returns false for isArrayTypeName with empty input (negative)", () => {
+		expect(isArrayTypeName("")).toBe(false);
 	});
 });

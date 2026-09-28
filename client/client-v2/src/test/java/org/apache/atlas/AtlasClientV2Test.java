@@ -55,12 +55,14 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.token.retriever.JwTokenRetrieverDefault;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.http.HttpStatus;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -81,7 +83,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
+import static org.apache.atlas.AtlasBaseClient.PROP_REST_AUTH_TOKEN_SUPPLIER;
+import static org.apache.atlas.token.retriever.JwTokenRetrieverDefault.JWT_SOURCE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -2722,5 +2727,108 @@ public class AtlasClientV2Test {
         // Should not throw exception
         client.addClassifications("TestType", attributes, classifications);
         assertTrue(true);
+    }
+
+    @Test
+    public void testDefaultTokenSupplier() throws Exception {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(JWT_SOURCE, "")).thenReturn("env");
+
+        AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+        assertTokenSupplierClass(client, JwTokenRetrieverDefault.class);
+    }
+
+    @Test
+    public void testCustomTokenSupplier() throws Exception {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestTokenSupplier.class.getName());
+
+        AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+        assertTokenSupplierClass(client, TestTokenSupplier.class);
+    }
+
+    @Test
+    public void testCustomTokenSupplierWithConfig() throws Exception {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestTokenSupplierWithConfig.class.getName());
+
+        AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+        assertTokenSupplierClass(client, TestTokenSupplierWithConfig.class);
+    }
+
+    @Test
+    public void testNonExistingTokenSupplier() {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn("NonExistingTokenSupplier");
+
+        try {
+            AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+            fail("AtlasClientV2 instantiation should have failed. Token supplier class: NonExistingTokenSupplier");
+        } catch (IllegalArgumentException ignore) {
+            // ignored
+        }
+    }
+
+    @Test
+    public void testInvalidTokenSupplier() {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestInvalidTokenSupplier.class.getName());
+
+        try {
+            AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+            fail("AtlasClientV2 instantiation should have failed. Token supplier class: " + TestInvalidTokenSupplier.class.getName());
+        } catch (IllegalArgumentException ignore) {
+            // ignored
+        }
+    }
+
+    private void assertTokenSupplierClass(AtlasClientV2 client, Class clz) throws Exception {
+        Field fieldTokenSupplier = AtlasBaseClient.class.getDeclaredField("tokenSupplier");
+
+        fieldTokenSupplier.setAccessible(true);
+
+        Object tokenSupplier = fieldTokenSupplier.get(client);
+
+        assertNotNull(tokenSupplier);
+        assertEquals(tokenSupplier.getClass(), clz);
+    }
+
+    private static class TestTokenSupplier implements Supplier<String> {
+        public TestTokenSupplier() {
+        }
+
+        @Override
+        public String get() {
+            return "testToken";
+        }
+    }
+
+    private static class TestTokenSupplierWithConfig implements Supplier<String> {
+        public TestTokenSupplierWithConfig(Configuration ignored) {
+        }
+
+        @Override
+        public String get() {
+            return "testTokenWithConfig";
+        }
+    }
+
+    private static class TestInvalidTokenSupplier {
+        public TestInvalidTokenSupplier() {
+        }
+
+        public String get() {
+            return "testToken";
+        }
     }
 }

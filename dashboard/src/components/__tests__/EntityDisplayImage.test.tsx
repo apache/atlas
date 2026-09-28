@@ -29,6 +29,7 @@
 import React from 'react'
 import { render, waitFor, act } from '@testing-library/react'
 import DisplayImage from '../EntityDisplayImage'
+import axios from 'axios'
 
 // Import Utils to spy on it
 import * as Utils from '../../utils/Utils'
@@ -41,18 +42,15 @@ jest.mock('../../utils/Utils', () => ({
 }))
 
 const mockFetch = (contentType: string | null, shouldReject?: boolean) => {
-	if (shouldReject) {
-		(global as any).fetch = jest.fn().mockRejectedValue(new Error('fetch failed'))
-		return
-	}
-	(global as any).fetch = jest.fn().mockResolvedValue({
-		ok: true,
-		headers: {
-			get: jest.fn((header: string) => {
-				return header === 'Content-Type' ? (contentType || '') : null
-			})
-		}
-	})
+        if (shouldReject) {
+                jest.spyOn(axios, 'get').mockRejectedValue(new Error('fetch failed'))
+                return
+        }
+        jest.spyOn(axios, 'get').mockResolvedValue({
+                headers: {
+                        "content-type": contentType || ''
+                }
+        })
 }
 
 describe('EntityDisplayImage', () => {

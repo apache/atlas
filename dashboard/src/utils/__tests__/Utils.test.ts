@@ -555,6 +555,32 @@ describe('Utils', () => {
 			// found defaults to true when an attribute is found
 			expect(result.found).toBe(true);
 		});
+
+		it('should resolve display name from uniqueAttributes.qualifiedName', () => {
+			const data = {
+				guid: 'cf2-guid',
+				typeName: 'hbase_column_family',
+				uniqueAttributes: {
+					qualifiedName: 'default:test_tbl.cf2@primary'
+				}
+			};
+			const result = extractKeyValueFromEntity(data);
+			expect(result.name).toBe('cf2');
+			expect(result.key).toBe('qualifiedName');
+		});
+
+		it('should resolve display name from qualifiedName without dot segment', () => {
+			const data = {
+				guid: 'tbl-guid',
+				typeName: 'hbase_table',
+				uniqueAttributes: {
+					qualifiedName: 'default:test_tbl@primary'
+				}
+			};
+			const result = extractKeyValueFromEntity(data);
+			expect(result.name).toBe('test_tbl');
+			expect(result.key).toBe('qualifiedName');
+		});
 	});
 
 	describe('getNestedSuperTypes', () => {

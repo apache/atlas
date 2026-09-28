@@ -51,15 +51,23 @@ import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { enrichEntityPayloadForRelationshipSave } from "@utils/entityPayloadEnrichmentUtils";
 
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
+
 const defaultField = {
   key: "",
   value: ""
 };
 
-const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
+type UserDefinedPropertiesProps = {
+  loading: boolean | undefined;
+  customAttributes: Record<string, any>;
+  entity: any;
+};
+
+const UserDefinedProperties = ({ loading, customAttributes, entity }: UserDefinedPropertiesProps) => {
   const dispatchApi = useAppDispatch();
-  const { guid }: any = useParams();
-  const toastId: any = useRef(null);
+  const { guid } = useParams();
+  const toastId = useRef<number | string | null>(null);
   const [addLabel, setAddLabel] = useState<boolean>(true);
   const [expanded, setExpanded] = useState<string | false>(false);
   let attributes = cloneDeep(customAttributes);
@@ -101,7 +109,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
       }
     };
 
-  const structureAttributes = (list: any) => {
+  const structureAttributes = (list: { key: string; value: string }[]) => {
     const obj: Record<string, string> = {};
     if (!Array.isArray(list)) {
       return obj;
@@ -119,7 +127,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
     return obj;
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: Record<string, any>) => {
     let formData = { ...values };
     let entityObj = cloneDeep(entity);
     let properties = structureAttributes(formData.customAttributes);
@@ -152,10 +160,10 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
     handleSubmit(onSubmit)();
   };
 
-  const validateKeyUnique = (value: any, index: number): any => {
+  const validateKeyUnique = (value: string, index: number): string | boolean => {
     const items = getValues("customAttributes");
     const duplicate = items.some(
-      (item: { key: any }, i: any) => item.key === value && i !== index
+      (item: { key: string }, i: number) => item.key === value && i !== index
     );
     return duplicate ? "Key must be unique" : true;
   };
@@ -194,22 +202,24 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
 
                     <Stack direction="row" alignItems="center" gap="0.5rem">
                       {addLabel ? (
-                        <CustomButton
-                          key="edit-Add-button"
-                          variant="outlined"
-                          color="success"
-                          size="small"
-                          onClick={(e: { stopPropagation: () => void }) => {
-                            e.stopPropagation();
-                            setExpanded("userDefinedPanel");
-                            setAddLabel(false);
-                            if (!isEmpty(defaultFieldValues)) {
-                              reset({ customAttributes: defaultFieldValues });
-                            }
-                          }}
-                        >
-                          {!isEmpty(customAttributes) ? "Edit" : "Add"}
-                        </CustomButton>
+                        !loading && isEntityModificationAllowed(entity?.status) && (
+                          <CustomButton
+                            key="edit-Add-button"
+                            variant="outlined"
+                            color="success"
+                            size="small"
+                            onClick={(e: { stopPropagation: () => void }) => {
+                              e.stopPropagation();
+                              setExpanded("userDefinedPanel");
+                              setAddLabel(false);
+                              if (!isEmpty(defaultFieldValues)) {
+                                reset({ customAttributes: defaultFieldValues });
+                              }
+                            }}
+                          >
+                            {!isEmpty(customAttributes) ? "Edit" : "Add"}
+                          </CustomButton>
+                        )
                       ) : (
                         <>
                           <CustomButton
@@ -267,7 +277,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                     {!isEmpty(customAttributes) ? (
                       Object.entries(customAttributes)
                         .sort()
-                        .map(([keys, value]: [string, any]) => {
+                        .map(([keys, value]: [string, string]) => {
                           return (
                             <>
                               <Stack
@@ -303,19 +313,24 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                         })
                     ) : (
                       <span>
-                        No properties have been created yet. To add a
-                        property,click{" "}
-                        <Typography
-                          className="text-color-green cursor-pointer"
-                          component="span"
-                          onClick={(e: { stopPropagation: () => void }) => {
-                            e.stopPropagation();
-                            setAddLabel(false);
-                          }}
-                          style={{ textDecoration: "underline" }}
-                        >
-                          here
-                        </Typography>
+                        {!isEntityModificationAllowed(entity?.status) ? (
+                          "No properties have been created yet."
+                        ) : (
+                          <>
+                            No properties have been created yet. To add a
+                            property,click{" "}
+                            <Typography
+                              className="text-color-green cursor-pointer text-underline"
+                              component="span"
+                              onClick={(e: { stopPropagation: () => void }) => {
+                                e.stopPropagation();
+                                setAddLabel(false);
+                              }}
+                            >
+                              here
+                            </Typography>
+                          </>
+                        )}
                       </span>
                     )}
                   </Stack>
@@ -323,7 +338,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
               </>
             ) : (
               <>
-                {fields.map((item: any, index) => {
+                {fields.map((item: Record<string, any>, index) => {
                   return (
                     <Stack
                       gap="0.5rem"
@@ -402,7 +417,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                           size="small"
                           aria-label="add"
                           className="cursor-pointer"
-                          onClick={(e: any) => {
+                          onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             append(defaultField);
                           }}

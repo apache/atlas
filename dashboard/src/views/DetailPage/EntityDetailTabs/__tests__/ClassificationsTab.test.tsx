@@ -1001,6 +1001,40 @@ describe('ClassificationsTab', () => {
 	});
 
 	describe('Edge Cases', () => {
+		it('should not render action buttons when parent entity is DELETED', () => {
+			const deletedEntity = {
+				...mockEntity,
+				status: 'DELETED'
+			};
+
+			render(
+				<TestWrapper>
+					<ClassificationsTab entity={deletedEntity} loading={false} tags={mockTags} />
+				</TestWrapper>
+			);
+
+			// Delete and Edit buttons should not be rendered
+			const actionButtons = screen.queryAllByTestId(/custom-button-addTag/);
+			expect(actionButtons).toHaveLength(0);
+		});
+
+		it('should not render action buttons when parent entity is PURGED', () => {
+			const purgedEntity = {
+				...mockEntity,
+				status: 'PURGED'
+			};
+
+			render(
+				<TestWrapper>
+					<ClassificationsTab entity={purgedEntity} loading={false} tags={mockTags} />
+				</TestWrapper>
+			);
+
+			// Delete and Edit buttons should not be rendered
+			const actionButtons = screen.queryAllByTestId(/custom-button-addTag/);
+			expect(actionButtons).toHaveLength(0);
+		});
+
 		it('should handle empty tags prop', () => {
 			render(
 				<TestWrapper>

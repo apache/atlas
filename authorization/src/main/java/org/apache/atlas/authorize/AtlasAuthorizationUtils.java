@@ -22,6 +22,8 @@ package org.apache.atlas.authorize;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -91,6 +93,26 @@ public class AtlasAuthorizationUtils {
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
 
                 authorizer.scrubSearchResults(request);
+            } catch (AtlasAuthorizationException e) {
+                LOG.error("Unable to obtain AtlasAuthorizer", e);
+            }
+        }
+    }
+
+    /**
+     * Scrub a single entity-header in-place when the current user is not authorized (ENTITY_READ) to read it.
+     * Mirrors the per-entity handling in {@link AtlasAuthorizer#scrubSearchResults}, but for results (e.g. lineage)
+     * that are not modeled as an {@link AtlasSearchResult}. The entity's guid and relationships are preserved by the
+     * caller (kept in the surrounding map/relations), only the header's sensitive fields are cleared.
+     */
+    public static void scrubEntityHeader(AtlasEntityHeader entityHeader, AtlasTypeRegistry typeRegistry) {
+        if (entityHeader == null) {
+            return;
+        }
+
+        if (!isAccessAllowed(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, entityHeader))) {
+            try {
+                AtlasAuthorizerFactory.getAtlasAuthorizer().scrubEntityHeader(entityHeader);
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }

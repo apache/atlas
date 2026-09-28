@@ -49,7 +49,16 @@
                 <exclude>dev-support/atlas-docker/data/**</exclude>
                 <exclude>dev-support/atlas-docker/dist/**</exclude>
                 <exclude>dev-support/atlas-docker/downloads/**</exclude>
+                <!-- packaged again below with execute bit for docker bind mounts -->
+                <exclude>dev-support/atlas-docker/**/*.sh</exclude>
             </excludes>
+        </fileSet>
+        <fileSet>
+            <directory>..</directory>
+            <includes>
+                <include>dev-support/atlas-docker/**/*.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
 </assembly>

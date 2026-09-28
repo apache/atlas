@@ -44,11 +44,20 @@ import { getLabels } from "@api/apiMethods/detailpageApiMethod";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 
-const filter = createFilterOptions<any>();
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
-const Labels = ({ loading, labels }: any) => {
-  const { guid }: any = useParams();
-  const toastId: any = useRef(null);
+type LabelOption = string | { inputValue?: string; value?: string };
+const filter = createFilterOptions<LabelOption>();
+
+type LabelsProps = {
+  loading: boolean | undefined;
+  labels: string[];
+  entity: any;
+};
+
+const Labels = ({ loading, labels, entity }: LabelsProps) => {
+  const { guid } = useParams();
+  const toastId = useRef<number | string | null>(null);
   const dispatchApi = useAppDispatch();
   const [addLabel, setAddLabel] = useState<boolean>(true);
   const [expanded, setExpanded] = useState<string | false>(false);
@@ -100,7 +109,7 @@ const Labels = ({ loading, labels }: any) => {
     setLoader(false);
     setOpen(false);
   };
-  const onInputChange = (_event: any, value: string) => {
+  const onInputChange = (_event: React.SyntheticEvent, value: string) => {
     if (value) {
       setOpen(true);
       setLoader(true);
@@ -135,15 +144,15 @@ const Labels = ({ loading, labels }: any) => {
     return out;
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: Record<string, any>) => {
     const formData = { ...values };
     const payload = normalizeLabelsPayload(formData.labels);
     if (payload.length === 0 && (!labels || labels.length === 0)) {
       return;
     }
     try {
-      await getLabels(guid, payload);
-      toast.dismiss(toastId.current);
+      await getLabels(guid as string, payload);
+      if (toastId.current) { toast.dismiss(toastId.current); }
       toastId.current = toast.success(
         "One or more labels were updated successfully"
       );
@@ -154,7 +163,7 @@ const Labels = ({ loading, labels }: any) => {
 
       setAddLabel(true);
     } catch (error) {
-      toast.dismiss(toastId.current);
+      if (toastId.current) { toast.dismiss(toastId.current); }
       serverError(error, toastId);
     }
   };
@@ -189,19 +198,21 @@ const Labels = ({ loading, labels }: any) => {
 
                   <Stack direction="row" alignItems="center" gap="0.5rem">
                     {addLabel ? (
-                      <CustomButton
-                        key="edit-Add-button"
-                        variant="outlined"
-                        color="success"
-                        size="small"
-                        onClick={(e: { stopPropagation: () => void }) => {
-                          e.stopPropagation();
-                          setExpanded("labelsPanel");
-                          setAddLabel(false);
-                        }}
-                      >
-                        {!isEmpty(labels) ? "Edit" : "Add"}
-                      </CustomButton>
+                      !loading && isEntityModificationAllowed(entity?.status) && (
+                        <CustomButton
+                          key="edit-Add-button"
+                          variant="outlined"
+                          color="success"
+                          size="small"
+                          onClick={(e: { stopPropagation: () => void }) => {
+                            e.stopPropagation();
+                            setExpanded("labelsPanel");
+                            setAddLabel(false);
+                          }}
+                        >
+                          {!isEmpty(labels) ? "Edit" : "Add"}
+                        </CustomButton>
+                      )
                     ) : (
                       <>
                         <CustomButton
@@ -275,18 +286,23 @@ const Labels = ({ loading, labels }: any) => {
                     })
                   ) : (
                     <span>
-                      No labels have been created yet. To add a labels, click{" "}
-                      <Typography
-                        className="text-color-green cursor-pointer"
-                        component="span"
-                        onClick={(e: { stopPropagation: () => void }) => {
-                          e.stopPropagation();
-                          setAddLabel(false);
-                        }}
-                        style={{ textDecoration: "underline" }}
-                      >
-                        here
-                      </Typography>
+                      {!isEntityModificationAllowed(entity?.status) ? (
+                        "No labels have been created yet."
+                      ) : (
+                        <>
+                          No labels have been created yet. To add a labels, click{" "}
+                          <Typography
+                            component="span"
+                            onClick={(e: { stopPropagation: () => void }) => {
+                              e.stopPropagation();
+                              setAddLabel(false);
+                            }}
+                            className="text-color-green cursor-pointer text-underline"
+                          >
+                            here
+                          </Typography>
+                        </>
+                      )}
                     </span>
                   )}
                 </>

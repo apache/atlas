@@ -23,16 +23,22 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 let mockReduxState = { typeHeader: { typeHeaderData: [] } }
+let mockSearch = ''
 
 jest.mock('react-redux', () => ({
 	useSelector: (fn: any) => fn(mockReduxState)
 }))
 
 jest.mock('react-router-dom', () => ({
-	Link: ({ children, to }: any) => (
-		<a href={to?.pathname || ''}>{children}</a>
-	),
-	useLocation: () => ({ search: '' }),
+	Link: ({ children, to, className }: any) => {
+		const search = to?.search ? `?${to.search}` : ''
+		return (
+			<a href={`${to?.pathname || ''}${search}`} className={className}>
+				{children}
+			</a>
+		)
+	},
+	useLocation: () => ({ search: mockSearch }),
 	useNavigate: () => jest.fn()
 }))
 
@@ -41,7 +47,9 @@ jest.mock('../../api/apiMethods/detailpageApiMethod', () => ({
 }))
 
 jest.mock('../muiComponents', () => ({
-	IconButton: ({ children }: any) => <button>{children}</button>
+	IconButton: ({ children, 'aria-label': ariaLabel }: any) => (
+		<button aria-label={ariaLabel}>{children}</button>
+	)
 }))
 
 jest.mock('../../utils/CommonViewFunction', () => ({
@@ -50,7 +58,12 @@ jest.mock('../../utils/CommonViewFunction', () => ({
 }))
 
 jest.mock('../../utils/Enum', () => ({
-	entityStateReadOnly: { ACTIVE: true },
+	entityStateReadOnly: {
+		ACTIVE: false,
+		DELETED: true,
+		STATUS_ACTIVE: false,
+		STATUS_DELETED: true
+	},
 	filterQueryValue: {},
 	queryBuilderDateRangeUIValueToAPI: {},
 	systemAttributes: {}
@@ -144,22 +157,76 @@ describe('commonComponents', () => {
 		expect(screen.getByText('json')).toBeTruthy()
 	})
 
-	it('renders ExtractObject link and delete icon for read-only', () => {
-		render(
+	it('renders ExtractObject delete icon only for DELETED status', () => {
+		const { container } = render(
 			<ExtractObject
 				keyValue={[{
-					guid: 'g1',
-					name: 'EntityName',
-					status: 'ACTIVE',
-					typeName: 'DataSet'
+					guid: 'cf2-guid',
+					name: 'cf2',
+					status: 'DELETED',
+					typeName: 'hbase_column_family'
 				}]}
+				skipHeaderFetch={true}
 			/>
 		)
 
-		expect(screen.getByText('EntityName')).toBeTruthy()
+		expect(screen.getByText('cf2')).toBeTruthy()
+		expect(container.querySelector('.delete-icon')).toBeTruthy()
+		expect(container.querySelector('.entity-name-deleted')).toBeTruthy()
+		expect(screen.getByLabelText('Deleted entity')).toBeTruthy()
+	})
+
+	it('renders active entity link without delete icon', () => {
+		const { container } = render(
+			<ExtractObject
+				keyValue={[{
+					guid: 'cf1-guid',
+					name: 'cf1',
+					status: 'ACTIVE',
+					typeName: 'hbase_column_family'
+				}]}
+				skipHeaderFetch={true}
+			/>
+		)
+
+		expect(screen.getByText('cf1')).toBeTruthy()
+		expect(container.querySelector('.delete-icon')).toBeNull()
+	})
+
+	it('renders audit column families with deleted styling from referredEntities', () => {
+		const { container } = render(
+			<GetArrayValue
+				auditDetails={true}
+				values={[
+					{ guid: 'cf1-guid', typeName: 'hbase_column_family' },
+					{ guid: 'cf2-guid', typeName: 'hbase_column_family' }
+				]}
+				properties="props"
+				referredEntities={{
+					'cf1-guid': {
+						guid: 'cf1-guid',
+						name: 'cf1',
+						status: 'ACTIVE',
+						entityStatus: 'ACTIVE'
+					},
+					'cf2-guid': {
+						guid: 'cf2-guid',
+						name: 'cf2',
+						status: 'DELETED',
+						entityStatus: 'DELETED'
+					}
+				}}
+			/>
+		)
+
+		expect(screen.getByText('cf1')).toBeTruthy()
+		expect(screen.getByText('cf2')).toBeTruthy()
+		const deleteIcons = container.querySelectorAll('.delete-icon')
+		expect(deleteIcons.length).toBe(1)
 	})
 
 	it('renders glossary term link without delete icon', () => {
+		mockSearch = '?searchType=keyword&filter=old&guid=old-guid'
 		const { container } = render(
 			<ExtractObject
 				keyValue={[{
@@ -171,8 +238,34 @@ describe('commonComponents', () => {
 			/>
 		)
 
-		expect(screen.getByText('Term1')).toBeTruthy()
+		const link = screen.getByText('Term1').closest('a')
+		expect(link?.getAttribute('href')).toContain('/glossary/t1')
+		expect(link?.getAttribute('href')).toContain('guid=t1')
+		expect(link?.getAttribute('href')).toContain('gtype=term')
+		expect(link?.getAttribute('href')).toContain('viewType=term')
+		expect(link?.getAttribute('href')).not.toContain('filter=old')
+		expect(link?.getAttribute('href')).toContain('searchType=keyword')
 		expect(container.querySelector('.delete-icon')).toBeNull()
+		mockSearch = ''
+	})
+
+	it('renders deleted glossary term link without delete icon', () => {
+		mockSearch = '?searchType=keyword&filter=old'
+		const { container } = render(
+			<ExtractObject
+				keyValue={[{
+					guid: 't2',
+					name: 'DeletedTerm',
+					status: 'DELETED',
+					typeName: 'AtlasGlossaryTerm'
+				}]}
+			/>
+		)
+
+		const link = screen.getByText('DeletedTerm').closest('a')
+		expect(link?.getAttribute('href')).toContain('/glossary/t2')
+		expect(container.querySelector('.delete-icon')).toBeNull()
+		mockSearch = ''
 	})
 
 	it('renders JSON pretty for struct object', () => {
@@ -259,6 +352,59 @@ describe('commonComponents', () => {
 		expect(container.textContent).toContain('json')
 	})
 
+	it('getValues renders object ref when entity has no typeName', () => {
+		const result = getValues(
+			{ guid: 'ref-guid', name: 'RefEntity', status: 'ACTIVE' },
+			{},
+			{ name: 'relAttr' },
+			undefined,
+			'properties',
+			undefined,
+			undefined,
+			'relAttr'
+		)
+
+		const { container } = render(<>{result}</>)
+		expect(screen.getByText('RefEntity')).toBeTruthy()
+		expect(container.querySelector('.delete-icon')).toBeNull()
+	})
+
+	it('getValues renders audit object ref when entity has no typeName', () => {
+		const result = getValues(
+			{ guid: 'ref-guid', name: 'DeletedRef', status: 'DELETED' },
+			{},
+			{ name: 'relAttr' },
+			undefined,
+			'properties',
+			undefined,
+			undefined,
+			'relAttr',
+			true
+		)
+
+		const { container } = render(<>{result}</>)
+		expect(screen.getByText('DeletedRef')).toBeTruthy()
+		expect(container.querySelector('.delete-icon')).toBeTruthy()
+	})
+
+	it('getValues renders array refs when entity has no typeName', () => {
+		const result = getValues(
+			[
+				{ guid: 'g1', name: 'First', status: 'ACTIVE' },
+				{ guid: 'g2', name: 'Second', status: 'ACTIVE' }
+			],
+			{},
+			{ name: 'relAttr' },
+			undefined,
+			'properties'
+		)
+
+		const { container } = render(<>{result}</>)
+		expect(screen.getByText('First')).toBeTruthy()
+		expect(screen.getByText('Second')).toBeTruthy()
+		expect(container.querySelector('pre')).toBeTruthy()
+	})
+
 	it('getValues renders array with GetArrayValue', () => {
 		const result = getValues(
 			{ getValue: () => ['a', 'b'] },
@@ -290,6 +436,18 @@ describe('commonComponents', () => {
 		)
 		const { container } = render(<>{result}</>)
 		expect(container.textContent).toContain('text')
+	})
+
+	it('getValues renders direct string value when properties param is set', () => {
+		const result = getValues(
+			'audit-label-value',
+			{},
+			{ name: 'labelName' },
+			undefined,
+			'properties'
+		)
+		const { container } = render(<>{result}</>)
+		expect(container.textContent).toContain('audit-label-value')
 	})
 
 	it('getValues renders number date', () => {

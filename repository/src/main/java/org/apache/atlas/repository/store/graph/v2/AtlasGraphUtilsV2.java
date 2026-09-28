@@ -911,20 +911,26 @@ public class AtlasGraphUtilsV2 {
     public static void addItemToListProperty(AtlasEdge edge, String property, String value) {
         List<String> list = (List<String>) getListFromProperty(edge, property);
 
-        list.add(value);
+        if (!list.contains(value)) {
+            List<String> newList = new ArrayList<>(list);
+            newList.add(value);
 
-        edge.setListProperty(property, list);
+            edge.setListProperty(property, newList);
+        }
     }
 
     public static void removeItemFromListProperty(AtlasEdge edge, String property, String value) {
         List<String> list = (List<String>) getListFromProperty(edge, property);
 
-        list.remove(value);
+        if (list.contains(value)) {
+            List<String> newList = new ArrayList<>(list);
+            newList.remove(value);
 
-        if (CollectionUtils.isEmpty(list)) {
-            edge.removeProperty(property);
-        } else {
-            edge.setListProperty(property, list);
+            if (CollectionUtils.isEmpty(newList)) {
+                edge.removeProperty(property);
+            } else {
+                edge.setListProperty(property, newList);
+            }
         }
     }
 

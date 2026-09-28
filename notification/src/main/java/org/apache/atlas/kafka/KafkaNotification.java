@@ -449,7 +449,13 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 ret = (KafkaProducer) producersByCriteria.get(producerCriteria);
 
                 if (ret == null) {
-                    ret = new KafkaProducer(properties);
+                    try {
+                        ret = new KafkaProducer(properties);
+                    } catch (Exception e) {
+                        LOG.error("Failed to create KafkaProducer for criteria={}", producerCriteria, e);
+
+                        throw e;
+                    }
 
                     producersByCriteria.put(producerCriteria, ret);
                 }
