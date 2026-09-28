@@ -48,9 +48,8 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import org.testng.Assert;
-
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -233,7 +232,7 @@ public class RestNotificationTest {
 
             String basicAuthUser = getBasicAuthUser(restNotification.atlasClientV2);
 
-            Assert.assertNull(basicAuthUser, "Auth-skip mode should not set basicAuthUser");
+            assertNull(basicAuthUser, "Auth-skip mode should not set basicAuthUser");
         } finally {
             globalConf.clearProperty("atlas.hook.rest.notification.auth.skip");
         }
