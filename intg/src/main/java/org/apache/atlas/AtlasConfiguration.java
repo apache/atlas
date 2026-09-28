@@ -77,6 +77,7 @@ public enum AtlasConfiguration {
 
     LABEL_MAX_LENGTH("atlas.entity.label.max.length", 50),
     IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", ""),
+    IMPORT_ALLOWED_DIRECTORY("atlas.import.allowed.directory", ""),
     MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
     LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", false),

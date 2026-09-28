@@ -66,6 +66,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP;
+import static org.apache.atlas.AtlasErrorCode.IMPORT_FILE_NOT_ACCESSIBLE;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.FAILED;
 import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMERS_KEY;
 import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMS_KEY;
@@ -131,17 +133,23 @@ public class ImportService implements AsyncImporter {
         try {
             LOG.info("==> import(user={}, from={}, fileName={})", userName, requestingIP, fileName);
 
-            File file = new File(fileName);
+            File file = ImportFilePathValidator.validate(fileName);
 
             result = run(new FileInputStream(file), request, userName, hostName, requestingIP);
         } catch (AtlasBaseException excp) {
+            if (isImportFileAccessFailure(excp)) {
+                LOG.warn("import(user={}, from={}, fileName={}): invalid import file", userName, requestingIP, fileName, excp);
+
+                throw new AtlasBaseException(IMPORT_FILE_NOT_ACCESSIBLE);
+            }
+
             LOG.error("import(user={}, from={}, fileName={}): failed", userName, requestingIP, excp);
 
             throw excp;
         } catch (FileNotFoundException excp) {
-            LOG.error("import(user={}, from={}, fileName={}): file not found", userName, requestingIP, excp);
+            LOG.warn("import(user={}, from={}, fileName={}): invalid import file", userName, requestingIP, fileName, excp);
 
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, fileName + ": file not found");
+            throw new AtlasBaseException(IMPORT_FILE_NOT_ACCESSIBLE);
         } catch (Exception excp) {
             LOG.error("import(user={}, from={}, fileName={}): failed", userName, requestingIP, excp);
 
@@ -152,6 +160,10 @@ public class ImportService implements AsyncImporter {
         }
 
         return result;
+    }
+
+    private static boolean isImportFileAccessFailure(AtlasBaseException excp) {
+        return excp.getAtlasErrorCode() == IMPORT_FILE_NOT_ACCESSIBLE || excp.getAtlasErrorCode() == IMPORT_ATTEMPTING_EMPTY_ZIP;
     }
 
     public AtlasAsyncImportRequest run(AtlasImportRequest request, InputStream inputStream, String userName, String hostName, String requestingIP) throws AtlasBaseException {
