@@ -41,12 +41,6 @@ then
   exit 1
 fi
 
-if [ "${ATLAS_BACKEND}" = "postgres" ] && [ -f /home/atlas/dist/postgresql-42.7.7.jar ]
-then
-  mkdir -p "${ATLAS_HOME}/libext"
-  cp -f /home/atlas/dist/postgresql-42.7.7.jar "${ATLAS_HOME}/libext/"
-fi
-
 su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
 ATLAS_PID=`ps -ef  | grep -v grep | grep -i "org.apache.atlas.Atlas" | awk '{print $2}'`
 
