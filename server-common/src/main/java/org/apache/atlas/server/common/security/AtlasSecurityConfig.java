@@ -128,7 +128,8 @@ public abstract class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         httpSecurity
                 .authorizeRequests().anyRequest().authenticated()
                 .and()
-                .headers()
+                // Why disable() xssProtection -> By default Spring Security automatically adds security headers unless you disable them. No Modern Browsers support and its replaced by "Content-Security-Policy"
+                .headers().xssProtection().disable()
                 .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.CONTENT_SEC_POLICY_KEY, HeadersUtil.getHeaderMap(HeadersUtil.CONTENT_SEC_POLICY_KEY)))
                 .addHeaderWriter(new StaticHeadersWriter(HeadersUtil.SERVER_KEY, HeadersUtil.getHeaderMap(HeadersUtil.SERVER_KEY)))
                 .and()
