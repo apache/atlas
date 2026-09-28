@@ -74,11 +74,6 @@ Docker files in this folder create docker images and run them to build Apache At
       The Postgres overlay runs `config/init_postgres.sh` as a one-shot initialization service before Atlas starts.
       This creates the required roles, databases, and Atlas RDBMS schema.
 
-      The Atlas server distribution does not ship the PostgreSQL JDBC driver in the server tarball.
-      When `ATLAS_BACKEND=postgres`, the `Dockerfile.atlas` image build downloads
-      `org.postgresql:postgresql` (version aligned with the root Maven `postgresql.version` property)
-      into `${ATLAS_HOME}/libext/`, which is on the Atlas server classpath (`atlas_start.py`).
-
    4. To install and start Atlas using HBase as backend store, execute following commands:
 
       ```shell
