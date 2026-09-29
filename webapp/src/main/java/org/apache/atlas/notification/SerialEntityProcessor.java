@@ -22,6 +22,7 @@ import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import javax.ws.rs.core.Response;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -368,9 +369,16 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
             return false;
         }
 
-        // Non-retryable: Entity not found is acceptable in some scenarios
+        // Non-retryable: client/data errors and entity not found
         if (e instanceof AtlasBaseException) {
             AtlasBaseException baseException = (AtlasBaseException) e;
+            Response.Status    httpCode       = baseException.getAtlasErrorCode().getHttpCode();
+
+            if (Response.Status.BAD_REQUEST.equals(httpCode) || Response.Status.NOT_FOUND.equals(httpCode)) {
+                LOG.warn("Non-retryable exception: {} ({})", baseException.getAtlasErrorCode(), httpCode);
+                return false;
+            }
+
             if (baseException.getAtlasErrorCode().equals(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)) {
                 LOG.warn("Non-retryable exception: INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND");
                 return false;
@@ -452,6 +460,15 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
             PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
 
             if (isEmptyMessage(kafkaMsg)) {
+                return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+            }
+
+            try {
+                NotificationMessageValidator.validate(message, typeRegistry);
+            } catch (AtlasBaseException validationException) {
+                LOG.warn("Skipping notification with invalid type name(s): type={}, error={}",
+                        message.getType(), validationException.getMessage());
+
                 return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
             }
 

@@ -19,6 +19,16 @@
 set -e
 set -x
 
+if [ -n "${ATLAS_SERVER_JAVA_VERSION}" ]; then
+  ARCH="$(uname -m)"
+  case "${ARCH}" in
+    aarch64|arm64) ARCH=arm64 ;;
+    x86_64|amd64) ARCH=amd64 ;;
+  esac
+  export JAVA_HOME="/usr/lib/jvm/java-${ATLAS_SERVER_JAVA_VERSION}-openjdk-${ARCH}"
+  export PATH="${JAVA_HOME}/bin:${PATH}"
+fi
+
 ATLAS_APPLICATION_PROPERTIES=${ATLAS_HOME}/conf/atlas-application.properties
 ATLAS_USER_CREDENTIALS=${ATLAS_HOME}/conf/users-credentials.properties
 ATLAS_EXPANDED_WEBAPP=${ATLAS_HOME}/server/webapp/atlas/WEB-INF
@@ -41,7 +51,7 @@ then
   exit 1
 fi
 
-su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
+su -m -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
 ATLAS_PID=`ps -ef  | grep -v grep | grep -i "org.apache.atlas.Atlas" | awk '{print $2}'`
 
 # prevent the container from exiting
