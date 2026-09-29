@@ -57,6 +57,10 @@ public class GenericEntityPreprocessor extends EntityPreprocessor {
         filterRelationshipAttributes(entity.getRelationshipAttributes(), context);
     }
 
+    public boolean shouldIgnore(Object entity) {
+        return isToBeIgnored(entity);
+    }
+
     private boolean isMatch(String property, List<Pattern> patterns) {
         return patterns.stream().anyMatch((Pattern pattern) -> pattern.matcher(property).matches());
     }
