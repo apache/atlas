@@ -67,6 +67,7 @@ interface PaginationProps {
   setIsEmptyData?: any;
   showGoToPage?: boolean;
   totalCount?: number;
+  approximateCountExact?: boolean;
   /** Client mode: notify parent when page size changes (user action). */
   onClientPageSizeChange?: (pageSize: number) => void;
   /** See TableProps.paginationSummaryVariant */
@@ -92,6 +93,7 @@ const TablePagination: React.FC<PaginationProps> = ({
   setIsEmptyData,
   showGoToPage = false,
   totalCount,
+  approximateCountExact = false,
   onClientPageSizeChange,
   paginationSummaryVariant = 'default'
 }) => {
@@ -419,8 +421,14 @@ const TablePagination: React.FC<PaginationProps> = ({
             <>
               Showing {footerRangeStart.toLocaleString()}-
               {footerRangeEnd.toLocaleString()} of{' '}
+              {!approximateCountExact && isServerSide ? '~' : ''}
               {totalDatasetRows.toLocaleString()}{' '}
               {totalDatasetRows === 1 ? 'record' : 'records'}
+              {!approximateCountExact && isServerSide ? (
+                <LightTooltip title="Count is approximate when search applies in-memory filtering beyond the index query.">
+                  <span> (approx.)</span>
+                </LightTooltip>
+              ) : null}
             </>
           )}
         </span>

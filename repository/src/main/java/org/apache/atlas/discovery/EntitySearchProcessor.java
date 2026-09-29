@@ -64,6 +64,7 @@ public class EntitySearchProcessor extends SearchProcessor {
     private final AtlasGraphQuery graphQuery;
     private       Predicate       graphQueryPredicate;
     private       Predicate       filterGraphQueryPredicate;
+    private final boolean         approximateCountExact;
 
     public EntitySearchProcessor(SearchContext context) {
         super(context);
@@ -229,6 +230,19 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (context.getSearchParameters().getExcludeDeletedEntities()) {
             filterGraphQueryPredicate = filterGraphQueryPredicate == null ? activePredicate : PredicateUtils.andPredicate(filterGraphQueryPredicate, activePredicate);
         }
+
+        // Count from index totals is exact when the query is fully index-resolved with no
+        // entity attribute filters that are applied in-memory after the index query (CDPD-40161).
+        approximateCountExact = indexQuery != null
+                && graphQuery == null
+                && !filterClassification
+                && graphQueryPredicate == null
+                && !context.hasAttributeFilter(filterCriteria);
+    }
+
+    @Override
+    public boolean isApproximateCountExact() {
+        return approximateCountExact;
     }
 
     @Override

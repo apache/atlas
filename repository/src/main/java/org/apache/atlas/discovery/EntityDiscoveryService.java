@@ -981,9 +981,15 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         try {
             List<AtlasVertex> resultList = searchContext.getSearchProcessor().execute();
 
-            ret.setApproximateCount(searchContext.getSearchProcessor().getResultCount());
+            SearchProcessor searchProcessor = searchContext.getSearchProcessor();
 
-            String nextMarker = searchContext.getSearchProcessor().getNextMarker();
+            ret.setApproximateCount(searchProcessor.getResultCount());
+
+            if (searchProcessor.isApproximateCountExact()) {
+                ret.setApproximateCountExact(Boolean.TRUE);
+            }
+
+            String nextMarker = searchProcessor.getNextMarker();
 
             if (StringUtils.isNotEmpty(nextMarker)) {
                 ret.setNextMarker(nextMarker);

@@ -27,6 +27,8 @@ export interface TableProps {
   headerComponent?: JSX.Element;
   pageCount?: number;
   totalCount?: number;
+  /** When false/undefined, totalCount from search may be approximate. */
+  approximateCountExact?: boolean;
   defaultColumnVisibility?: any;
   page?: (page: number) => void;
   onClickRow?: (cell: Cell<any, unknown>, row: Row<any>) => void;

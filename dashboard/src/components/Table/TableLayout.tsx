@@ -329,6 +329,7 @@ const TableLayout: FC<TableProps> = ({
   defaultColumnVisibility,
   pageCount,
   totalCount,
+  approximateCountExact,
   onClickRow,
   emptyText,
   defaultColumnParams,
@@ -733,6 +734,7 @@ const TableLayout: FC<TableProps> = ({
               setIsEmptyData={setIsEmptyData}
               showGoToPage={showGoToPage}
               totalCount={totalCount}
+              approximateCountExact={approximateCountExact}
               onClientPageSizeChange={onClientPageSizeChange}
               paginationSummaryVariant={paginationSummaryVariant}
             />

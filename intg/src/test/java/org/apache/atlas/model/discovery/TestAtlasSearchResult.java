@@ -652,6 +652,7 @@ public class TestAtlasSearchResult {
         result.setType("Table");
         result.setClassification("PII");
         result.setApproximateCount(1000L);
+        result.setApproximateCountExact(Boolean.TRUE);
         result.setNextMarker("next-page");
 
         SearchParameters params = new SearchParameters();
