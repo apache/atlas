@@ -118,7 +118,11 @@ public class RestNotification extends AbstractNotification {
                         + AtlasConstants.DEFAULT_REST_NOTIFICATION_ADDRESS + ")");
             }
 
-            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+            if (AtlasConfiguration.NOTIFICATION_HOOK_REST_AUTH_SKIP.getBoolean()) {
+                LOG.debug("Client-side authentication skipped; creating client without authentication");
+
+                atlasClientV2 = new AtlasClientV2(atlasEndPoint, (String[]) null);
+            } else if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String fileAuthUsername = configuration.getString(BASIC_AUTH_USERNAME, "admin");
                 String fileAuthPassword = configuration.getString(BASIC_AUTH_PASSWORD, "admin123");
 
