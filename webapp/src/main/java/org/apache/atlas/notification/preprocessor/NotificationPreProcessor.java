@@ -1621,8 +1621,11 @@ public class NotificationPreProcessor implements NotificationEntityProcessor, Ty
 
         String sharedKey = null;
         for (EntityRoutingInfo info : lineageEntities) {
-            if (EntityPreprocessor.TYPE_HIVE_PROCESS.equals(getEntityTypeName(info.getEntity()))
-                    || AtlasBaseTypeDef.ATLAS_TYPE_PROCESS.equals(getEntityTypeName(info.getEntity()))) {
+            String typeName = getEntityTypeName(info.getEntity());
+
+            // Prefer any Process subtype (hive_process, spark_process, sqoop_process, …)
+            // so table-to-table lineage from non-Hive hooks stays on one LINEAGE topic.
+            if (isProcessOrSubtype(typeName)) {
                 sharedKey = info.getRoutingKey();
                 break;
             }

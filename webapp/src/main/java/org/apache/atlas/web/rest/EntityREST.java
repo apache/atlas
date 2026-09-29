@@ -1213,6 +1213,10 @@ public class EntityREST {
             ret = typeRegistry.getEntityTypeByName(typeName);
         }
 
+        if (ret == null && typeRegistryVersionGate != null && typeRegistryVersionGate.forceRefresh()) {
+            ret = typeRegistry.getEntityTypeByName(typeName);
+        }
+
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
         }
@@ -1225,6 +1229,10 @@ public class EntityREST {
 
         if (ret == null && typeRegistryVersionGate != null) {
             typeRegistryVersionGate.ensureUpToDate();
+            ret = typeRegistry.getClassificationTypeByName(typeName);
+        }
+
+        if (ret == null && typeRegistryVersionGate != null && typeRegistryVersionGate.forceRefresh()) {
             ret = typeRegistry.getClassificationTypeByName(typeName);
         }
 

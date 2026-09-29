@@ -535,7 +535,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         Collection<AtlasVertex> deletionCandidates = new ArrayList<>();
-        AtlasVertex             vertex             = AtlasGraphUtilsV2.findByUniqueAttributes(graph, entityType, uniqAttributes);
+        AtlasVertex             vertex             = AtlasGraphUtilsV2.findSingleActiveByUniqueAttributes(graph, entityType, uniqAttributes);
 
         if (vertex != null) {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
@@ -1357,6 +1357,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+                if (entityType == null && typeRegistryVersionGate != null && typeRegistryVersionGate.forceRefresh()) {
+                    entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+                }
 
                 if (entityType == null) {
                     throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());

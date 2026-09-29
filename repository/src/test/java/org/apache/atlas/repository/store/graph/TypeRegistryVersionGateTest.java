@@ -129,4 +129,30 @@ public class TypeRegistryVersionGateTest {
             assertFalse(gate.isCurrent());
         }
     }
+
+    @Test
+    public void forceRefreshReloadsEvenWhenWatermarkSaysCurrent() throws AtlasBaseException {
+        gate.markSeen(3L);
+
+        try (MockedStatic<AtlasGraphUtilsV2> utils = mockStatic(AtlasGraphUtilsV2.class)) {
+            utils.when(() -> AtlasGraphUtilsV2.getTypeDefRegistryVersion(graph)).thenReturn(3L);
+
+            assertFalse(gate.ensureUpToDate());
+            assertTrue(gate.forceRefresh());
+        }
+
+        verify(typeDefStore, times(1)).refreshFromStore();
+        verify(typeDefStore, never()).init();
+    }
+
+    @Test
+    public void forceRefreshFailureReturnsFalse() throws AtlasBaseException {
+        doThrow(new AtlasBaseException("reload failed")).when(typeDefStore).refreshFromStore();
+
+        try (MockedStatic<AtlasGraphUtilsV2> utils = mockStatic(AtlasGraphUtilsV2.class)) {
+            utils.when(() -> AtlasGraphUtilsV2.getTypeDefRegistryVersion(graph)).thenReturn(1L);
+
+            assertFalse(gate.forceRefresh());
+        }
+    }
 }

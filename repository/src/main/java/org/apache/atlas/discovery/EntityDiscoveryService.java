@@ -214,13 +214,13 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingDslQuery(String dslQuery, int limit, int offset) throws AtlasBaseException {
-        ensureTypeRegistryCurrent();
+        return withTypeCatchUp(() -> {
+            AtlasSearchResult ret = dslQueryExecutor.execute(dslQuery, limit, offset);
 
-        AtlasSearchResult ret = dslQueryExecutor.execute(dslQuery, limit, offset);
+            scrubSearchResults(ret);
 
-        scrubSearchResults(ret);
-
-        return ret;
+            return ret;
+        });
     }
 
     @Override
@@ -483,19 +483,19 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException {
-        ensureTypeRegistryCurrent();
+        return withTypeCatchUp(() -> {
+            String query = searchParameters.getQuery();
 
-        String query = searchParameters.getQuery();
+            if (StringUtils.isNotEmpty(query)) {
+                String modifiedString = StringUtils.strip(query, "*");
 
-        if (StringUtils.isNotEmpty(query)) {
-            String modifiedString = StringUtils.strip(query, "*");
-
-            if (AtlasStructType.AtlasAttribute.hastokenizeChar(modifiedString)) {
-                searchParameters.setQuery(modifiedString);
+                if (AtlasStructType.AtlasAttribute.hastokenizeChar(modifiedString)) {
+                    searchParameters.setQuery(modifiedString);
+                }
             }
-        }
 
-        return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
+            return searchWithSearchContext(new SearchContext(searchParameters, typeRegistry, graph, indexer.getVertexIndexKeys()));
+        });
     }
 
     @Override
@@ -1262,5 +1262,49 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         if (typeRegistryVersionGate != null) {
             typeRegistryVersionGate.ensureUpToDate();
         }
+    }
+
+    private boolean forceTypeRefresh() {
+        return typeRegistryVersionGate != null && typeRegistryVersionGate.forceRefresh();
+    }
+
+    private static boolean isUnknownTypeError(AtlasBaseException failure) {
+        if (failure == null) {
+            return false;
+        }
+
+        AtlasErrorCode code = failure.getAtlasErrorCode();
+
+        return code == AtlasErrorCode.UNKNOWN_TYPENAME
+                || code == AtlasErrorCode.TYPE_NAME_NOT_FOUND
+                || code == AtlasErrorCode.TYPE_NAME_INVALID
+                || code == AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
+    }
+
+    private AtlasSearchResult withEntitiesArray(AtlasSearchResult result) {
+        if (result != null && result.getEntities() == null) {
+            result.setEntities(new ArrayList<>());
+        }
+
+        return result;
+    }
+
+    private AtlasSearchResult withTypeCatchUp(SearchCall call) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
+        try {
+            return withEntitiesArray(call.run());
+        } catch (AtlasBaseException e) {
+            if (!isUnknownTypeError(e) || !forceTypeRefresh()) {
+                throw e;
+            }
+
+            return withEntitiesArray(call.run());
+        }
+    }
+
+    @FunctionalInterface
+    private interface SearchCall {
+        AtlasSearchResult run() throws AtlasBaseException;
     }
 }

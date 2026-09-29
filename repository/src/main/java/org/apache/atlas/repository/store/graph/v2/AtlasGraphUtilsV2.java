@@ -375,6 +375,70 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
+    /**
+     * Delete-only helper: unique-index miss can be index lag, not "entity gone".
+     * Accepts a property-query hit only when it is a single ACTIVE vertex of this type
+     * (or subtype) matching the unique attributes. Multiple hits return null so we
+     * never delete a different entity.
+     */
+    public static AtlasVertex findSingleActiveByUniqueAttributes(AtlasGraph graph, AtlasEntityType entityType,
+                                                                 Map<String, Object> attrValues) {
+        AtlasVertex indexed = findByUniqueAttributes(graph, entityType, attrValues);
+
+        if (indexed != null) {
+            return indexed;
+        }
+
+        if (entityType == null || MapUtils.isEmpty(attrValues)) {
+            return null;
+        }
+
+        Map<String, AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
+        Map<String, Object>         attrNameValues   = populateAttributesMap(uniqueAttributes, attrValues);
+
+        if (MapUtils.isEmpty(attrNameValues)) {
+            return null;
+        }
+
+        AtlasVertex ret = findSingleActiveByProperties(graph, entityType.getTypeName(), attrNameValues, false);
+
+        if (ret == null && CollectionUtils.isNotEmpty(entityType.getAllSubTypes())) {
+            ret = findSingleActiveByProperties(graph, entityType.getTypeName(), attrNameValues, true);
+        }
+
+        return ret;
+    }
+
+    private static AtlasVertex findSingleActiveByProperties(AtlasGraph graph, String typeName,
+                                                            Map<String, Object> attributeValues, boolean isSuperType) {
+        String          typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
+        AtlasGraphQuery query           = graph.query()
+                                               .has(typePropertyKey, typeName)
+                                               .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+
+        for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                query.has(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        if (!results.hasNext()) {
+            return null;
+        }
+
+        AtlasVertex first = results.next();
+
+        if (results.hasNext()) {
+            LOG.warn("findSingleActiveByUniqueAttributes(): type={} matched more than one ACTIVE vertex; leaving unresolved",
+                    typeName);
+            return null;
+        }
+
+        return first;
+    }
+
     public static String findFirstDeletedDuringSpooledByQualifiedName(String qualifiedName, long timestamp) {
         return findFirstDeletedDuringSpooledByQualifiedName(getGraphInstance(), qualifiedName, timestamp);
     }

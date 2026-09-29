@@ -100,6 +100,32 @@ public class TypeRegistryVersionGate {
     }
 
     /**
+     * Reloads from the store even when the version watermark says this node is current.
+     * Use only on the failure path where a type is already known to be missing — the
+     * watermark can be stale if {@link #markSeen(long)} ran before the type landed, or
+     * if the graph index has not yet published the version bump.
+     *
+     * @return {@code true} when a reload ran, {@code false} when it failed
+     */
+    public boolean forceRefresh() {
+        synchronized (this) {
+            try {
+                LOG.info("TypeRegistryVersionGate: forcing typedef delta refresh (last-seen {})", lastSeenVersion);
+
+                typeDefStoreProvider.get().refreshFromStore();
+
+                lastSeenVersion = AtlasGraphUtilsV2.getTypeDefRegistryVersion(graph);
+
+                return true;
+            } catch (AtlasBaseException excp) {
+                LOG.warn("TypeRegistryVersionGate: forced delta refresh failed; the typedef-sync path will retry", excp);
+
+                return false;
+            }
+        }
+    }
+
+    /**
      * Records that this node's in-memory registry already reflects {@code version} — used after
      * a local typedef write (the writer updated the registry in-place) or after applying this
      * node's own Kafka signal, so the next read does not pay for a full catalog rebuild.
