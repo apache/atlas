@@ -18,6 +18,8 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.inject.Inject;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
@@ -50,7 +52,6 @@ import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang3.StringUtils;
-import org.mockito.stubbing.Answer;
 import org.testng.ITestContext;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterTest;
@@ -601,20 +602,32 @@ public class ImportServiceTest extends AtlasTestBase {
     }
 
     @Test
-    public void importServiceProcessesIOException() {
+    public void importServiceRejectsMissingImportFile() throws Exception {
         ImportService      importService = new ImportService(typeDefStore, typeRegistry, null, null, null, null, null, null, atlasAuditService);
         AtlasImportRequest req           = mock(AtlasImportRequest.class);
-        Answer<Map> answer = invocationOnMock -> {
-            throw new IOException("file is read only");
-        };
+        java.io.File importDirectory = java.nio.file.Files.createTempDirectory("atlas-import-service-").toFile();
 
-        when(req.getFileName()).thenReturn("some-file.zip");
-        when(req.getOptions()).thenAnswer(answer);
+        String previousAllowedDirectory = ApplicationProperties.get().getString(
+                AtlasConfiguration.IMPORT_ALLOWED_DIRECTORY.getPropertyName());
+        ApplicationProperties.get().setProperty(AtlasConfiguration.IMPORT_ALLOWED_DIRECTORY.getPropertyName(),
+                importDirectory.getAbsolutePath());
+
+        when(req.getFileName()).thenReturn("missing-file.zip");
 
         try {
             importService.run(req, "a", "b", "c");
+            fail("Expected AtlasBaseException");
         } catch (AtlasBaseException ex) {
-            assertEquals(ex.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.INVALID_PARAMETERS.getErrorCode());
+            assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.IMPORT_FILE_NOT_ACCESSIBLE);
+        } finally {
+            if (previousAllowedDirectory == null) {
+                ApplicationProperties.get().clearProperty(AtlasConfiguration.IMPORT_ALLOWED_DIRECTORY.getPropertyName());
+            } else {
+                ApplicationProperties.get().setProperty(AtlasConfiguration.IMPORT_ALLOWED_DIRECTORY.getPropertyName(),
+                        previousAllowedDirectory);
+            }
+
+            importDirectory.delete();
         }
     }
 
