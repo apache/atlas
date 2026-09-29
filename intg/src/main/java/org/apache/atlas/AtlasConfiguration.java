@@ -45,6 +45,7 @@ public enum AtlasConfiguration {
 
     NOTIFICATION_HOOK_REST_ENABLED("atlas.hook.rest.notification.enabled", false),
     NOTIFICATION_HOOK_REST_ADDRESS("atlas.hook.rest.notification.address", ""),
+    NOTIFICATION_HOOK_REST_AUTH_SKIP("atlas.hook.rest.notification.auth.skip", false),
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
 
@@ -77,6 +78,7 @@ public enum AtlasConfiguration {
 
     LABEL_MAX_LENGTH("atlas.entity.label.max.length", 50),
     IMPORT_TEMP_DIRECTORY("atlas.import.temp.directory", ""),
+    IMPORT_ALLOWED_DIRECTORY("atlas.import.allowed.directory", ""),
     MIGRATION_IMPORT_START_POSITION("atlas.migration.import.start.position", 0),
     LINEAGE_USING_GREMLIN("atlas.lineage.query.use.gremlin", false),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", false),

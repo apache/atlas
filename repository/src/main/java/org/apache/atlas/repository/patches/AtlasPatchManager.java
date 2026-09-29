@@ -53,6 +53,7 @@ public class AtlasPatchManager {
     private final EntityGraphMapper        entityGraphMapper;
     private       PatchContext             context;
     private final Object                   initLock = new Object();
+    private       boolean                  defaultHandlersRegistered;
 
     @Inject
     public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
@@ -63,8 +64,7 @@ public class AtlasPatchManager {
     }
 
     public AtlasPatches getAllPatches() {
-        initIfNeeded();
-        return context.getPatchRegistry().getAllPatches();
+        return getOrCreatePatchContext().getPatchRegistry().getAllPatches();
     }
 
     public void applyAll() {
@@ -167,40 +167,67 @@ public class AtlasPatchManager {
     }
 
     public PatchContext getContext() {
-        return this.context;
+        return getOrCreatePatchContext();
     }
 
     private void init() {
         LOG.info("==> AtlasPatchManager.init()");
 
-        this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
-        this.handlers.clear();
-
-        // register all java patches here
-        handlers.add(new UniqueAttributePatch(context));
-        handlers.add(new ClassificationTextPatch(context));
-        handlers.add(new FreeTextRequestHandlerPatch(context));
-        handlers.add(new SuggestionsRequestHandlerPatch(context));
-        handlers.add(new IndexConsistencyPatch(context));
-        handlers.add(new ReIndexPatch(context));
-        handlers.add(new ProcessNamePatch(context));
-        handlers.add(new UpdateCompositeIndexStatusPatch(context));
-        handlers.add(new RelationshipTypeNamePatch(context));
-        handlers.add(new ProcessImpalaNamePatch(context));
-        handlers.add(new ReplaceHugeSparkProcessAttributesPatch(context));
+        getOrCreatePatchContext();
+        registerDefaultHandlersIfNeeded();
 
         LOG.info("<== AtlasPatchManager.init()");
     }
 
-    private void initIfNeeded() {
-        if (context != null) {
+    /**
+     * Ensures {@link PatchContext} exists before JSON typedef patches register Java patch handlers
+     * (AtlasTypeDefStoreInitializer runs before {@link AtlasPatchService#applyAll()}).
+     */
+    public PatchContext getOrCreatePatchContext() {
+        if (this.context != null) {
+            return this.context;
+        }
+
+        synchronized (initLock) {
+            if (this.context == null) {
+                LOG.info("AtlasPatchManager.getOrCreatePatchContext(): creating PatchContext");
+
+                this.context = new PatchContext(atlasGraph, typeRegistry, indexer, entityGraphMapper);
+            }
+
+            return this.context;
+        }
+    }
+
+    private void registerDefaultHandlersIfNeeded() {
+        if (defaultHandlersRegistered) {
             return;
         }
 
         synchronized (initLock) {
-            if (context == null) {
-                init();
+            if (defaultHandlersRegistered) {
+                return;
             }
+
+            // register all java patches here
+            handlers.add(new UniqueAttributePatch(context));
+            handlers.add(new ClassificationTextPatch(context));
+            handlers.add(new FreeTextRequestHandlerPatch(context));
+            handlers.add(new SuggestionsRequestHandlerPatch(context));
+            handlers.add(new IndexConsistencyPatch(context));
+            handlers.add(new ReIndexPatch(context));
+            handlers.add(new ProcessNamePatch(context));
+            handlers.add(new UpdateCompositeIndexStatusPatch(context));
+            handlers.add(new RelationshipTypeNamePatch(context));
+            handlers.add(new ProcessImpalaNamePatch(context));
+            handlers.add(new ReplaceHugeSparkProcessAttributesPatch(context));
+
+            defaultHandlersRegistered = true;
         }
+    }
+
+    private void initIfNeeded() {
+        getOrCreatePatchContext();
+        registerDefaultHandlersIfNeeded();
     }
 }
