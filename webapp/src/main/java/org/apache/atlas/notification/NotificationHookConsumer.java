@@ -902,6 +902,123 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         return ret;
     }
 
+    @VisibleForTesting
+    void validateEntityTypeNames(HookNotification message) throws AtlasBaseException {
+        for (String typeName : getEntityTypeNames(message)) {
+            if (typeRegistry.getEntityTypeByName(typeName) == null) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
+            }
+        }
+    }
+
+    private Set<String> getEntityTypeNames(HookNotification message) {
+        Set<String> ret = new HashSet<>();
+
+        switch (message.getType()) {
+            case ENTITY_CREATE:
+                addReferenceableTypeNames(((EntityCreateRequest) message).getEntities(), ret);
+                break;
+
+            case ENTITY_FULL_UPDATE:
+                addReferenceableTypeNames(((EntityUpdateRequest) message).getEntities(), ret);
+                break;
+
+            case ENTITY_PARTIAL_UPDATE: {
+                EntityPartialUpdateRequest request = (EntityPartialUpdateRequest) message;
+
+                ret.add(request.getTypeName());
+
+                if (request.getEntity() != null) {
+                    ret.add(request.getEntity().getTypeName());
+                }
+            }
+            break;
+
+            case ENTITY_DELETE:
+                ret.add(((EntityDeleteRequest) message).getTypeName());
+                break;
+
+            case ENTITY_CREATE_V2:
+                addEntityTypeNames(((EntityCreateRequestV2) message).getEntities(), ret);
+                break;
+
+            case ENTITY_FULL_UPDATE_V2:
+                addEntityTypeNames(((EntityUpdateRequestV2) message).getEntities(), ret);
+                break;
+
+            case ENTITY_PARTIAL_UPDATE_V2: {
+                EntityPartialUpdateRequestV2 request = (EntityPartialUpdateRequestV2) message;
+
+                if (request.getEntityId() != null) {
+                    ret.add(request.getEntityId().getTypeName());
+                }
+
+                addEntityTypeNames(request.getEntity(), ret);
+            }
+            break;
+
+            case ENTITY_DELETE_V2: {
+                List<AtlasObjectId> objectIds = ((EntityDeleteRequestV2) message).getEntities();
+
+                if (objectIds != null) {
+                    for (AtlasObjectId objectId : objectIds) {
+                        if (objectId != null) {
+                            ret.add(objectId.getTypeName());
+                        }
+                    }
+                }
+            }
+            break;
+
+            default:
+                break;
+        }
+
+        return ret;
+    }
+
+    private static void addReferenceableTypeNames(List<Referenceable> referenceables, Set<String> typeNames) {
+        if (referenceables != null) {
+            for (Referenceable referenceable : referenceables) {
+                if (referenceable != null) {
+                    typeNames.add(referenceable.getTypeName());
+                }
+            }
+        }
+    }
+
+    private static void addEntityTypeNames(AtlasEntitiesWithExtInfo entities, Set<String> typeNames) {
+        if (entities != null) {
+            addEntityTypeNames(entities.getEntities(), typeNames);
+
+            if (entities.getReferredEntities() != null) {
+                addEntityTypeNames(entities.getReferredEntities().values(), typeNames);
+            }
+        }
+    }
+
+    private static void addEntityTypeNames(AtlasEntityWithExtInfo entity, Set<String> typeNames) {
+        if (entity != null) {
+            if (entity.getEntity() != null) {
+                typeNames.add(entity.getEntity().getTypeName());
+            }
+
+            if (entity.getReferredEntities() != null) {
+                addEntityTypeNames(entity.getReferredEntities().values(), typeNames);
+            }
+        }
+    }
+
+    private static void addEntityTypeNames(Collection<AtlasEntity> entities, Set<String> typeNames) {
+        if (entities != null) {
+            for (AtlasEntity entity : entities) {
+                if (entity != null) {
+                    typeNames.add(entity.getTypeName());
+                }
+            }
+        }
+    }
+
     private void recordProcessedEntities(EntityMutationResponse mutationResponse, NotificationStat stats, PreprocessorContext context) {
         if (mutationResponse != null) {
             if (stats != null) {
@@ -1289,6 +1406,20 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
 
                 if (isEmptyMessage(kafkaMsg)) {
+                    commit(kafkaMsg);
+
+                    return;
+                }
+
+                try {
+                    validateEntityTypeNames(message);
+                } catch (AtlasBaseException excp) {
+                    LOG.warn("Unrecoverable failure, skipping retries: {}. type={}, topic={}, partition={}, offset={}", excp.getMessage(), message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset());
+
+                    stats.isFailedMsg = true;
+
+                    failedMessages.add(AbstractNotification.getMessageJson(message));
+
                     commit(kafkaMsg);
 
                     return;
