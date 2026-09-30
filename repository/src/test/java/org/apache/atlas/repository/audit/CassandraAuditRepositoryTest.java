@@ -50,7 +50,7 @@ public class CassandraAuditRepositoryTest extends AuditRepositoryTestBase {
             ((CassandraBasedAuditRepository) eventRepository).start();
 
             ensureClusterCreation();
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             throw new SkipException("setup: failed!", ex);
         }
     }

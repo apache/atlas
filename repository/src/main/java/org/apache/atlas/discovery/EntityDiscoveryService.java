@@ -699,6 +699,12 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             checkSavedSearchOwnership(currentUser, savedSearch);
 
+            if (StringUtils.isNotBlank(savedSearch.getGuid())) {
+                AtlasUserSavedSearch existingSavedSearch = userProfileService.getSavedSearch(savedSearch.getGuid());
+
+                checkSavedSearchOwnership(currentUser, existingSavedSearch);
+            }
+
             return userProfileService.addSavedSearch(savedSearch);
         } catch (AtlasBaseException e) {
             LOG.error("addSavedSearch({})", savedSearch, e);

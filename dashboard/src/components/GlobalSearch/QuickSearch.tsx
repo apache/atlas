@@ -85,6 +85,8 @@ const SCOPE_LABELS: Record<QuickSearchScope, string> = {
 	businessMetadata: "Business Metadata"
 };
 
+const hasValidSearchQuery = (value: string) => value.trim().length > 0;
+
 const QuickSearch = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -96,6 +98,8 @@ const QuickSearch = () => {
 	const [loading, setLoading] = useState<boolean>(false);
 	const [inputText, setInputText] = useState<string>("");
 	const [scope, setScope] = useState<QuickSearchScope>("default");
+	const trimmedQuery = useMemo(() => inputText.trim(), [inputText]);
+	const isSearchEnabled = hasValidSearchQuery(inputText);
 
 	const { typeHeaderData } = useAppSelector((state: any) => state.typeHeader);
 	const { metricsData } = useAppSelector((state: any) => state.metrics);
@@ -198,24 +202,24 @@ const QuickSearch = () => {
 
 		entities = !isEmpty(searchResults?.entities)
 			? searchResults?.entities?.map((entityDef: any) => {
-					const { name }: { name: string; found: boolean; key: any } =
-						extractKeyValueFromEntity(entityDef);
-					return {
-						title: `${name}`,
-						parent: entityDef.typeName,
-						types: "Entities",
-						entityObj: entityDef
-					};
-				})
+				const { name }: { name: string; found: boolean; key: any } =
+					extractKeyValueFromEntity(entityDef);
+				return {
+					title: `${name}`,
+					parent: entityDef.typeName,
+					types: "Entities",
+					entityObj: entityDef
+				};
+			})
 			: [{ title: "No Entities Found", types: "Entities" }];
 
 		suggestionNames = !isEmpty(suggestions)
 			? suggestions.map((suggestion: any) => {
-					return {
-						title: `${suggestion}`,
-						types: "Suggestions"
-					};
-				})
+				return {
+					title: `${suggestion}`,
+					types: "Suggestions"
+				};
+			})
 			: [{ title: "No Suggestions Found", types: "Suggestions" }];
 
 		setOptions([...entities, ...suggestionNames] as GlobalOptionRow[]);
@@ -287,8 +291,7 @@ const QuickSearch = () => {
 			if (scope !== "default") {
 				return;
 			}
-			const sanitizedQuery = queryValue || "*";
-			searchParams.set("query", sanitizedQuery);
+			searchParams.set("query", queryValue);
 			searchParams.set("searchType", "basic");
 			navigate(
 				{
@@ -340,16 +343,15 @@ const QuickSearch = () => {
 	};
 
 	const handleSubmitSearch = () => {
-		const q = inputText.trim();
+		const q = trimmedQuery;
+		if (!hasValidSearchQuery(inputText)) {
+			return;
+		}
 		if (scope !== "default") {
 			const activeOption = options.find((o) => o.title === q);
 			if (activeOption?.scoped) {
 				handleScopedSelection(activeOption.scoped);
 			}
-			return;
-		}
-		if (!q) {
-			handleValues("*");
 			return;
 		}
 		const activeOption = options.find(
@@ -421,7 +423,9 @@ const QuickSearch = () => {
 							switch (code) {
 								case 13: {
 									e.preventDefault();
-									handleSubmitSearch();
+									if (isSearchEnabled) {
+										handleSubmitSearch();
+									}
 									break;
 								}
 								case 9:
@@ -439,11 +443,22 @@ const QuickSearch = () => {
 						sx={{
 							minWidth: 150,
 							flex: "1 1 280px",
+							"& .MuiAutocomplete-popper": {
+								maxWidth: "100%"
+							},
 							"& + .MuiAutocomplete-popper .MuiAutocomplete-option": {
 								backgroundColor: "white"
 							},
 							"& + .MuiAutocomplete-popper .MuiAutocomplete-option:hover": {
 								backgroundColor: "#c7e3ff"
+							}
+						}}
+						componentsProps={{
+							paper: {
+								sx: {
+									maxWidth: "100%",
+									overflowX: "hidden"
+								}
 							}
 						}}
 						value={null}
@@ -476,13 +491,19 @@ const QuickSearch = () => {
 								const parts = parse(title, matches);
 								return (
 									<li {...props} key={row.scoped.id}>
-										<Typography component="span" variant="body2">
+										<Typography 
+											component="span" 
+											variant="body2"
+											sx={{
+												display: "block",
+												width: "100%",
+												}}
+											title={title}
+											noWrap>
 											{parts.map((part, index) => (
 												<span
 													key={index}
-													style={{
-														fontWeight: part.highlight ? 700 : 400
-													}}
+													className={part.highlight ? "fw-bold" : "fw-normal"}
 												>
 													{part.text}
 												</span>
@@ -494,14 +515,14 @@ const QuickSearch = () => {
 
 							const { entityObj, types, parent } =
 								typeof option !== "string" &&
-								"entityObj" in option &&
-								"types" in option &&
-								"parent" in option
+									"entityObj" in option &&
+									"types" in option &&
+									"parent" in option
 									? (option as {
-											entityObj: { status?: string; guid?: string };
-											types: string;
-											parent: string;
-										})
+										entityObj: { status?: string; guid?: string };
+										types: string;
+										parent: string;
+									})
 									: { entityObj: null, types: "", parent: "" };
 							const title =
 								typeof option !== "string" && "title" in option
@@ -528,36 +549,31 @@ const QuickSearch = () => {
 							);
 							return (
 								<Stack
-									flexDirection="row"
 									component="li"
 									className="global-search-options"
+									direction="row"
+									alignItems="center"
 									sx={{
 										"& > span": {
 											mr: 2,
 											flexShrink: 0
-										}
+										},
+										overflow: "hidden",
+										width: "100%"
 									}}
 									{...props}
+									title={safeTitle}
 									onClick={() => {
 										handleValues(option as GlobalOptionRow);
 									}}
 								>
 									{types === "Entities" && !isEmpty(entityObj) ? (
 										<Link
-											className="entity-name text-decoration-none"
-											style={{
-												maxWidth: "100%",
-												width: "100%",
-												color: "black",
-												textDecoration: "none",
-												display: "inline-flex",
-												alignItems: "center",
-												flexWrap: "wrap"
-											}}
+											className="entity-name text-decoration-none text-black-no-decoration text-truncate-block"
 											to={{ pathname: href }}
 											color={
 												entityObj?.status &&
-												entityStateReadOnly[entityObj.status]
+													entityStateReadOnly[entityObj.status]
 													? "error"
 													: "primary"
 											}
@@ -567,65 +583,58 @@ const QuickSearch = () => {
 											)}
 											{types === "Entities" && !isEmpty(entityObj)
 												? parts.map((part, index) => (
-														<Stack
-															flexDirection="row"
-															key={index}
-															style={{
-																fontWeight: part.highlight ? "bold" : "regular"
-															}}
-														>
-															{entityObj?.guid !== "-1" && !part.highlight ? (
-																<Link
-																	className="entity-name text-blue text-decoration-none"
-																	style={{
-																		color: "black",
-																		textDecoration: "none",
-																		maxWidth: "100%",
-																		width: "100%"
-																	}}
-																	to={{ pathname: href }}
-																	color={
-																		entityObj?.status &&
+													<span
+														key={index}
+														className={part.highlight ? "fw-bold" : "fw-normal"}
+													>
+														{entityObj?.guid !== "-1" && !part.highlight ? (
+															<Link
+																className="entity-name text-blue text-black-no-decoration max-100 w-100"
+																to={{ pathname: href }}
+																color={
+																	entityObj?.status &&
 																		entityStateReadOnly[entityObj.status]
-																			? "error"
-																			: "primary"
-																	}
-																>
-																	{part.text}
-																</Link>
-															) : (
-																part.text
-															)}
-														</Stack>
-													))
+																		? "error"
+																		: "primary"
+																}
+															>
+																{part.text}
+															</Link>
+														) : (
+															part.text
+														)}
+													</span>
+												))
 												: parts.map((part, index) => (
-														<Stack
-															flexDirection="row"
-															key={index}
-															style={{
-																fontWeight: part.highlight ? "bold" : "regular"
-															}}
-														>
-															{part.text}
-														</Stack>
-													))}
+													<span
+														key={index}
+														className={part.highlight ? "fw-bold" : "fw-normal"}
+													>
+														{part.text}
+													</span>
+												))}
 											{types === "Entities" &&
 												!isEmpty(entityObj) &&
 												` (${parent})`}
 										</Link>
 									) : (
-										parts.map((part, index) => (
-											<Typography
-												component="p"
-												key={index}
-												className="global-search-options-text"
-												sx={{
-													fontWeight: part.highlight ? "bold" : "regular"
-												}}
-											>
-												{part.text}
-											</Typography>
-										))
+										<Typography
+											component="span"
+											className="global-search-options-text"
+											sx={{
+												display: "block",
+												width: "100%",
+											}}
+											noWrap>
+											{parts.map((part, index) => (
+												<span
+													key={index}
+													className={part.highlight ? "fw-bold" : "fw-normal"}
+												>
+													{part.text}
+												</span>
+											))}
+										</Typography>
 									)}
 								</Stack>
 							);
@@ -677,11 +686,18 @@ const QuickSearch = () => {
 				<CustomButton
 					variant="contained"
 					size="small"
+					className="global-search-submit-btn"
+					disabled={!isSearchEnabled}
 					sx={{
 						backgroundColor: "#4a90e2 !important",
 						color: "#fff !important",
 						textTransform: "none",
-						fontWeight: 600
+						fontWeight: 600,
+						"&.Mui-disabled": {
+							backgroundColor: "#a8c8eb !important",
+							color: "#fff !important",
+							opacity: 0.7
+						}
 					}}
 					onClick={handleSubmitSearch}
 					aria-label="Run search"

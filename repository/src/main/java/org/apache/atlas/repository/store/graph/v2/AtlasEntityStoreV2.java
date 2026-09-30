@@ -23,7 +23,6 @@ import org.apache.atlas.DeleteType;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
@@ -43,6 +42,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.FailedEntity;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -81,6 +81,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -108,6 +110,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphMapper          entityGraphMapper;
     private final EntityGraphRetriever       entityRetriever;
+    private       EntityRenameHandler        entityRenameHandler;
     private       boolean                    storeDifferentialAudits;
 
     @Inject
@@ -119,6 +122,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityGraphMapper       = entityGraphMapper;
         this.entityRetriever         = new EntityGraphRetriever(graph, typeRegistry);
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
+    }
+
+    @Inject
+    public void setEntityRenameHandler(EntityRenameHandler entityRenameHandler) {
+        this.entityRenameHandler = entityRenameHandler;
     }
 
     @VisibleForTesting
@@ -542,78 +550,96 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException {
-        if (CollectionUtils.isEmpty(guids)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Guid(s) not specified");
-        }
-
-        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_PURGE), "purge entity: guids=", guids);
-
-        Collection<AtlasVertex> purgeCandidates = new ArrayList<>();
-
-        for (String guid : guids) {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findDeletedByGuid(graph, guid);
-
-            if (vertex == null) {
-                // Entity does not exist - treat as non-error, since the caller
-                // wanted to delete the entity and it's already gone.
-                LOG.warn("Purge request ignored for non-existent/active entity with guid {}", guid);
-
-                continue;
-            }
-
-            purgeCandidates.add(vertex);
-        }
-
-        if (purgeCandidates.isEmpty()) {
-            LOG.info("No purge candidate entities were found for guids: {} which is already deleted", guids);
-        }
-
-        EntityMutationResponse ret = purgeVertices(purgeCandidates);
-
-        // Notify the change listeners
-        entityChangeNotifier.onEntitiesMutated(ret, false);
-
-        return ret;
-    }
-
-    @Override
-    @GraphTransaction
     public EntityMutationResponse purgeEntitiesInBatch(Set<String> purgeCandidates) throws AtlasBaseException {
-        LOG.info("==> purgeEntitiesInBatch()");
+        LOG.debug("purgeEntitiesInBatch: batchSize={}", purgeCandidates.size());
 
         Collection<AtlasVertex> purgeVertices = new ArrayList<>();
-        EntityMutationResponse response      = new EntityMutationResponse();
+        EntityMutationResponse response = new EntityMutationResponse();
+        Map<AtlasVertex, AtlasEntityHeader> prePurgeHeaders = new IdentityHashMap<>();
 
         RequestContext requestContext = RequestContext.get();
         requestContext.setDeleteType(DeleteType.HARD); // hard deleter
         requestContext.setPurgeRequested(true);
 
+        if (CollectionUtils.isNotEmpty(purgeCandidates)) {
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(new ArrayList<>(purgeCandidates));
+            GraphTransactionInterceptor.clearCache();
+        }
         for (String guid : purgeCandidates) {
             AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
-            if (vertex != null) {
+            if (vertex == null || !vertex.exists()) {
+                LOG.debug("Purge batch skipped guid={} as vertex was already removed (likely by concurrent batch)", guid);
+                addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+                continue;
+            }
+
+            try {
+                if (AtlasGraphUtilsV2.getState(vertex) != Status.DELETED) {
+                    LOG.warn("Purge batch skipped guid={} as it is no longer in DELETED state", guid);
+                    addPurgeBatchFailure(response, guid, AtlasErrorCode.NOT_IN_DELETED_STATE);
+                    continue;
+                }
+
                 AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(vertex);
                 purgeVertices.add(vertex);
-                response.addEntity(PURGE, entityHeader);
+                prePurgeHeaders.put(vertex, entityHeader);
+            } catch (IllegalStateException e) {
+                LOG.debug("Purge batch skipped guid={} as vertex was already removed (likely by concurrent batch)", guid, e);
+                addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
             }
         }
 
-        deleteDelegate.getHandler().deleteTraitsAndVertices(purgeVertices);
+        Collection<AtlasVertex> deletedVertices = deleteDelegate.getHandler().deleteTraitsAndVertices(purgeVertices);
+        Set<AtlasVertex> deletedVertexSet = Collections.newSetFromMap(new IdentityHashMap<>());
+        deletedVertexSet.addAll(deletedVertices);
 
-        entityChangeNotifier.onEntitiesMutated(response, false);
+        EntityMutationResponse notificationResponse = new EntityMutationResponse();
 
-        for (AtlasEntityHeader entity : response.getPurgedEntities()) {
-            LOG.info("Auto purged entity with guid {}", entity.getGuid());
+        for (Map.Entry<AtlasVertex, AtlasEntityHeader> entry : prePurgeHeaders.entrySet()) {
+            if (deletedVertexSet.contains(entry.getKey())) {
+                response.addEntity(PURGE, entry.getValue());
+                notificationResponse.addEntity(PURGE, entry.getValue());
+            } else {
+                String      guid   = entry.getValue().getGuid();
+                AtlasVertex vertex = entry.getKey();
+                try {
+                    if (!vertex.exists()) {
+                        // Hard-deleted while processing an earlier vertex in this batch (ATLAS-4766).
+                        // Count as purged using the header captured at batch start; do not notify again.
+                        LOG.debug("Purge batch counted guid={} as purged after concurrent removal within batch", guid);
+                        response.addEntity(PURGE, entry.getValue());
+                    } else {
+                        LOG.debug("Purge batch skipped guid={} as vertex was not deleted by this batch", guid);
+                        addPurgeBatchFailure(response, guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
+                    }
+                } catch (IllegalStateException e) {
+                    LOG.debug("Purge batch counted guid={} as purged; batch vertex handle no longer valid", guid, e);
+                    response.addEntity(PURGE, entry.getValue());
+                }
+            }
         }
 
-        LOG.info("<== purgeEntitiesInBatch()");
+        // Notify listeners only for vertices hard-deleted in this batch. GUIDs removed by a concurrent
+        // batch (during pre-check or delete) are already purged, so do not trigger notifications again.
+        entityChangeNotifier.onEntitiesMutated(notificationResponse, false);
+
+        if (CollectionUtils.isNotEmpty(response.getPurgedEntities())) {
+            LOG.debug("purgeEntitiesInBatch: purged {} entity(ies)", response.getPurgedEntities().size());
+        }
 
         return response;
     }
 
+    private void addPurgeBatchFailure(EntityMutationResponse response, String guid, AtlasErrorCode errorCode) {
+        if (response != null) {
+            response.addFailedEntity(new FailedEntity(guid, errorCode.getErrorCode(), errorCode.getFormattedErrorMessage(guid)));
+        }
+    }
+
     @Override
-    public Set<AtlasVertex> accumulateDeletionCandidates(Set<String> guids) throws AtlasBaseException {
-        LOG.info("==> accumulateDeletionCandidates() !");
+    @GraphTransaction
+    public Set<String> accumulateDeletionCandidates(Set<String> guids) throws AtlasBaseException {
+        LOG.debug("accumulateDeletionCandidates: guidCount={}", guids.size());
         Set<AtlasVertex> vertices = new HashSet<>();
 
         for (String guid : guids) {
@@ -621,7 +647,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             vertices.add(vertex);
         }
 
-        return deleteDelegate.getHandler().accumulateDeletionCandidates(vertices);
+        Set<AtlasVertex> deletionCandidates = deleteDelegate.getHandler().accumulateDeletionCandidates(vertices);
+        Set<String>      candidateGuids       = new LinkedHashSet<>();
+
+        for (AtlasVertex vertex : deletionCandidates) {
+            String candidateGuid = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+            if (candidateGuid != null) {
+                candidateGuids.add(candidateGuid);
+            }
+        }
+
+        return candidateGuids;
     }
 
     @Override
@@ -1202,6 +1239,51 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
+    private void handleRenamePropagation(boolean isPartialUpdate, AtlasEntity entity, AtlasEntityType entityType,
+                                         AtlasVertex vertex, EntityMutationContext context) throws AtlasBaseException {
+        if (!isPartialUpdate || entityRenameHandler == null) {
+            return;
+        }
+
+        if (CollectionUtils.isEmpty(entityType.getRenamePropagationTargets())) {
+            return;
+        }
+
+        String entityGuid = StringUtils.isNotEmpty(entity.getGuid()) ? entity.getGuid() : AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+        try {
+            LOG.debug("handleRenamePropagation(): type={}; guid={}; renamePropagationTargetCount={}",
+                    entityType.getTypeName(), entityGuid, entityType.getRenamePropagationTargets().size());
+
+            String oldUniqueAttrValue = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME), String.class);
+            String newUniqueAttrValue = (String) entity.getAttribute(AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME);
+
+            if (StringUtils.isBlank(oldUniqueAttrValue) || StringUtils.isBlank(newUniqueAttrValue)) {
+                LOG.debug("handleRenamePropagation(): skip — missing qualifiedName on vertex or request (type={}; guid={})",
+                        entityType.getTypeName(), entityGuid);
+                return;
+            }
+
+            if (StringUtils.equals(oldUniqueAttrValue, newUniqueAttrValue)) {
+                LOG.debug("handleRenamePropagation(): skip — qualifiedName unchanged (type={}; guid={})",
+                        entityType.getTypeName(), entityGuid);
+                return;
+            }
+
+            LOG.info("Rename detected (qualifiedName changed): type={}; guid={}; oldQualifiedName={}; newQualifiedName={}; processing dependent entities for rename propagation",
+                    entityType.getTypeName(), entityGuid, oldUniqueAttrValue, newUniqueAttrValue);
+
+            entityRenameHandler.addDependentsToContext(context, entityType, vertex, entity);
+        } catch (AtlasBaseException e) {
+            LOG.error("handleRenamePropagation(): rename propagation failed for type={}; guid={}", entityType.getTypeName(), entityGuid, e);
+            throw e;
+        } catch (Exception e) {
+            LOG.error("handleRenamePropagation(): unexpected error during rename propagation for type={}; guid={}",
+                    entityType.getTypeName(), entityGuid, e);
+            throw new AtlasBaseException(e);
+        }
+    }
+
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
 
@@ -1251,6 +1333,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     }
                     if (!isEntityIncomplete(vertex)) { // In case of an import shell entities, skip updating to entitiesCreated, to avoid mapAttributesAndClassification // In case of hook shell entities, it will not reach to this case
                         context.addUpdated(guid, entity, entityType, vertex);
+
+                        handleRenamePropagation(isPartialUpdate, entity, entityType, vertex, context);
                     }
                 } else {
                     graphDiscoverer.validateAndNormalize(entity);
@@ -1346,21 +1430,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
             response.addEntity(UPDATE, entity);
-        }
-
-        return response;
-    }
-
-    private EntityMutationResponse purgeVertices(Collection<AtlasVertex> purgeCandidates) throws AtlasBaseException {
-        EntityMutationResponse response = new EntityMutationResponse();
-        RequestContext         req      = RequestContext.get();
-
-        req.setDeleteType(DeleteType.HARD);
-        req.setPurgeRequested(true);
-        deleteDelegate.getHandler().deleteEntities(purgeCandidates); // this will update req with list of purged entities
-
-        for (AtlasEntityHeader entity : req.getDeletedEntities()) {
-            response.addEntity(PURGE, entity);
         }
 
         return response;

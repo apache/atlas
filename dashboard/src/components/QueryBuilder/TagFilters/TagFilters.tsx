@@ -57,8 +57,8 @@ const TagFilters = ({
   let attrTagObj =
     !isEmpty(classificationDefs) && !isEmpty(tag)
       ? classificationDefs.find((tag: { name: string }) => {
-          return tag.name == tagParams;
-        })
+        return tag.name == tagParams;
+      })
       : {};
 
   if (attrTagObj) {
@@ -163,8 +163,8 @@ const TagFilters = ({
       defaultExpanded
       sx={{ borderBottom: "1px solid rgba(0, 0, 0, 0.12) !important" }}
     >
-      <AccordionSummary aria-controls="panel1-content" id="panel1-header">
-        <Typography className="text-color-green" fontWeight="600">
+      <AccordionSummary aria-controls="panel1-content" id="panel1-header" sx={{ '& .MuiAccordionSummary-content': { overflow: 'hidden' } }}>
+        <Typography className="text-color-green w-100" fontWeight="600" noWrap title={`Classification: ${tagParams}`}>
           Classification: {tagParams}
         </Typography>
       </AccordionSummary>

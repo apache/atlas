@@ -23,27 +23,27 @@ const dateFormat = "MM/DD/YYYY";
 
 const globalSession = (sessionData: any) => {
   globalSessionData.restCrsfHeader =
-    sessionData["atlas.rest-csrf.custom-header"] || "";
+    sessionData["atlas.rest-csrf.custom-header"] ?? "";
   globalSessionData.crsfToken = sessionData["_csrfToken"];
   globalSessionData.debugMetrics = sessionData["atlas.debug.metrics.enabled"];
   globalSessionData.entityCreate =
-    sessionData["atlas.entity.create.allowed"] || true;
+    sessionData["atlas.entity.create.allowed"] ?? true;
   globalSessionData.entityUpdate =
-    sessionData["atlas.entity.update.allowed"] || true;
+    sessionData["atlas.entity.update.allowed"] ?? true;
   globalSessionData.taskTabEnabled =
-    sessionData["atlas.tasks.enabled"] || false;
+    sessionData["atlas.tasks.enabled"] ?? false;
   globalSessionData.sessionTimeout =
-    sessionData["atlas.session.timeout.secs"] || 900;
+    sessionData["atlas.session.timeout.secs"] ?? 900;
   globalSessionData.uiTaskTabEnabled =
     sessionData["atlas.tasks.ui.tab.enabled"];
   globalSessionData.relationshipSearch =
-    sessionData["atlas.relationship.search.enabled"] || false;
+    sessionData["atlas.relationship.search.enabled"] ?? false;
   globalSessionData.isLineageOnDemandEnabled =
-    sessionData["atlas.lineage.on.demand.enabled"] || false;
+    sessionData["atlas.lineage.on.demand.enabled"] ?? false;
   globalSessionData.lineageNodeCount =
-    sessionData["atlas.lineage.on.demand.default.node.count"] || 3;
+    sessionData["atlas.lineage.on.demand.default.node.count"] ?? 3;
   globalSessionData.isTimezoneFormatEnabled =
-    sessionData["atlas.ui.date.timezone.format.enabled"] || true;
+    sessionData["atlas.ui.date.timezone.format.enabled"] ?? true;
 };
 
 export { globalSession, entityImgPath, dateTimeFormat, dateFormat };

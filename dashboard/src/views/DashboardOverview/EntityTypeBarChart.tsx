@@ -114,8 +114,11 @@ const EntityTypeBarChart = memo(
 					payload?: EntityTypeDistributionItem;
 				}>;
 			};
-			if (!p?.active || !p?.payload?.length) return null;
-			const row = p.payload[0]?.payload;
+			if (!p?.active) return null;
+			const pl = p.payload;
+			if (pl == null) return null;
+			if (!pl.length) return null;
+			const row = pl[0]?.payload;
 			if (!row) return null;
 			return (
 				<Box sx={{ p: 1.5, bgcolor: "background.paper", borderRadius: 1, boxShadow: 2, minWidth: 140 }}>

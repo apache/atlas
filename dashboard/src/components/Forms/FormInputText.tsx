@@ -45,10 +45,10 @@ const FormInputText = ({
               <Typography
                 color="#666666"
                 overflow="hidden"
-                textOverflow="ellipsis"
+                
                 maxWidth="160px"
                 fontSize={14}
-              >{`(${typeName})`}</Typography>
+               noWrap>{`(${typeName})`}</Typography>
             </LightTooltip>
           </div>
           <TextField

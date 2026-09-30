@@ -176,6 +176,10 @@ public class DataMigrationService implements Service {
         }
 
         private File getFileFromImportDirectory(String importDirectory, String fileName) {
+            if (StringUtils.isEmpty(importDirectory)) {
+                return new File(fileName);
+            }
+
             return Paths.get(importDirectory, fileName).toFile();
         }
     }

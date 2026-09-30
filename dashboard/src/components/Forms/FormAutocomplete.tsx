@@ -110,11 +110,11 @@ const FormAutocomplete = ({ data, control }: any) => {
               <LightTooltip title={`Data Type: (${typeName})`}>
                 <Typography
                   color="#666666"
-                  textOverflow="ellipsis"
+                  
                   maxWidth="160px"
                   overflow="hidden"
                   fontSize={14}
-                >{`(${typeName})`}</Typography>
+                 noWrap>{`(${typeName})`}</Typography>
               </LightTooltip>
             </div>
             <Autocomplete

@@ -43,6 +43,9 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.ClassificationAssociateRequest;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
+import org.apache.atlas.model.instance.FailedEntity;
+import org.apache.atlas.model.instance.PurgeSummary;
 import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
@@ -52,9 +55,14 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.token.retriever.JwTokenRetrieverDefault;
+import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.http.HttpStatus;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -75,8 +83,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import static org.mockito.Matchers.anyString;
+import static org.apache.atlas.AtlasBaseClient.PROP_REST_AUTH_TOKEN_SUPPLIER;
+import static org.apache.atlas.token.retriever.JwTokenRetrieverDefault.JWT_SOURCE;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -114,7 +127,7 @@ public class AtlasClientV2Test {
 
         when(response.getStatus()).thenReturn(Response.Status.NO_CONTENT.getStatusCode());
 
-        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(any(), ArgumentMatchers.<Class>any(), any())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
@@ -135,7 +148,7 @@ public class AtlasClientV2Test {
         ClientResponse response = mock(ClientResponse.class);
 
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(any(), ArgumentMatchers.<Class>any(), any())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
@@ -2511,6 +2524,79 @@ public class AtlasClientV2Test {
     }
 
     @Test
+    public void testPurgeEntitiesByGuidsAssignsToBaseType() throws Exception {
+        TestableAtlasClientV2 client = new TestableAtlasClientV2();
+        EntityMutationResponse mockResponse = new EntityMutationResponse();
+        client.setMockResponse(mockResponse, EntityMutationResponse.class);
+
+        EntityMutationResponse result = client.purgeEntitiesByGuids(Collections.singleton("guid1"));
+
+        assertNotNull(result);
+        assertEquals(result, mockResponse);
+    }
+
+    @Test
+    public void testPurgeEntitiesByGuidsDeserializesPurgeFieldsOnHttp200() throws Exception {
+        EntityMutationResponse result = invokePurgeWithMockedHttpResponse(HttpStatus.SC_OK, buildSamplePurgeResponseJson());
+
+        assertPurgeResponseFields(result);
+    }
+
+    @Test
+    public void testPurgeEntitiesByGuidsDeserializedResponseAssignsToBaseType() throws Exception {
+        EntityMutationResponse result = invokePurgeWithMockedHttpResponse(HttpStatus.SC_OK, buildSamplePurgeResponseJson());
+
+        assertNotNull(result.getEntitiesByOperation(EntityOperation.PURGE));
+        assertEquals(result.getEntitiesByOperation(EntityOperation.PURGE).size(), 1);
+        assertEquals(result.getEntitiesByOperation(EntityOperation.PURGE).get(0).getGuid(), "purged-guid");
+    }
+
+    private EntityMutationResponse invokePurgeWithMockedHttpResponse(int httpStatus, String responseJson) throws Exception {
+        AtlasClientV2       atlasClient = new AtlasClientV2(service, configuration);
+        WebResource.Builder builder     = setupBuilder(AtlasClientV2.API_V2.PURGE_ENTITIES_BY_GUIDS, service);
+        ClientResponse      response    = mock(ClientResponse.class);
+
+        when(response.getStatus()).thenReturn(httpStatus);
+        when(response.getEntity(String.class)).thenReturn(responseJson);
+        when(builder.method(eq(javax.ws.rs.HttpMethod.PUT), eq(ClientResponse.class), any())).thenReturn(response);
+
+        return atlasClient.purgeEntitiesByGuids(Collections.singleton("purged-guid"));
+    }
+
+    private static String buildSamplePurgeResponseJson() {
+        EntityMutationResponse response = new EntityMutationResponse();
+
+        Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities = new HashMap<>();
+        List<AtlasEntityHeader> purged = new ArrayList<>();
+        purged.add(new AtlasEntityHeader("Table", "purged-guid", null));
+        mutatedEntities.put(EntityOperation.PURGE, purged);
+        response.setMutatedEntities(mutatedEntities);
+
+        response.addFailedEntity(new FailedEntity("failed-guid", "ATLAS-404-00-006", "instance not found"));
+        response.setSummary(new PurgeSummary(2, 1, 0, 1, 0));
+
+        return AtlasJson.toJson(response);
+    }
+
+    private static void assertPurgeResponseFields(EntityMutationResponse result) {
+        assertNotNull(result);
+        assertNotNull(result.getPurgedEntities());
+        assertEquals(result.getPurgedEntities().size(), 1);
+        assertEquals(result.getPurgedEntities().get(0).getGuid(), "purged-guid");
+
+        assertNotNull(result.getFailedEntities());
+        assertEquals(result.getFailedEntities().size(), 1);
+        assertEquals(result.getFailedEntities().get(0).getGuid(), "failed-guid");
+        assertEquals(result.getFailedEntities().get(0).getErrorCode(), "ATLAS-404-00-006");
+        assertEquals(result.getFailedEntities().get(0).getErrorMessage(), "instance not found");
+
+        assertNotNull(result.getPurgeSummary());
+        assertEquals(result.getPurgeSummary().getRequestedCount(), 2);
+        assertEquals(result.getPurgeSummary().getPurgedCount(), 1);
+        assertEquals(result.getPurgeSummary().getFailedCount(), 1);
+    }
+
+    @Test
     public void testAddClassificationByEntityRequest() throws Exception {
         TestableAtlasClientV2 client = new TestableAtlasClientV2();
         ClassificationAssociateRequest request = new ClassificationAssociateRequest();
@@ -2641,5 +2727,108 @@ public class AtlasClientV2Test {
         // Should not throw exception
         client.addClassifications("TestType", attributes, classifications);
         assertTrue(true);
+    }
+
+    @Test
+    public void testDefaultTokenSupplier() throws Exception {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(JWT_SOURCE, "")).thenReturn("env");
+
+        AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+        assertTokenSupplierClass(client, JwTokenRetrieverDefault.class);
+    }
+
+    @Test
+    public void testCustomTokenSupplier() throws Exception {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestTokenSupplier.class.getName());
+
+        AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+        assertTokenSupplierClass(client, TestTokenSupplier.class);
+    }
+
+    @Test
+    public void testCustomTokenSupplierWithConfig() throws Exception {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestTokenSupplierWithConfig.class.getName());
+
+        AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+        assertTokenSupplierClass(client, TestTokenSupplierWithConfig.class);
+    }
+
+    @Test
+    public void testNonExistingTokenSupplier() {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn("NonExistingTokenSupplier");
+
+        try {
+            AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+            fail("AtlasClientV2 instantiation should have failed. Token supplier class: NonExistingTokenSupplier");
+        } catch (IllegalArgumentException ignore) {
+            // ignored
+        }
+    }
+
+    @Test
+    public void testInvalidTokenSupplier() {
+        Configuration configuration = Mockito.mock(Configuration.class);
+
+        when(configuration.getString(PROP_REST_AUTH_TOKEN_SUPPLIER)).thenReturn(TestInvalidTokenSupplier.class.getName());
+
+        try {
+            AtlasClientV2 client = new AtlasClientV2(service, configuration);
+
+            fail("AtlasClientV2 instantiation should have failed. Token supplier class: " + TestInvalidTokenSupplier.class.getName());
+        } catch (IllegalArgumentException ignore) {
+            // ignored
+        }
+    }
+
+    private void assertTokenSupplierClass(AtlasClientV2 client, Class clz) throws Exception {
+        Field fieldTokenSupplier = AtlasBaseClient.class.getDeclaredField("tokenSupplier");
+
+        fieldTokenSupplier.setAccessible(true);
+
+        Object tokenSupplier = fieldTokenSupplier.get(client);
+
+        assertNotNull(tokenSupplier);
+        assertEquals(tokenSupplier.getClass(), clz);
+    }
+
+    private static class TestTokenSupplier implements Supplier<String> {
+        public TestTokenSupplier() {
+        }
+
+        @Override
+        public String get() {
+            return "testToken";
+        }
+    }
+
+    private static class TestTokenSupplierWithConfig implements Supplier<String> {
+        public TestTokenSupplierWithConfig(Configuration ignored) {
+        }
+
+        @Override
+        public String get() {
+            return "testTokenWithConfig";
+        }
+    }
+
+    private static class TestInvalidTokenSupplier {
+        public TestInvalidTokenSupplier() {
+        }
+
+        public String get() {
+            return "testToken";
+        }
     }
 }

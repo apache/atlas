@@ -457,25 +457,25 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public EntityMutationResponse createEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
-        return callAPI(API_V2.CREATE_ENTITY, EntityMutationResponse.class, entity);
+        return callAPI(API_V2.CREATE_ENTITY, EntityMutationResponse.class, AtlasType.toJson(entity));
     }
 
     public EntityMutationResponse createEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
-        return callAPI(API_V2.CREATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
+        return callAPI(API_V2.CREATE_ENTITIES, EntityMutationResponse.class, AtlasType.toJson(atlasEntities));
     }
 
     public EntityMutationResponse updateEntity(AtlasEntityWithExtInfo entity) throws AtlasServiceException {
-        return callAPI(API_V2.UPDATE_ENTITY, EntityMutationResponse.class, entity);
+        return callAPI(API_V2.UPDATE_ENTITY, EntityMutationResponse.class, AtlasType.toJson(entity));
     }
 
     public EntityMutationResponse updateEntities(AtlasEntitiesWithExtInfo atlasEntities) throws AtlasServiceException {
-        return callAPI(API_V2.UPDATE_ENTITIES, EntityMutationResponse.class, atlasEntities);
+        return callAPI(API_V2.UPDATE_ENTITIES, EntityMutationResponse.class, AtlasType.toJson(atlasEntities));
     }
 
     public EntityMutationResponse updateEntityByAttribute(String typeName, Map<String, String> uniqAttributes, AtlasEntityWithExtInfo entityInfo) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(uniqAttributes);
 
-        return callAPI(API_V2.UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, entityInfo, queryParams, typeName);
+        return callAPI(API_V2.UPDATE_ENTITY_BY_ATTRIBUTE, EntityMutationResponse.class, AtlasType.toJson(entityInfo), queryParams, typeName);
     }
 
     public EntityMutationResponse partialUpdateEntityByGuid(String entityGuid, Object attrValue, String attrName) throws AtlasServiceException {
@@ -518,23 +518,23 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void addClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>) null, classifications, (String[]) null);
+        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>) null, AtlasType.toJson(classifications), (String[]) null);
     }
 
     public void addClassifications(String typeName, Map<String, String> uniqAttributes, List<AtlasClassification> classifications) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(uniqAttributes);
 
-        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATION_BY_TYPE_AND_ATTRIBUTE, typeName), (Class<?>) null, classifications, queryParams);
+        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATION_BY_TYPE_AND_ATTRIBUTE, typeName), (Class<?>) null, AtlasType.toJson(classifications), queryParams);
     }
 
     public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), (Class<?>) null, classifications);
+        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), (Class<?>) null, AtlasType.toJson(classifications));
     }
 
     public void updateClassifications(String typeName, Map<String, String> uniqAttributes, List<AtlasClassification> classifications) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = attributesToQueryParams(uniqAttributes);
 
-        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATION_BY_TYPE_AND_ATTRIBUTE, typeName), (Class<?>) null, classifications, queryParams);
+        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATION_BY_TYPE_AND_ATTRIBUTE, typeName), (Class<?>) null, AtlasType.toJson(classifications), queryParams);
     }
 
     public String setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasServiceException {

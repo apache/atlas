@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.atlas-hive
       args:
-        - HIVE_HADOOP_VERSION=${HIVE_HADOOP_VERSION}
+        - HADOOP_VERSION=${HADOOP_VERSION}
         - HIVE_VERSION=${HIVE_VERSION}
         - ATLAS_VERSION=${ATLAS_VERSION}
     image: atlas-hive
@@ -32,7 +32,7 @@ services:
       atlas-kafka:
         condition: service_started
     environment:
-      - HIVE_HADOOP_VERSION
+      - HADOOP_VERSION
       - HIVE_VERSION
       - ATLAS_VERSION
 

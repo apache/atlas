@@ -64,10 +64,10 @@ const FormDatepicker = ({ data, control, fieldName }: any) => {
                 <Typography
                   color="#666666"
                   overflow="hidden"
-                  textOverflow="ellipsis"
+                  
                   maxWidth="160px"
                   fontSize={14}
-                >{`(${typeName})`}</Typography>
+                 noWrap>{`(${typeName})`}</Typography>
               </LightTooltip>
             </div>
             <div className="w-100">

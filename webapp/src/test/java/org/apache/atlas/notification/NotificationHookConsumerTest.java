@@ -47,17 +47,18 @@ import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.server.common.service.ServiceState;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AdaptiveWaiter;
 import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.kafka.common.TopicPartition;
 import org.mockito.Mock;
@@ -65,6 +66,7 @@ import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -99,7 +101,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -157,7 +159,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumerCanProceedIfServerIsReady() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class));
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
 
@@ -165,12 +167,12 @@ public class NotificationHookConsumerTest {
 
         assertTrue(hookConsumer.serverAvailable(timer));
 
-        verifyZeroInteractions(timer);
+        verifyNoInteractions(timer);
     }
 
     @Test
     public void testConsumerWaitsNTimesIfServerIsNotReadyNTimes() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class));
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
 
@@ -187,7 +189,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testCommitIsCalledWhenMessageIsProcessed() throws AtlasServiceException, AtlasException {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
         NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
         EntityCreateRequest message = mock(EntityCreateRequest.class);
@@ -203,24 +205,32 @@ public class NotificationHookConsumerTest {
     }
 
     @Test
-    public void testCommitIsNotCalledEvenWhenMessageProcessingFails() throws AtlasServiceException, AtlasException, AtlasBaseException {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+    public void testCommitIsNotCalledEvenWhenMessageProcessingFails() throws Exception {
+        Configuration config = buildFailedMsgCacheConfig(10);
+        when(config.getInt(NotificationHookConsumer.CONSUMER_RETRIES_PROPERTY, 3)).thenReturn(1);
+
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
+
         EntityCreateRequest message = new EntityCreateRequest("user", Collections.singletonList(mock(Referenceable.class)));
 
         when(atlasEntityStore.createOrUpdate(any(EntityStream.class), anyBoolean())).thenThrow(new RuntimeException("Simulating exception in processing message"));
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1));
 
-        verifyZeroInteractions(consumer);
+        // After max retries, the offset is committed so the consumer can move past the failed message
+        verify(consumer, times(1)).commit(any(TopicPartition.class), anyLong());
     }
 
     @Test
     public void testUnknownTypeNameInPartialUpdateIsNotRetried() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
         AtlasObjectId entityId = new AtlasObjectId("trino_table", "qualifiedName", "db.tbl@cl1");
         AtlasEntity entity = new AtlasEntity("trino_table");
         HookNotification.EntityPartialUpdateRequestV2 message = new HookNotification.EntityPartialUpdateRequestV2("user", entityId, new AtlasEntity.AtlasEntityWithExtInfo(entity));
@@ -235,9 +245,11 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testUnknownReferredEntityTypeNameInCreateIsNotRetried() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
         AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(new AtlasEntity("hive_table"));
 
         entities.addReferredEntity(new AtlasEntity("unknown_type"));
@@ -252,9 +264,11 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testUnknownTypeNameInV1PartialUpdateIsNotRetried() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
         HookNotificationV1.EntityPartialUpdateRequest message = new HookNotificationV1.EntityPartialUpdateRequest("user", "trino_table", "qualifiedName", "db.tbl@cl1", new Referenceable("trino_table"));
 
         when(typeRegistry.getEntityTypeByName("trino_table")).thenReturn(null);
@@ -268,9 +282,11 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testUnknownTypeNameInDeleteV2IsNotRetried() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(consumer);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
         List<AtlasObjectId> objectIds = Arrays.asList(new AtlasObjectId("hive_table", "qualifiedName", "db.t1@cl1"), new AtlasObjectId("unknown_type", "qualifiedName", "x@cl1"));
 
         when(typeRegistry.getEntityTypeByName("unknown_type")).thenReturn(null);
@@ -283,7 +299,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumerProceedsWithFalseIfInterrupted() throws Exception {
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class));
         NotificationHookConsumer.Timer timer = mock(NotificationHookConsumer.Timer.class);
 
@@ -303,7 +319,7 @@ public class NotificationHookConsumerTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         notificationHookConsumer.startInternal(configuration, executorService);
 
         verify(notificationInterface).createConsumers(NotificationType.HOOK, 1);
@@ -321,11 +337,11 @@ public class NotificationHookConsumerTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
 
         notificationHookConsumer.startInternal(configuration, executorService);
 
-        verifyZeroInteractions(notificationInterface);
+        verifyNoInteractions(notificationInterface);
     }
 
     @Test
@@ -340,7 +356,7 @@ public class NotificationHookConsumerTest {
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
 
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
 
         notificationHookConsumer.startInternal(configuration, executorService);
         notificationHookConsumer.instanceIsActive();
@@ -360,7 +376,7 @@ public class NotificationHookConsumerTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
-        final NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        final NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
 
         doAnswer(new Answer() {
             @Override
@@ -391,7 +407,7 @@ public class NotificationHookConsumerTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
-        final NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        final NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
 
         notificationHookConsumer.startInternal(configuration, executorService);
         notificationHookConsumer.instanceIsPassive();
@@ -463,7 +479,7 @@ public class NotificationHookConsumerTest {
         when(notificationInterface.createConsumers(ASYNC_IMPORT, 1)).thenReturn(consumers);
         doNothing().when(notificationInterface).deleteTopic(ASYNC_IMPORT, AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId);
 
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
 
         // setting this just so this test would not create hook consumers
         Field consumerDisabledField = NotificationHookConsumer.class.getDeclaredField("consumerDisabled");
@@ -572,7 +588,7 @@ public class NotificationHookConsumerTest {
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
 
         // TestableNotificationHookConsumer with override that sets consumerDisabled = true
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter) {
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null) {
             @Override
             protected ExecutorService createExecutor() {
                 return mock(ExecutorService.class);
@@ -608,7 +624,7 @@ public class NotificationHookConsumerTest {
         when(notificationConsumerMock.receive()).thenThrow(new IllegalStateException());
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
 
-        return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
     }
 
     @Test
@@ -673,7 +689,7 @@ public class NotificationHookConsumerTest {
 
             NotificationHookConsumer consumer = new NotificationHookConsumer(
                     notificationInterface, atlasEntityStore, serviceState, instanceConverter,
-                    typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
 
             // Verify complex configuration was applied
             assertNotNull(consumer);
@@ -711,7 +727,7 @@ public class NotificationHookConsumerTest {
             // Should still create consumer despite invalid patterns (they get logged and ignored)
             NotificationHookConsumer consumer = new NotificationHookConsumer(
                     notificationInterface, atlasEntityStore, serviceState, instanceConverter,
-                    typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
 
             assertNotNull(consumer);
         }
@@ -831,11 +847,13 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testHookConsumerCreateOrUpdateWithBatching() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithBatching(5); // batch size of 5
+        Configuration batchConfig = buildBatchingConfig(5);
+        NotificationHookConsumer consumer = createTestConsumer();
         NotificationConsumer<HookNotification> notificationConsumer = mock(NotificationConsumer.class);
-        Object hookConsumer = createHookConsumer(consumer, notificationConsumer);
+        Object hookConsumer = createHookConsumerWithEntityProcessor(consumer, notificationConsumer, createEntityProcessor(batchConfig));
 
-        Method createOrUpdateMethod = hookConsumer.getClass().getDeclaredMethod("createOrUpdate", AtlasEntitiesWithExtInfo.class, boolean.class, AtlasMetricsUtil.NotificationStat.class, PreprocessorContext.class);
+        Object entityProcessor = getEntityProcessor(hookConsumer);
+        Method createOrUpdateMethod = SerialEntityProcessor.class.getDeclaredMethod("createOrUpdate", AtlasEntitiesWithExtInfo.class, boolean.class, AtlasMetricsUtil.NotificationStat.class, PreprocessorContext.class);
         createOrUpdateMethod.setAccessible(true);
 
         // Create entities with more than batch size
@@ -862,7 +880,7 @@ public class NotificationHookConsumerTest {
         when(mockResponse.getDeletedEntities()).thenReturn(Collections.emptyList());
         when(atlasEntityStore.createOrUpdate(any(AtlasEntityStream.class), eq(false))).thenReturn(mockResponse);
 
-        createOrUpdateMethod.invoke(hookConsumer, entitiesWithExtInfo, false, stats, context);
+        createOrUpdateMethod.invoke(entityProcessor, entitiesWithExtInfo, false, stats, context);
 
         verify(atlasEntityStore, times(3)).createOrUpdate(any(AtlasEntityStream.class), eq(false));
     }
@@ -873,7 +891,8 @@ public class NotificationHookConsumerTest {
         NotificationConsumer<HookNotification> notificationConsumer = mock(NotificationConsumer.class);
         Object hookConsumer = createHookConsumer(consumer, notificationConsumer);
 
-        Method createOrUpdateMethod = hookConsumer.getClass().getDeclaredMethod("createOrUpdate", AtlasEntitiesWithExtInfo.class, boolean.class, AtlasMetricsUtil.NotificationStat.class, PreprocessorContext.class);
+        Object entityProcessor = getEntityProcessor(hookConsumer);
+        Method createOrUpdateMethod = SerialEntityProcessor.class.getDeclaredMethod("createOrUpdate", AtlasEntitiesWithExtInfo.class, boolean.class, AtlasMetricsUtil.NotificationStat.class, PreprocessorContext.class);
         createOrUpdateMethod.setAccessible(true);
 
         AtlasEntity entity = new AtlasEntity("TestType");
@@ -894,7 +913,7 @@ public class NotificationHookConsumerTest {
         when(mockResponse.getDeletedEntities()).thenReturn(Collections.emptyList());
         when(atlasEntityStore.createOrUpdate(any(AtlasEntityStream.class), anyBoolean())).thenReturn(mockResponse);
 
-        createOrUpdateMethod.invoke(hookConsumer, entitiesWithExtInfo, false, stats, context);
+        createOrUpdateMethod.invoke(entityProcessor, entitiesWithExtInfo, false, stats, context);
 
         verify(atlasEntityStore, times(2)).createOrUpdate(any(AtlasEntityStream.class), anyBoolean());
         verify(context).prepareForPostUpdate();
@@ -902,59 +921,25 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testAdaptiveWaiterWithDifferentExceptions() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumer();
+        AdaptiveWaiter adaptiveWaiter = new AdaptiveWaiter(100L, 5000L, 100L);
 
-        Class<?> adaptiveWaiterClass = getInnerClass(NotificationHookConsumer.class, "AdaptiveWaiter");
-        Object adaptiveWaiter = adaptiveWaiterClass.getDeclaredConstructor(long.class, long.class, long.class)
-                .newInstance(100L, 5000L, 100L);
+        adaptiveWaiter.pause(new RuntimeException("Test runtime exception"));
+        adaptiveWaiter.pause(new IllegalStateException("Test illegal state"));
+        adaptiveWaiter.pause(new AtlasBaseException("Test atlas exception"));
 
-        Method pauseMethod = adaptiveWaiterClass.getDeclaredMethod("pause", Throwable.class);
-        pauseMethod.setAccessible(true);
-
-        // Test with different exception types
-        pauseMethod.invoke(adaptiveWaiter, new RuntimeException("Test runtime exception"));
-        pauseMethod.invoke(adaptiveWaiter, new IllegalStateException("Test illegal state"));
-        pauseMethod.invoke(adaptiveWaiter, new AtlasBaseException("Test atlas exception"));
-
-        Field waitDurationField = adaptiveWaiterClass.getDeclaredField("waitDuration");
-        waitDurationField.setAccessible(true);
-        long waitDuration = (Long) waitDurationField.get(adaptiveWaiter);
-
-        // Should have increased wait duration after multiple pauses
-        assertTrue(waitDuration > 100L);
+        assertTrue(adaptiveWaiter.waitDuration > 100L);
     }
 
     @Test
     public void testAdaptiveWaiterResetAfterLongInterval() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumer();
+        AdaptiveWaiter adaptiveWaiter = new AdaptiveWaiter(100L, 1000L, 100L);
 
-        Class<?> adaptiveWaiterClass = getInnerClass(NotificationHookConsumer.class, "AdaptiveWaiter");
-        Object adaptiveWaiter = adaptiveWaiterClass.getDeclaredConstructor(long.class, long.class, long.class)
-                .newInstance(100L, 1000L, 100L);
+        adaptiveWaiter.pause(new RuntimeException("Test"));
+        Thread.sleep(2500); // resetInterval = maxDuration * 2
 
-        Method pauseMethod = adaptiveWaiterClass.getDeclaredMethod("pause", Throwable.class);
-        pauseMethod.setAccessible(true);
+        adaptiveWaiter.pause(new RuntimeException("Test again"));
 
-        Method setWaitDurationsMethod = adaptiveWaiterClass.getDeclaredMethod("setWaitDurations");
-        setWaitDurationsMethod.setAccessible(true);
-
-        Field lastWaitAtField = adaptiveWaiterClass.getDeclaredField("lastWaitAt");
-        lastWaitAtField.setAccessible(true);
-
-        // Simulate wait
-        pauseMethod.invoke(adaptiveWaiter, new RuntimeException("Test"));
-
-        // Set lastWaitAt to simulate long interval
-        lastWaitAtField.set(adaptiveWaiter, System.currentTimeMillis() - 10000);
-
-        // Should reset wait duration due to long interval
-        setWaitDurationsMethod.invoke(adaptiveWaiter);
-
-        Field waitDurationField = adaptiveWaiterClass.getDeclaredField("waitDuration");
-        waitDurationField.setAccessible(true);
-        long waitDuration = (Long) waitDurationField.get(adaptiveWaiter);
-
-        assertEquals(100L, waitDuration); // Should be reset to minimum
+        assertEquals(100L, adaptiveWaiter.waitDuration);
     }
 
     @Test
@@ -1156,7 +1141,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testComplexPreprocessingScenarios() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
         // Test complex entity with multiple relationships and attributes
         AtlasEntity complexEntity = new AtlasEntity("hive_table");
@@ -1176,10 +1161,10 @@ public class NotificationHookConsumerTest {
         EntityCreateRequestV2 createRequest = new EntityCreateRequestV2("testUser", entities);
         AtlasKafkaMessage<HookNotification> kafkaMsg = new AtlasKafkaMessage<>(createRequest, 1L, "test-topic", 0);
 
-        Method preProcessMethod = NotificationHookConsumer.class.getDeclaredMethod("preProcessNotificationMessage", AtlasKafkaMessage.class);
+        Method preProcessMethod = SerialEntityProcessor.class.getDeclaredMethod("preProcessNotificationMessage", AtlasKafkaMessage.class);
         preProcessMethod.setAccessible(true);
 
-        PreprocessorContext result = (PreprocessorContext) preProcessMethod.invoke(consumer, kafkaMsg);
+        PreprocessorContext result = (PreprocessorContext) preProcessMethod.invoke(entityProcessor, kafkaMsg);
 
         assertNotNull(result);
         verify(atlasEntityStore, never()).createOrUpdate(any(), anyBoolean()); // Just preprocessing
@@ -1203,15 +1188,16 @@ public class NotificationHookConsumerTest {
             appProps.when(ApplicationProperties::get).thenReturn(batchConfig);
 
             return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState,
-                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
         }
     }
 
     @Test
     public void testHookConsumerMaxRetriesWithFailedMessageRecording() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithFailedMsgCache(2); // small cache
+        Configuration cacheConfig = buildFailedMsgCacheConfig(2);
+        NotificationHookConsumer consumer = createTestConsumer();
         NotificationConsumer<HookNotification> notificationConsumer = mock(NotificationConsumer.class);
-        Object hookConsumer = createHookConsumer(consumer, notificationConsumer);
+        Object hookConsumer = createHookConsumerWithEntityProcessor(consumer, notificationConsumer, createEntityProcessor(cacheConfig));
 
         Method handleMessageMethod = hookConsumer.getClass().getDeclaredMethod("handleMessage", AtlasKafkaMessage.class);
         handleMessageMethod.setAccessible(true);
@@ -1342,7 +1328,9 @@ public class NotificationHookConsumerTest {
         handleMessageMethod.invoke(hookConsumer, kafkaMsg);
         handleMessageMethod.invoke(hookConsumer, kafkaMsg);
 
-        verify(notificationConsumer, times(2)).commit(any(TopicPartition.class), anyLong());
+        // First message commits; second reuses the same offset and polls instead of committing again
+        verify(notificationConsumer, times(1)).commit(any(TopicPartition.class), anyLong());
+        verify(notificationConsumer, times(1)).poll();
     }
 
     @Test
@@ -1375,9 +1363,9 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testSkipHiveColumnLineageWithDuplicates() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithHiveLineageSkip();
+        Object entityProcessor = createEntityProcessorWithHiveLineageSkip();
 
-        Method skipHiveLineageMethod = NotificationHookConsumer.class.getDeclaredMethod("skipHiveColumnLineage", PreprocessorContext.class);
+        Method skipHiveLineageMethod = SerialEntityProcessor.class.getDeclaredMethod("skipHiveColumnLineage", PreprocessorContext.class);
         skipHiveLineageMethod.setAccessible(true);
 
         PreprocessorContext context = mock(PreprocessorContext.class);
@@ -1398,7 +1386,7 @@ public class NotificationHookConsumerTest {
         when(context.getKafkaMessageOffset()).thenReturn(100L);
         when(context.getKafkaPartition()).thenReturn(1);
 
-        skipHiveLineageMethod.invoke(consumer, context);
+        skipHiveLineageMethod.invoke(entityProcessor, context);
 
         verify(context, atLeast(1)).getEntities();
     }
@@ -1477,7 +1465,7 @@ public class NotificationHookConsumerTest {
     public void testEntityUpdateWithComplexRelationships() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method updateReferencesMethod = NotificationHookConsumer.class.getDeclaredMethod("updateProcessedEntityReferences", List.class, Map.class);
+        Method updateReferencesMethod = SerialEntityProcessor.class.getDeclaredMethod("updateProcessedEntityReferences", List.class, Map.class);
         updateReferencesMethod.setAccessible(true);
 
         // Create entities with complex relationships
@@ -1514,7 +1502,7 @@ public class NotificationHookConsumerTest {
         guidAssignments.put("old-col1-guid", "new-col1-guid");
         guidAssignments.put("old-schema-guid", "new-schema-guid");
 
-        updateReferencesMethod.invoke(consumer, entities, guidAssignments);
+        updateReferencesMethod.invoke(getEntityProcessor(consumer), entities, guidAssignments);
 
         // Verify references were updated
         assertEquals("new-db-guid", ((AtlasObjectId) entity1.getAttribute("database")).getGuid());
@@ -1540,7 +1528,7 @@ public class NotificationHookConsumerTest {
             appProps.when(ApplicationProperties::get).thenReturn(cacheConfig);
 
             return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState,
-                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
         }
     }
 
@@ -1561,7 +1549,7 @@ public class NotificationHookConsumerTest {
             appProps.when(ApplicationProperties::get).thenReturn(thresholdConfig);
 
             return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState,
-                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
         }
     }
 
@@ -1583,7 +1571,7 @@ public class NotificationHookConsumerTest {
             appProps.when(ApplicationProperties::get).thenReturn(ignoreConfig);
 
             return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState,
-                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
         }
     }
 
@@ -1605,13 +1593,13 @@ public class NotificationHookConsumerTest {
             appProps.when(ApplicationProperties::get).thenReturn(skipConfig);
 
             return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState,
-                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+                    instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
         }
     }
 
     @Test
     public void testPreProcessNotificationMessage() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
         // Create test message
         AtlasEntity entity = new AtlasEntity("hive_table");
@@ -1625,10 +1613,10 @@ public class NotificationHookConsumerTest {
                 new AtlasKafkaMessage<>(createRequest, 1L, "test-topic", 0);
 
         Method preProcessMethod =
-                NotificationHookConsumer.class.getDeclaredMethod("preProcessNotificationMessage", AtlasKafkaMessage.class);
+                SerialEntityProcessor.class.getDeclaredMethod("preProcessNotificationMessage", AtlasKafkaMessage.class);
         preProcessMethod.setAccessible(true);
 
-        PreprocessorContext result = (PreprocessorContext) preProcessMethod.invoke(consumer, kafkaMsg);
+        PreprocessorContext result = (PreprocessorContext) preProcessMethod.invoke(entityProcessor, kafkaMsg);
 
         assertNotNull(result, "Preprocessing should return a valid PreprocessorContext");
     }
@@ -1637,9 +1625,9 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testPreprocessEntities() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
-        Method preprocessEntitiesMethod = NotificationHookConsumer.class.getDeclaredMethod("preprocessEntities", PreprocessorContext.class);
+        Method preprocessEntitiesMethod = SerialEntityProcessor.class.getDeclaredMethod("preprocessEntities", PreprocessorContext.class);
         preprocessEntitiesMethod.setAccessible(true);
 
         // Create mock context
@@ -1653,7 +1641,7 @@ public class NotificationHookConsumerTest {
         when(context.getReferredEntities()).thenReturn(new HashMap<>());
         when(context.isIgnoredEntity("test-guid")).thenReturn(false);
 
-        preprocessEntitiesMethod.invoke(consumer, context);
+        preprocessEntitiesMethod.invoke(entityProcessor, context);
 
         verify(context).getEntities();
     }
@@ -1662,13 +1650,13 @@ public class NotificationHookConsumerTest {
     public void testTrimAndPurgeMethod() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method trimAndPurgeMethod = NotificationHookConsumer.class.getDeclaredMethod("trimAndPurge", String[].class, String.class);
+        Method trimAndPurgeMethod = SerialEntityProcessor.class.getDeclaredMethod("trimAndPurge", String[].class, String.class);
         trimAndPurgeMethod.setAccessible(true);
 
         // Test with valid values
         String[] input = {" value1 ", "", " value2", null, "value3 "};
         @SuppressWarnings("unchecked")
-        List<String> result = (List<String>) trimAndPurgeMethod.invoke(consumer, input, "default");
+        List<String> result = (List<String>) trimAndPurgeMethod.invoke(getEntityProcessor(consumer), input, "default");
 
         assertEquals(3, result.size());
         assertTrue(result.contains("value1"));
@@ -1677,13 +1665,13 @@ public class NotificationHookConsumerTest {
 
         // Test with null input
         @SuppressWarnings("unchecked")
-        List<String> defaultResult = (List<String>) trimAndPurgeMethod.invoke(consumer, null, "default");
+        List<String> defaultResult = (List<String>) trimAndPurgeMethod.invoke(getEntityProcessor(consumer), null, "default");
         assertEquals(1, defaultResult.size());
         assertEquals("default", defaultResult.get(0));
 
         // Test with empty default
         @SuppressWarnings("unchecked")
-        List<String> emptyResult = (List<String>) trimAndPurgeMethod.invoke(consumer, null, null);
+        List<String> emptyResult = (List<String>) trimAndPurgeMethod.invoke(getEntityProcessor(consumer), null, null);
         assertTrue(emptyResult.isEmpty());
     }
 
@@ -1691,22 +1679,22 @@ public class NotificationHookConsumerTest {
     public void testGetAuthenticationForUser() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method getAuthMethod = NotificationHookConsumer.class.getDeclaredMethod("getAuthenticationForUser", String.class);
+        Method getAuthMethod = SerialEntityProcessor.class.getDeclaredMethod("getAuthenticationForUser", String.class);
         getAuthMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class)) {
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
                     .thenReturn(new ArrayList<>());
 
-            Object auth = getAuthMethod.invoke(consumer, "testUser");
+            Object auth = getAuthMethod.invoke(getEntityProcessor(consumer), "testUser");
             assertNotNull(auth);
 
             // Test with null/empty username
-            Object nullAuth = getAuthMethod.invoke(consumer, (String) null);
+            Object nullAuth = getAuthMethod.invoke(getEntityProcessor(consumer), (String) null);
             assertNull(nullAuth);
 
-            Object emptyAuth = getAuthMethod.invoke(consumer, "");
+            Object emptyAuth = getAuthMethod.invoke(getEntityProcessor(consumer), "");
             assertNull(emptyAuth);
         }
     }
@@ -1715,14 +1703,14 @@ public class NotificationHookConsumerTest {
     public void testSetCurrentUser() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method setCurrentUserMethod = NotificationHookConsumer.class.getDeclaredMethod("setCurrentUser", String.class);
+        Method setCurrentUserMethod = SerialEntityProcessor.class.getDeclaredMethod("setCurrentUser", String.class);
         setCurrentUserMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class);
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class);
                 MockedStatic<org.springframework.security.core.context.SecurityContextHolder> securityContext =
                         mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
                     .thenReturn(new ArrayList<>());
 
             org.springframework.security.core.context.SecurityContext mockContext =
@@ -1730,7 +1718,7 @@ public class NotificationHookConsumerTest {
             securityContext.when(org.springframework.security.core.context.SecurityContextHolder::getContext)
                     .thenReturn(mockContext);
 
-            setCurrentUserMethod.invoke(consumer, "testUser");
+            setCurrentUserMethod.invoke(getEntityProcessor(consumer), "testUser");
 
             verify(mockContext).setAuthentication(any());
         }
@@ -1740,7 +1728,7 @@ public class NotificationHookConsumerTest {
     public void testUpdateProcessedEntityReferencesAtlasObjectId() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method updateMethod = NotificationHookConsumer.class.getDeclaredMethod("updateProcessedEntityReferences", AtlasObjectId.class, Map.class);
+        Method updateMethod = SerialEntityProcessor.class.getDeclaredMethod("updateProcessedEntityReferences", AtlasObjectId.class, Map.class);
         updateMethod.setAccessible(true);
 
         AtlasObjectId objectId = new AtlasObjectId("original-guid", "TestType");
@@ -1757,7 +1745,7 @@ public class NotificationHookConsumerTest {
     public void testUpdateProcessedEntityReferencesMap() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method updateMethod = NotificationHookConsumer.class.getDeclaredMethod("updateProcessedEntityReferences", Map.class, Map.class);
+        Method updateMethod = SerialEntityProcessor.class.getDeclaredMethod("updateProcessedEntityReferences", Map.class, Map.class);
         updateMethod.setAccessible(true);
 
         Map<String, Object> objIdMap = new HashMap<>();
@@ -1768,7 +1756,7 @@ public class NotificationHookConsumerTest {
         Map<String, String> guidAssignments = new HashMap<>();
         guidAssignments.put("original-guid", "new-guid");
 
-        updateMethod.invoke(consumer, objIdMap, guidAssignments);
+        updateMethod.invoke(getEntityProcessor(consumer), objIdMap, guidAssignments);
 
         assertEquals("new-guid", objIdMap.get("guid"));
         assertFalse(objIdMap.containsKey("typeName"));
@@ -1779,7 +1767,7 @@ public class NotificationHookConsumerTest {
     public void testUpdateProcessedEntityReferencesCollection() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method updateMethod = NotificationHookConsumer.class.getDeclaredMethod("updateProcessedEntityReferences", Collection.class, Map.class);
+        Method updateMethod = SerialEntityProcessor.class.getDeclaredMethod("updateProcessedEntityReferences", Collection.class, Map.class);
         updateMethod.setAccessible(true);
 
         AtlasObjectId objectId1 = new AtlasObjectId("guid1", "TestType1");
@@ -1795,7 +1783,7 @@ public class NotificationHookConsumerTest {
         assertEquals("guid2", objectId2.getGuid());
         assertEquals("TestType2", objectId2.getTypeName());
 
-        updateMethod.invoke(consumer, collection, guidAssignments);
+        updateMethod.invoke(getEntityProcessor(consumer), collection, guidAssignments);
 
         // objectId1 should be updated, objectId2 should remain unchanged
         assertEquals("new-guid1", objectId1.getGuid());
@@ -1808,7 +1796,7 @@ public class NotificationHookConsumerTest {
     public void testRecordProcessedEntities() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method recordMethod = NotificationHookConsumer.class.getDeclaredMethod("recordProcessedEntities", EntityMutationResponse.class, AtlasMetricsUtil.NotificationStat.class, PreprocessorContext.class);
+        Method recordMethod = SerialEntityProcessor.class.getDeclaredMethod("recordProcessedEntities", EntityMutationResponse.class, AtlasMetricsUtil.NotificationStat.class, PreprocessorContext.class);
         recordMethod.setAccessible(true);
 
         EntityMutationResponse mutationResponse = mock(EntityMutationResponse.class);
@@ -1822,7 +1810,7 @@ public class NotificationHookConsumerTest {
         when(context.getCreatedEntities()).thenReturn(Collections.emptySet());
         when(context.getDeletedEntities()).thenReturn(Collections.emptySet());
 
-        recordMethod.invoke(consumer, mutationResponse, stats, context);
+        recordMethod.invoke(getEntityProcessor(consumer), mutationResponse, stats, context);
 
         verify(stats).updateStats(mutationResponse);
         verify(context).getGuidAssignments();
@@ -1832,28 +1820,28 @@ public class NotificationHookConsumerTest {
     public void testIsEmptyMessageForDifferentTypes() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method isEmptyMethod = NotificationHookConsumer.class.getDeclaredMethod("isEmptyMessage", AtlasKafkaMessage.class);
+        Method isEmptyMethod = SerialEntityProcessor.class.getDeclaredMethod("isEmptyMessage", AtlasKafkaMessage.class);
         isEmptyMethod.setAccessible(true);
 
         // Test CREATE_V2 with empty entities
         EntityCreateRequestV2 emptyCreate = new EntityCreateRequestV2("user", new AtlasEntitiesWithExtInfo());
         AtlasKafkaMessage<HookNotification> emptyCreateMsg = new AtlasKafkaMessage<>(emptyCreate, 1L, "topic", 0);
-        assertTrue((Boolean) isEmptyMethod.invoke(consumer, emptyCreateMsg));
+        assertTrue((Boolean) isEmptyMethod.invoke(getEntityProcessor(consumer), emptyCreateMsg));
 
         // Test CREATE_V2 with null entities
         EntityCreateRequestV2 nullCreate = new EntityCreateRequestV2("user", null);
         AtlasKafkaMessage<HookNotification> nullCreateMsg = new AtlasKafkaMessage<>(nullCreate, 1L, "topic", 0);
-        assertTrue((Boolean) isEmptyMethod.invoke(consumer, nullCreateMsg));
+        assertTrue((Boolean) isEmptyMethod.invoke(getEntityProcessor(consumer), nullCreateMsg));
 
         // Test UPDATE_V2 with empty entities
         EntityUpdateRequestV2 emptyUpdate = new EntityUpdateRequestV2("user", new AtlasEntitiesWithExtInfo());
         AtlasKafkaMessage<HookNotification> emptyUpdateMsg = new AtlasKafkaMessage<>(emptyUpdate, 1L, "topic", 0);
-        assertTrue((Boolean) isEmptyMethod.invoke(consumer, emptyUpdateMsg));
+        assertTrue((Boolean) isEmptyMethod.invoke(getEntityProcessor(consumer), emptyUpdateMsg));
 
         // Test other message types (should return false)
         EntityDeleteRequestV2 deleteRequest = new EntityDeleteRequestV2("user", Collections.emptyList());
         AtlasKafkaMessage<HookNotification> deleteMsg = new AtlasKafkaMessage<>(deleteRequest, 1L, "topic", 0);
-        assertFalse((Boolean) isEmptyMethod.invoke(consumer, deleteMsg));
+        assertFalse((Boolean) isEmptyMethod.invoke(getEntityProcessor(consumer), deleteMsg));
     }
 
     @Test
@@ -1929,18 +1917,19 @@ public class NotificationHookConsumerTest {
         NotificationConsumer<HookNotification> notificationConsumer = mock(NotificationConsumer.class);
         Object hookConsumer = createHookConsumer(consumer, notificationConsumer);
 
-        Method recordFailedMethod = hookConsumer.getClass().getDeclaredMethod("recordFailedMessages");
+        Object entityProcessor = getEntityProcessor(hookConsumer);
+        Method recordFailedMethod = SerialEntityProcessor.class.getDeclaredMethod("recordFailedMessages", String.class, List.class);
         recordFailedMethod.setAccessible(true);
 
         // Add some failed messages
-        Field failedMessagesField = hookConsumer.getClass().getDeclaredField("failedMessages");
+        Field failedMessagesField = SerialEntityProcessor.class.getDeclaredField("failedMessages");
         failedMessagesField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        List<String> failedMessages = (List<String>) failedMessagesField.get(hookConsumer);
+        List<String> failedMessages = (List<String>) failedMessagesField.get(entityProcessor);
         failedMessages.add("failed message 1");
         failedMessages.add("failed message 2");
 
-        recordFailedMethod.invoke(hookConsumer);
+        recordFailedMethod.invoke(entityProcessor, "test-topic", failedMessages);
 
         assertTrue(failedMessages.isEmpty()); // Should be cleared after recording
     }
@@ -1968,7 +1957,7 @@ public class NotificationHookConsumerTest {
         NotificationHookConsumer consumer = new NotificationHookConsumer(
                 notificationInterface, atlasEntityStore, serviceState,
                 instanceConverter, typeRegistry, metricsUtil,
-                entityCorrelationStore, asyncImporter);
+                entityCorrelationStore, asyncImporter, null);
 
         // ✅ Manually initialize consumers list (otherwise it's null)
         Field consumersField = NotificationHookConsumer.class.getDeclaredField("consumers");
@@ -2087,27 +2076,15 @@ public class NotificationHookConsumerTest {
     public void testConstructorWithExceptionInConfigurationAccess() throws Exception {
         Configuration faultyConfig = mock(Configuration.class);
 
-        // Make config throw error on access
+        when(faultyConfig.getInt(NotificationHookConsumer.CONSUMER_FAILEDCACHESIZE_PROPERTY, 1)).thenReturn(1);
         when(faultyConfig.getInt(NotificationHookConsumer.CONSUMER_RETRIES_PROPERTY, 3))
                 .thenThrow(new RuntimeException("Config access error"));
-        // Add other config properties to prevent NPE
-        when(faultyConfig.getBoolean("atlas.notification.create.shell.entity.for.non.existing.ref", false))
-                .thenReturn(false);
-        when(faultyConfig.getInt("atlas.notification.hook.consumer.buffering.interval", 10))
-                .thenReturn(10);
-        when(faultyConfig.getInt("atlas.notification.hook.consumer.buffering.batch.size", 25))
-                .thenReturn(25);
 
-        try (MockedStatic<ApplicationProperties> appProps = mockStatic(ApplicationProperties.class)) {
-            appProps.when(ApplicationProperties::get).thenReturn(faultyConfig);
-
-            try {
-                new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState,
-                        instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
-                fail("Expected exception due to config access error");
-            } catch (Exception e) {
-                assertTrue(e.getMessage().contains("Config access error") || e.getCause().getMessage().contains("Config access error"));
-            }
+        try {
+            createEntityProcessor(faultyConfig);
+            fail("Expected exception due to config access error");
+        } catch (RuntimeException e) {
+            assertTrue(e.getMessage().contains("Config access error"));
         }
     }
 
@@ -2193,9 +2170,9 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testPreprocessHiveTypes() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
-        Method preprocessHiveTypesMethod = NotificationHookConsumer.class.getDeclaredMethod("preprocessHiveTypes", PreprocessorContext.class);
+        Method preprocessHiveTypesMethod = SerialEntityProcessor.class.getDeclaredMethod("preprocessHiveTypes", PreprocessorContext.class);
         preprocessHiveTypesMethod.setAccessible(true);
 
         PreprocessorContext context = mock(PreprocessorContext.class);
@@ -2206,7 +2183,7 @@ public class NotificationHookConsumerTest {
         List<AtlasEntity> entities = Collections.singletonList(hiveTable);
         when(context.getEntities()).thenReturn(entities);
 
-        preprocessHiveTypesMethod.invoke(consumer, context);
+        preprocessHiveTypesMethod.invoke(entityProcessor, context);
 
         verify(context).getEntities();
     }
@@ -2215,9 +2192,9 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testSkipHiveColumnLineage() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
-        Method skipHiveLineageMethod = NotificationHookConsumer.class.getDeclaredMethod("skipHiveColumnLineage", PreprocessorContext.class);
+        Method skipHiveLineageMethod = SerialEntityProcessor.class.getDeclaredMethod("skipHiveColumnLineage", PreprocessorContext.class);
         skipHiveLineageMethod.setAccessible(true);
 
         PreprocessorContext context = mock(PreprocessorContext.class);
@@ -2235,16 +2212,16 @@ public class NotificationHookConsumerTest {
         when(context.getReferredEntities()).thenReturn(new HashMap<>());
 
         // This is a void method, so just verify it executes without exception
-        skipHiveLineageMethod.invoke(consumer, context);
+        skipHiveLineageMethod.invoke(entityProcessor, context);
 
         verify(context, atLeast(1)).getEntities();
     }
 
     @Test
     public void testRdbmsTypeRemoveOwnedRefAttrs() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
-        Method rdbmsRemoveMethod = NotificationHookConsumer.class.getDeclaredMethod("rdbmsTypeRemoveOwnedRefAttrs", PreprocessorContext.class);
+        Method rdbmsRemoveMethod = SerialEntityProcessor.class.getDeclaredMethod("rdbmsTypeRemoveOwnedRefAttrs", PreprocessorContext.class);
         rdbmsRemoveMethod.setAccessible(true);
 
         PreprocessorContext context = mock(PreprocessorContext.class);
@@ -2255,16 +2232,16 @@ public class NotificationHookConsumerTest {
         List<AtlasEntity> entities = Collections.singletonList(rdbmsTable);
         when(context.getEntities()).thenReturn(entities);
 
-        rdbmsRemoveMethod.invoke(consumer, context);
+        rdbmsRemoveMethod.invoke(entityProcessor, context);
 
         verify(context).getEntities();
     }
 
     @Test
     public void testPruneObjectPrefixForS3V2Directory() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
-        Method pruneMethod = NotificationHookConsumer.class.getDeclaredMethod("pruneObjectPrefixForS3V2Directory", PreprocessorContext.class);
+        Method pruneMethod = SerialEntityProcessor.class.getDeclaredMethod("pruneObjectPrefixForS3V2Directory", PreprocessorContext.class);
         pruneMethod.setAccessible(true);
 
         PreprocessorContext context = mock(PreprocessorContext.class);
@@ -2274,16 +2251,16 @@ public class NotificationHookConsumerTest {
         List<AtlasEntity> entities = Collections.singletonList(s3Object);
         when(context.getEntities()).thenReturn(entities);
 
-        pruneMethod.invoke(consumer, context);
+        pruneMethod.invoke(entityProcessor, context);
 
         verify(context, atLeast(1)).getEntities();
     }
 
     @Test
     public void testPreprocessSparkProcessAttributes() throws Exception {
-        NotificationHookConsumer consumer = createTestConsumerWithPreprocessing();
+        Object entityProcessor = createEntityProcessorWithPreprocessing();
 
-        Method sparkPreprocessMethod = NotificationHookConsumer.class.getDeclaredMethod("preprocessSparkProcessAttributes", PreprocessorContext.class);
+        Method sparkPreprocessMethod = SerialEntityProcessor.class.getDeclaredMethod("preprocessSparkProcessAttributes", PreprocessorContext.class);
         sparkPreprocessMethod.setAccessible(true);
 
         PreprocessorContext context = mock(PreprocessorContext.class);
@@ -2293,7 +2270,7 @@ public class NotificationHookConsumerTest {
         List<AtlasEntity> entities = Collections.singletonList(sparkProcess);
         when(context.getEntities()).thenReturn(entities);
 
-        sparkPreprocessMethod.invoke(consumer, context);
+        sparkPreprocessMethod.invoke(entityProcessor, context);
 
         verify(context).getEntities();
     }
@@ -2302,7 +2279,7 @@ public class NotificationHookConsumerTest {
     public void testUpdateProcessedEntityReferencesObject() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method updateMethod = NotificationHookConsumer.class.getDeclaredMethod("updateProcessedEntityReferences", Object.class, Map.class);
+        Method updateMethod = SerialEntityProcessor.class.getDeclaredMethod("updateProcessedEntityReferences", Object.class, Map.class);
         updateMethod.setAccessible(true);
 
         // Test with AtlasObjectId
@@ -2314,7 +2291,7 @@ public class NotificationHookConsumerTest {
         assertEquals("original-guid", objectId.getGuid());
         assertEquals("TestType", objectId.getTypeName());
 
-        updateMethod.invoke(consumer, objectId, guidAssignments);
+        updateMethod.invoke(getEntityProcessor(consumer), objectId, guidAssignments);
         assertEquals("new-guid", objectId.getGuid());
         assertNull(objectId.getTypeName()); // cleared after GUID assignment
 
@@ -2324,14 +2301,14 @@ public class NotificationHookConsumerTest {
         objIdMap.put("typeName", "MapType");
         guidAssignments.put("map-guid", "new-map-guid");
 
-        updateMethod.invoke(consumer, objIdMap, guidAssignments);
+        updateMethod.invoke(getEntityProcessor(consumer), objIdMap, guidAssignments);
         assertEquals("new-map-guid", objIdMap.get("guid"));
 
         // Test with Collection
         List<AtlasObjectId> collection = Collections.singletonList(new AtlasObjectId("Type1", "collection-guid"));
         guidAssignments.put("collection-guid", "new-collection-guid");
 
-        updateMethod.invoke(consumer, collection, guidAssignments);
+        updateMethod.invoke(getEntityProcessor(consumer), collection, guidAssignments);
     }
 
     @Test
@@ -2496,14 +2473,14 @@ public class NotificationHookConsumerTest {
     public void testSetCurrentUserWithAuthorizationEnabled() throws Exception {
         NotificationHookConsumer consumer = createTestConsumerWithAuthorization();
 
-        Method setCurrentUserMethod = NotificationHookConsumer.class.getDeclaredMethod("setCurrentUser", String.class);
+        Method setCurrentUserMethod = SerialEntityProcessor.class.getDeclaredMethod("setCurrentUser", String.class);
         setCurrentUserMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class);
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class);
                 MockedStatic<org.springframework.security.core.context.SecurityContextHolder> securityContext =
                         mockStatic(org.springframework.security.core.context.SecurityContextHolder.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("testUser"))
                     .thenReturn(new ArrayList<>());
 
             org.springframework.security.core.context.SecurityContext mockContext =
@@ -2511,7 +2488,7 @@ public class NotificationHookConsumerTest {
             securityContext.when(org.springframework.security.core.context.SecurityContextHolder::getContext)
                     .thenReturn(mockContext);
 
-            setCurrentUserMethod.invoke(consumer, "testUser");
+            setCurrentUserMethod.invoke(getEntityProcessor(consumer), "testUser");
 
             verify(mockContext).setAuthentication(any());
         }
@@ -2523,24 +2500,24 @@ public class NotificationHookConsumerTest {
     public void testGetAuthenticationForUserWithCache() throws Exception {
         NotificationHookConsumer consumer = createTestConsumerWithAuthorization();
 
-        Method getAuthMethod = NotificationHookConsumer.class.getDeclaredMethod("getAuthenticationForUser", String.class);
+        Method getAuthMethod = SerialEntityProcessor.class.getDeclaredMethod("getAuthenticationForUser", String.class);
         getAuthMethod.setAccessible(true);
 
-        try (MockedStatic<org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider> authProvider =
-                        mockStatic(org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.class)) {
-            authProvider.when(() -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"))
+        try (MockedStatic<org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider> authProvider =
+                        mockStatic(org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.class)) {
+            authProvider.when(() -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"))
                     .thenReturn(new ArrayList<>());
 
             // First call - should cache
-            Object auth1 = getAuthMethod.invoke(consumer, "cachedUser");
+            Object auth1 = getAuthMethod.invoke(getEntityProcessor(consumer), "cachedUser");
             assertNotNull(auth1);
 
             // Second call - should use cache
-            Object auth2 = getAuthMethod.invoke(consumer, "cachedUser");
+            Object auth2 = getAuthMethod.invoke(getEntityProcessor(consumer), "cachedUser");
             assertNotNull(auth2);
 
             // Should only call the static method once due to caching
-            authProvider.verify(times(1), () -> org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"));
+            authProvider.verify(times(1), () -> org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI("cachedUser"));
         }
     }
 
@@ -2549,7 +2526,7 @@ public class NotificationHookConsumerTest {
     public void testIsEmptyMessageWithNullMessage() throws Exception {
         NotificationHookConsumer consumer = createTestConsumer();
 
-        Method isEmptyMethod = NotificationHookConsumer.class
+        Method isEmptyMethod = SerialEntityProcessor.class
                 .getDeclaredMethod("isEmptyMessage", AtlasKafkaMessage.class);
         isEmptyMethod.setAccessible(true);
 
@@ -2557,7 +2534,7 @@ public class NotificationHookConsumerTest {
                 new AtlasKafkaMessage<>(null, 1L, "topic", 0);
 
         try {
-            isEmptyMethod.invoke(consumer, nullMessage);
+            isEmptyMethod.invoke(getEntityProcessor(consumer), nullMessage);
             fail("Expected NullPointerException but none thrown");
         } catch (InvocationTargetException e) {
             assertTrue(e.getCause() instanceof NullPointerException,
@@ -2593,7 +2570,7 @@ public class NotificationHookConsumerTest {
     }
 
     private NotificationHookConsumer createTestConsumer() throws AtlasException {
-        return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter);
+        return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
     }
 
     // ==================== HELPER METHODS ====================
@@ -2618,7 +2595,8 @@ public class NotificationHookConsumerTest {
                     typeRegistry,
                     metricsUtil,
                     entityCorrelationStore,
-                    asyncImporter);
+                    asyncImporter,
+                    null);
         }
     }
 
@@ -2649,8 +2627,98 @@ public class NotificationHookConsumerTest {
                     typeRegistry,
                     metricsUtil,
                     entityCorrelationStore,
-                    asyncImporter);
+                    asyncImporter,
+                    null);
         }
+    }
+
+    private Configuration buildBatchingConfig(int batchSize) {
+        Configuration batchConfig = mock(Configuration.class);
+        when(batchConfig.getInt(NotificationHookConsumer.CONSUMER_COMMIT_BATCH_SIZE, 50)).thenReturn(batchSize);
+        when(batchConfig.getInt(NotificationHookConsumer.CONSUMER_RETRIES_PROPERTY, 3)).thenReturn(3);
+        when(batchConfig.getBoolean("atlas.notification.create.shell.entity.for.non.existing.ref", false)).thenReturn(false);
+        when(batchConfig.getInt("atlas.notification.hook.consumer.buffering.interval", 10)).thenReturn(10);
+        when(batchConfig.getInt("atlas.notification.hook.consumer.buffering.batch.size", 25)).thenReturn(25);
+        when(batchConfig.getBoolean("atlas.notification.consumer.create.shell.entity.for.non-existing.ref", true)).thenReturn(false);
+        when(batchConfig.getInt("atlas.notification.consumer.message.buffering.interval.seconds", 15)).thenReturn(10);
+        when(batchConfig.getInt("atlas.notification.consumer.message.buffering.batch.size", 100)).thenReturn(25);
+        return batchConfig;
+    }
+
+    private Configuration buildFailedMsgCacheConfig(int cacheSize) {
+        Configuration cacheConfig = mock(Configuration.class);
+        when(cacheConfig.getInt(NotificationHookConsumer.CONSUMER_FAILEDCACHESIZE_PROPERTY, 1)).thenReturn(cacheSize);
+        when(cacheConfig.getInt(NotificationHookConsumer.CONSUMER_RETRIES_PROPERTY, 3)).thenReturn(3);
+        when(cacheConfig.getBoolean("atlas.notification.create.shell.entity.for.non.existing.ref", false)).thenReturn(false);
+        when(cacheConfig.getInt("atlas.notification.hook.consumer.buffering.interval", 10)).thenReturn(10);
+        when(cacheConfig.getInt("atlas.notification.hook.consumer.buffering.batch.size", 25)).thenReturn(25);
+        when(cacheConfig.getBoolean("atlas.notification.consumer.create.shell.entity.for.non-existing.ref", true)).thenReturn(false);
+        when(cacheConfig.getInt("atlas.notification.consumer.message.buffering.interval.seconds", 15)).thenReturn(10);
+        when(cacheConfig.getInt("atlas.notification.consumer.message.buffering.batch.size", 100)).thenReturn(25);
+        return cacheConfig;
+    }
+
+    private Object createEntityProcessor(Configuration configuration) throws Exception {
+        return new SerialEntityProcessor(
+                configuration,
+                metricsUtil,
+                null,
+                atlasEntityStore,
+                instanceConverter,
+                new EntityCorrelationManager(entityCorrelationStore),
+                typeRegistry,
+                LoggerFactory.getLogger("FAILED"),
+                LoggerFactory.getLogger("LARGE_MESSAGES"),
+                asyncImporter);
+    }
+
+    private Object createEntityProcessorWithPreprocessing() throws Exception {
+        Configuration preprocessingConfig = mock(Configuration.class);
+        when(preprocessingConfig.getBoolean(NotificationHookConsumer.CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true)).thenReturn(true);
+        when(preprocessingConfig.getStringArray(NotificationHookConsumer.CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN)).thenReturn(new String[] {"temp_.*"});
+        when(preprocessingConfig.getInt(NotificationHookConsumer.CONSUMER_RETRIES_PROPERTY, 3)).thenReturn(3);
+        when(preprocessingConfig.getBoolean("atlas.notification.create.shell.entity.for.non.existing.ref", false)).thenReturn(true);
+        when(preprocessingConfig.getInt("atlas.notification.hook.consumer.buffering.interval", 10)).thenReturn(10);
+        when(preprocessingConfig.getInt("atlas.notification.hook.consumer.buffering.batch.size", 25)).thenReturn(25);
+        when(preprocessingConfig.getBoolean("atlas.notification.consumer.create.shell.entity.for.non-existing.ref", true)).thenReturn(false);
+        when(preprocessingConfig.getInt("atlas.notification.consumer.message.buffering.interval.seconds", 15)).thenReturn(10);
+        when(preprocessingConfig.getInt("atlas.notification.consumer.message.buffering.batch.size", 100)).thenReturn(25);
+        return createEntityProcessor(preprocessingConfig);
+    }
+
+    private Object createEntityProcessorWithHiveLineageSkip() throws Exception {
+        Configuration skipConfig = mock(Configuration.class);
+        when(skipConfig.getBoolean(NotificationHookConsumer.CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false)).thenReturn(true);
+        when(skipConfig.getInt(NotificationHookConsumer.CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15)).thenReturn(1);
+        when(skipConfig.getInt(NotificationHookConsumer.CONSUMER_RETRIES_PROPERTY, 3)).thenReturn(3);
+        when(skipConfig.getBoolean("atlas.notification.create.shell.entity.for.non.existing.ref", false)).thenReturn(false);
+        when(skipConfig.getInt("atlas.notification.hook.consumer.buffering.interval", 10)).thenReturn(10);
+        when(skipConfig.getInt("atlas.notification.hook.consumer.buffering.batch.size", 25)).thenReturn(25);
+        when(skipConfig.getBoolean("atlas.notification.consumer.create.shell.entity.for.non-existing.ref", true)).thenReturn(false);
+        when(skipConfig.getInt("atlas.notification.consumer.message.buffering.interval.seconds", 15)).thenReturn(10);
+        when(skipConfig.getInt("atlas.notification.consumer.message.buffering.batch.size", 100)).thenReturn(25);
+        return createEntityProcessor(skipConfig);
+    }
+
+    private Object getEntityProcessor(Object hookConsumer) throws Exception {
+        Field field = hookConsumer.getClass().getDeclaredField("entityProcessor");
+        field.setAccessible(true);
+        return field.get(hookConsumer);
+    }
+
+    private Object getEntityProcessor(NotificationHookConsumer consumer) throws Exception {
+        return getEntityProcessor(createHookConsumer(consumer, mock(NotificationConsumer.class)));
+    }
+
+    private Object createHookConsumerWithEntityProcessor(
+            NotificationHookConsumer notificationHookConsumer,
+            NotificationConsumer<HookNotification> notificationConsumer,
+            Object entityProcessor) throws Exception {
+        Object hookConsumer = createHookConsumer(notificationHookConsumer, notificationConsumer);
+        Field field = hookConsumer.getClass().getDeclaredField("entityProcessor");
+        field.setAccessible(true);
+        field.set(hookConsumer, entityProcessor);
+        return hookConsumer;
     }
 
     private Object createHookConsumer(NotificationHookConsumer consumer, NotificationConsumer<HookNotification> notificationConsumer) throws Exception {
@@ -2685,7 +2753,7 @@ public class NotificationHookConsumerTest {
         int executorCreationCount;
 
         TestableNotificationHookConsumer() throws AtlasException {
-            super(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+            super(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         }
 
         @Override

@@ -50,13 +50,35 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
 
     for (let key in stateObject) {
       let keys: string[] = key.split(":");
-      key = keys[0];
-      let subKey = keys[1];
-      if (stats[key]) {
-        stats[key][subKey] = stateObject[`${key}:${subKey}`];
+      const mainKey = keys[0];
+      const subKey = keys[1];
+      
+      if (!stats[mainKey]) {
+        stats[mainKey] = {};
+      }
+      
+      // Handle multi-level nesting (e.g., Notification:topicDetails:topic1:offsetStart)
+      if (keys.length > 2) {
+        // For topicDetails structure: Notification:topicDetails:topic1:offsetStart
+        if (subKey === 'topicDetails' && keys.length === 4) {
+          const topicName = keys[2];
+          const topicProperty = keys[3];
+          
+          if (!stats[mainKey][subKey]) {
+            stats[mainKey][subKey] = {};
+          }
+          if (!stats[mainKey][subKey][topicName]) {
+            stats[mainKey][subKey][topicName] = {};
+          }
+          stats[mainKey][subKey][topicName][topicProperty] = stateObject[key];
+        } else {
+          // Fallback for other multi-level structures
+          const remainingKey = keys.slice(1).join(':');
+          stats[mainKey][remainingKey] = stateObject[key];
+        }
       } else {
-        stats[key] = {};
-        stats[key][subKey] = stateObject[`${key}:${subKey}`];
+        // Handle simple two-level nesting (e.g., Notification:currentDay)
+        stats[mainKey][subKey] = stateObject[key];
       }
     }
 
@@ -235,7 +257,7 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  Object.entries(serverData?.Server)?.map(
+                  Object.entries(serverData?.Server || {})?.map(
                     ([key, value]: any) => (
                       <TableRow key={key}>
                         <TableCell>{key}</TableCell>
@@ -305,7 +327,7 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
                               ? stats.Notification["lastMessageProcessedTime"]
                               : stats.Notification[header];
                           return (
-                            <TableCell align="left">
+                            <TableCell key={header} align="left">
                               {returnVal
                                 ? getStatsValue({
                                     value: returnVal,
@@ -330,11 +352,9 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
                     </TableCell>
                     {notificationTableHeader.map((header) => {
                       return (
-                        <>
-                          <TableCell align="right">
-                            <Typography fontWeight="600">{header}</Typography>
-                          </TableCell>
-                        </>
+                        <TableCell key={header} align="right">
+                          <Typography fontWeight="600">{header}</Typography>
+                        </TableCell>
                       );
                     })}
                   </TableRow>
@@ -351,10 +371,10 @@ const ServerStats = ({ selectedValue, currentMetricsData }: any) => {
                       <TableRow key={index}>
                         <TableCell>{obj.label}</TableCell>
                         {tableHeader.map((header) => (
-                          <TableCell align="right">
+                          <TableCell key={header} align="right">
                             {getTmplValue(obj, header)}
                           </TableCell>
-                        ))}{" "}
+                        ))}
                       </TableRow>
                     ))
                   )}

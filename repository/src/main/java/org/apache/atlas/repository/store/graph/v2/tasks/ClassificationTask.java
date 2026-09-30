@@ -50,6 +50,8 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_RELATIONSHIP_GUID        = "relationshipGuid";
     public static final String PARAM_RELATIONSHIP_OBJECT      = "relationshipObject";
     public static final String PARAM_RELATIONSHIP_EDGE_ID     = "relationshipEdgeId";
+    public static final String PARAM_OLD_TAG_PROPAGATION      = "oldTagPropagation";
+    public static final String PARAM_OLD_BLOCKED_CLASSIFICATIONS = "oldBlockedClassifications";
     public static final String PARAM_IMPORT_IN_PROGRESS       = "isImportInProgress";
     public static final boolean DEFAULT_IMPORT_IN_PROGRESS    = false;
 
@@ -84,10 +86,21 @@ public abstract class ClassificationTask extends AbstractTask {
     }
 
     public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship) {
+        return toParameters(relationshipEdgeId, relationship, null, null);
+    }
+
+    public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship, String oldTagPropagation, java.util.List<String> oldBlockedClassifications) {
         Map<String, Object>  ret = new HashMap<>();
 
         ret.put(PARAM_RELATIONSHIP_EDGE_ID, relationshipEdgeId);
         ret.put(PARAM_RELATIONSHIP_OBJECT, AtlasType.toJson(relationship));
+
+        if (oldTagPropagation != null) {
+            ret.put(PARAM_OLD_TAG_PROPAGATION, oldTagPropagation);
+        }
+        if (oldBlockedClassifications != null) {
+            ret.put(PARAM_OLD_BLOCKED_CLASSIFICATIONS, AtlasType.toJson(oldBlockedClassifications));
+        }
 
         return ret;
     }

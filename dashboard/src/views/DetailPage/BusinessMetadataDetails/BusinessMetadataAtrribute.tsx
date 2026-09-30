@@ -114,15 +114,23 @@ const BusinessMetadataAtrribute = ({ componentProps, row }: any) => {
         accessorKey: "options",
         cell: (info: any) => {
           const { applicableEntityTypes } = info.row.original.options || {};
-          const typesObj = !isEmpty(applicableEntityTypes)
-            ? JSON.parse(applicableEntityTypes, (_key, value) => {
+          let typesObj: string[] = [];
+          if (!isEmpty(applicableEntityTypes)) {
+            try {
+              typesObj = JSON.parse(applicableEntityTypes, (_key, value) => {
                 try {
                   return JSON.parse(value);
                 } catch (e) {
                   return value;
                 }
-              })
-            : [];
+              });
+            } catch (e) {
+              typesObj = [];
+            }
+          }
+          if (!Array.isArray(typesObj)) {
+            typesObj = [];
+          }
 
           return (
             <Stack

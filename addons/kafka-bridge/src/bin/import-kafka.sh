@@ -70,6 +70,7 @@ fi
 # log dir for applications
 ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-/var/log/atlas}"
 export ATLAS_LOG_DIR
+mkdir -p "${ATLAS_LOG_DIR}"
 LOGFILE="$ATLAS_LOG_DIR/import-kafka.log"
 
 TIME=`date +%Y%m%d%H%M%s`
@@ -78,7 +79,7 @@ TIME=`date +%Y%m%d%H%M%s`
 if [ ! -z "$KAFKA_CONF_DIR" ]; then
     KAFKA_CONF=$KAFKA_CONF_DIR
 elif [ ! -z "$KAFKA_HOME" ]; then
-    KAFKA_CONF="$KAFKA_HOME/conf"
+    KAFKA_CONF="$KAFKA_HOME/config"
 elif [ -e /etc/kafka/conf ]; then
     KAFKA_CONF="/etc/kafka/conf"
 else
@@ -102,9 +103,11 @@ if [ -z "$KAFKA_HOME" ]; then
     fi
 fi
 
-KAFKA_CP="${KAFKA_CONF}"
+# Do not add ${KAFKA_CONF} to the classpath: broker log4j.properties is picked up
+# automatically and writes to ${kafka.logs.dir}/server.log (i.e. /server.log when unset).
+KAFKA_CP=""
 
-for i in "${KAFKA_HOME}/libs/kafka-clients"*.jar "${KAFKA_HOME}/libs/slf4j-"*.jar  "${KAFKA_HOME}/libs/log4j-"*.jar "${KAFKA_HOME}/libs/commons-"*.jar "${KAFKA_HOME}/libs/jackson-module-jaxb-annotations"*.jar; do
+for i in "${KAFKA_HOME}/libs/kafka-clients"*.jar "${KAFKA_HOME}/libs/slf4j-"*.jar "${KAFKA_HOME}/libs/commons-"*.jar "${KAFKA_HOME}/libs/jackson-module-jaxb-annotations"*.jar; do
     KAFKA_CP="${KAFKA_CP}:$i"
 done
 

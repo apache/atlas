@@ -717,6 +717,7 @@ define(['require',
                     );
                 }
             },
+            // Marks business-metadata string columns so search results sanitize (not raw HTML).
             checkIsEditorValue: function(key) {
                 var isEditorKey = false;
                 if (this.businessMetadataAttributes.length) {
@@ -1372,6 +1373,7 @@ define(['require',
                     var view = new CreateEntityLayoutView({
                         entityDefCollection: that.entityDefCollection,
                         typeHeaders: that.typeHeaders,
+                        enumDefCollection: that.enumDefCollection,
                         searchVent: that.searchVent,
                         callback: function() {
                             that.fetchCollection();

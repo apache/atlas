@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, lazy, Suspense } from "react";
 import { Divider, IconButton, Stack, Tabs, Typography } from "@mui/material";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import DisplayImage from "@components/EntityDisplayImage";
@@ -28,31 +28,48 @@ import {
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { entityStateReadOnly, globalSessionData } from "@utils/Enum";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
-import PropertiesTab from "./EntityDetailTabs/PropertiesTab/PropertiesTab";
 import SkeletonLoader from "@components/SkeletonLoader";
-import RelationshipsTab from "./EntityDetailTabs/RelationshipsTab";
-import ClassificationsTab from "./EntityDetailTabs/ClassificationsTab";
 import { CustomButton, LightTooltip, LinkTab } from "@components/muiComponents";
 import { toast } from "react-toastify";
-import AuditsTab from "./EntityDetailTabs/AuditsTab";
 import { EntityState } from "@models/relationshipSearchType";
 import { useSelector } from "react-redux";
-import SchemaTab from "./EntityDetailTabs/SchemaTab";
-import ReplicationAuditTable from "./EntityDetailTabs/ReplicationAuditTab";
-import ProfileTab from "./EntityDetailTabs/ProfileTab";
-import TaskTab from "./EntityDetailTabs/TaskTab";
 import { Item, samePageLinkNavigation, StyledPaper } from "@utils/Muiutils";
 import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { normalizeSchemaElementsAttribute } from "@utils/schemaElementsAttributeUtils";
 import { SchemaTabCacheState } from "@models/schemaTabTypes";
 import React from "react";
+
 import AddTag from "@views/Classification/AddTag";
 import AssignTerm from "@views/Glossary/AssignTerm";
 import { removeTerm } from "@api/apiMethods/glossaryApiMethod";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
-import LineageTab from "./EntityDetailTabs/LineageTab";
+import { isEntityModificationAllowed } from "@utils/EntityStatus";
+
+const PropertiesTab = lazy(
+  () => import("./EntityDetailTabs/PropertiesTab/PropertiesTab")
+);
+const RelationshipsTab = lazy(
+  () => import("./EntityDetailTabs/RelationshipsTab")
+);
+const ClassificationsTab = lazy(
+  () => import("./EntityDetailTabs/ClassificationsTab")
+);
+const AuditsTab = lazy(() => import("./EntityDetailTabs/AuditsTab"));
+const SchemaTab = lazy(() => import("./EntityDetailTabs/SchemaTab"));
+const ReplicationAuditTable = lazy(
+  () => import("./EntityDetailTabs/ReplicationAuditTab")
+);
+const ProfileTab = lazy(() => import("./EntityDetailTabs/ProfileTab"));
+const TaskTab = lazy(() => import("./EntityDetailTabs/TaskTab"));
+const LineageTab = lazy(() => import("./EntityDetailTabs/LineageTab"));
+
+const tabFallback = (
+  <Stack direction="column" spacing={2} sx={{ p: 2 }}>
+    <SkeletonLoader count={4} variant="text" className="text-loader" />
+  </Stack>
+);
 
 const EntityDetailPage: React.FC = () => {
   const { guid } = useParams();
@@ -97,18 +114,17 @@ const EntityDetailPage: React.FC = () => {
   const { name }: { name: string; found: boolean; key: any } =
     extractKeyValueFromEntity(entity);
   let isProcess: boolean = false;
-  let typeName: any = extractKeyValueFromEntity(entity, "typeName");
   let entityObj =
     !isEmpty(entityDefObj) && !isEmpty(entity)
       ? entityDefObj.find((obj: { name: string }) => {
-          return obj.name == entity.typeName;
-        })
+        return obj.name == entity.typeName;
+      })
       : {};
   let superTypes = !isEmpty(entityDefObj)
     ? getNestedSuperTypes({
-        data: entityObj,
-        collection: entityDefObj
-      })
+      data: entityObj,
+      collection: entityDefObj
+    })
     : [];
   let isLineageRender: boolean | null = superTypes.find((type) => {
     if (type === "DataSet" || type === "Process") {
@@ -119,8 +135,11 @@ const EntityDetailPage: React.FC = () => {
     }
   });
   if (!isLineageRender) {
+    const entityTypeName = entity?.typeName;
     isLineageRender =
-      typeName === "DataSet" || typeName === "Process" ? true : null;
+      entityTypeName === "DataSet" || entityTypeName === "Process"
+        ? true
+        : null;
   }
 
   let schemaOptions = entityObj?.options;
@@ -235,52 +254,66 @@ const EntityDetailPage: React.FC = () => {
     ? Object.values(tagObj?.["propagatedMap"] || {})
     : [];
 
-  const tabComponents: Record<string, React.ReactNode> = {
-    properties: (
-      <PropertiesTab
-        entity={entity}
-        referredEntities={referredEntities}
-        loading={loading}
-      />
-    ),
-    lineage: <LineageTab entity={entity} isProcess={isProcess} />,
-    relationship: (
-      <RelationshipsTab
-        entity={entity}
-        referredEntities={referredEntities}
-        loading={loading}
-      />
-    ),
-    classification: (
-      <ClassificationsTab entity={entity} loading={loading} tags={tagObj} />
-    ),
-    audit: (
-      <AuditsTab
-        entity={entity}
-        referredEntities={referredEntities}
-        loading={loading}
-      />
-    ),
-    schema: (
-      <SchemaTab
-        key={guid}
-        entity={entity}
-        referredEntities={referredEntities}
-        loading={loading}
-        schemaRelationNames={schemaRelationNames}
-        schemaCache={schemaTabCache}
-        setSchemaCache={setSchemaTabCache}
-      />
-    ),
-    raudits: (
-      <ReplicationAuditTable
-        entity={entity}
-        referredEntities={referredEntities}
-        loading={loading}
-      />
-    ),
-    profile: <ProfileTab entity={entity} />,
-    pendingTask: <TaskTab />
+  const renderActiveTab = (): React.ReactNode => {
+    const tab = activeTab || "properties";
+
+    switch (tab) {
+      case "lineage":
+        return <LineageTab entity={entity} isProcess={isProcess} />;
+      case "relationship":
+        return (
+          <RelationshipsTab
+            entity={entity}
+            referredEntities={referredEntities}
+            loading={loading}
+          />
+        );
+      case "classification":
+        return (
+          <ClassificationsTab entity={entity} loading={loading} tags={tagObj} />
+        );
+      case "audit":
+        return (
+          <AuditsTab
+            entity={entity}
+            referredEntities={referredEntities}
+            loading={loading}
+          />
+        );
+      case "schema":
+        return (
+          <SchemaTab
+            key={guid}
+            entity={entity}
+            referredEntities={referredEntities}
+            loading={loading}
+            schemaRelationNames={schemaRelationNames}
+            schemaCache={schemaTabCache}
+            setSchemaCache={setSchemaTabCache}
+          />
+        );
+      case "raudits":
+        return (
+          <ReplicationAuditTable
+            entity={entity}
+            referredEntities={referredEntities}
+            loading={loading}
+          />
+        );
+      case "profile":
+        return <ProfileTab entity={entity} />;
+      case "pendingTask":
+        return <TaskTab />;
+      case "properties":
+      default:
+        return (
+          <PropertiesTab
+            entity={entity}
+            referredEntities={referredEntities}
+            loading={loading}
+          />
+        );
+    }
   };
 
   return (
@@ -296,7 +329,7 @@ const EntityDetailPage: React.FC = () => {
         className="detail-page-paper"
         variant="outlined"
       >
-        {loading ? (
+        {loading || detailPageData === null ? (
           <Stack direction="row" spacing={2} alignItems="center">
             <SkeletonLoader
               count={1}
@@ -356,7 +389,7 @@ const EntityDetailPage: React.FC = () => {
           }}
         >
           <Stack>
-            {loading ? (
+            {loading || detailPageData === null ? (
               <Stack direction="column" spacing={2} alignItems="left">
                 <SkeletonLoader
                   count={1}
@@ -377,20 +410,22 @@ const EntityDetailPage: React.FC = () => {
                   >
                     Classifications
                   </Typography>
-                  <LightTooltip title={"Add Classifications"}>
-                    <IconButton
-                      component="label"
-                      role={undefined}
-                      tabIndex={-1}
-                      size="small"
-                      color="primary"
-                      onClick={() => {
-                        setOpenAddTagModal(true);
-                      }}
-                    >
-                      <AddCircleOutlineIcon className="mr-0" fontSize="small" />{" "}
-                    </IconButton>
-                  </LightTooltip>
+                  {!loading && isEntityModificationAllowed(entity?.status) && (
+                    <LightTooltip title={"Add Classifications"}>
+                      <IconButton
+                        component="label"
+                        role={undefined}
+                        tabIndex={-1}
+                        size="small"
+                        color="primary"
+                        onClick={() => {
+                          setOpenAddTagModal(true);
+                        }}
+                      >
+                        <AddCircleOutlineIcon className="mr-0" fontSize="small" />{" "}
+                      </IconButton>
+                    </LightTooltip>
+                  )}
                 </Stack>
 
                 <Stack
@@ -417,7 +452,7 @@ const EntityDetailPage: React.FC = () => {
 
           {!entity?.typeName?.includes("AtlasGlossary") && (
             <Stack>
-              {loading ? (
+              {loading || detailPageData === null ? (
                 <Stack direction="column" spacing={2} alignItems="flex-start">
                   <SkeletonLoader
                     count={1}
@@ -438,28 +473,30 @@ const EntityDetailPage: React.FC = () => {
                     >
                       Terms
                     </Typography>
-                    <LightTooltip title="Add Term">
-                      <IconButton
-                        component="label"
-                        role={undefined}
-                        tabIndex={-1}
-                        size="small"
-                        color="primary"
-                        onClick={() => {
-                          if (!hasAnyGlossaryTerms) {
-                            toast.dismiss();
-                            toast.info("There are no available terms");
-                            return;
-                          }
-                          setOpenAddTermModal(true);
-                        }}
-                      >
-                        <AddCircleOutlineIcon
-                          className="mr-0"
-                          fontSize="small"
-                        />
-                      </IconButton>
-                    </LightTooltip>
+                    {!loading && isEntityModificationAllowed(entity?.status) && (
+                      <LightTooltip title="Add Term">
+                        <IconButton
+                          component="label"
+                          role={undefined}
+                          tabIndex={-1}
+                          size="small"
+                          color="primary"
+                          onClick={() => {
+                            if (!hasAnyGlossaryTerms) {
+                              toast.dismiss();
+                              toast.info("There are no available terms");
+                              return;
+                            }
+                            setOpenAddTermModal(true);
+                          }}
+                        >
+                          <AddCircleOutlineIcon
+                            className="mr-0"
+                            fontSize="small"
+                          />
+                        </IconButton>
+                      </LightTooltip>
+                    )}
                   </Stack>
 
                   <Stack
@@ -558,7 +595,7 @@ const EntityDetailPage: React.FC = () => {
                 <LinkTab
                   label={
                     entity.typeName == "hive_db" ||
-                    entity.typeName == "hbase_namespace"
+                      entity.typeName == "hbase_namespace"
                       ? "Tables"
                       : "Table"
                   }
@@ -567,7 +604,7 @@ const EntityDetailPage: React.FC = () => {
             {taskTabEnabled && uiTaskTabEnabled && <LinkTab label="Tasks" />}
           </Tabs>
 
-          {tabComponents[activeTab || "properties"]}
+          <Suspense fallback={tabFallback}>{renderActiveTab()}</Suspense>
         </Stack>
       </Item>
       {openAddTagModal && (
