@@ -126,6 +126,7 @@ public enum AtlasConfiguration {
     ASYNC_IMPORT_TOPIC_PREFIX("atlas.async.import.topic.prefix", "ATLAS_IMPORT_"),
     ASYNC_IMPORT_REQUEST_ID_PREFIX("atlas.async.import.request_id.prefix", "async_import_"),
     REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false),
+    GRAPH_VERTEX_EDGE_SCAN_BATCH_SIZE("atlas.graph.vertex.edge.scan.batch.size", 500),
     PURGE_API_MAX_REQUEST_SIZE("atlas.purge.api.max.request.size", 1000);
     private static final Configuration APPLICATION_PROPERTIES;
 
