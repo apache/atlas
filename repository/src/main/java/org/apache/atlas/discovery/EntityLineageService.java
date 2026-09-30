@@ -117,6 +117,8 @@ public class EntityLineageService implements AtlasLineageService {
             ret = getLineageInfoV2(guid, direction, depth, isDataSet);
         }
 
+        scrubLineageEntities(ret);
+
         return ret;
     }
 
@@ -136,6 +138,8 @@ public class EntityLineageService implements AtlasLineageService {
 
         // filtering out on-demand relations which has input & output nodes within the limit
         cleanupRelationsOnDemand(ret);
+
+        scrubLineageEntities(ret);
 
         return ret;
     }
@@ -676,6 +680,22 @@ public class EntityLineageService implements AtlasLineageService {
             String visitedEdgeLabel = isInputEdge ? getVisitedEdgeLabel(inGuid, outGuid, relationGuid) : getVisitedEdgeLabel(outGuid, inGuid, relationGuid);
 
             visitedEdges.add(visitedEdgeLabel);
+        }
+    }
+
+    /**
+     * Scrub lineage entities the caller is not authorized (ENTITY_READ) to read - similar to search-result scrubbing
+     * in {@code EntityDiscoveryService.scrubSearchResults()}. The full lineage graph is gathered first; here we only
+     * redact the headers of unauthorized entities (attributes, classifications, meanings are cleared). Node guids and
+     * relations are retained so the lineage graph stays connected.
+     */
+    private void scrubLineageEntities(AtlasLineageInfo lineageInfo) {
+        if (lineageInfo == null || MapUtils.isEmpty(lineageInfo.getGuidEntityMap())) {
+            return;
+        }
+
+        for (AtlasEntityHeader entityHeader : lineageInfo.getGuidEntityMap().values()) {
+            AtlasAuthorizationUtils.scrubEntityHeader(entityHeader, atlasTypeRegistry);
         }
     }
 

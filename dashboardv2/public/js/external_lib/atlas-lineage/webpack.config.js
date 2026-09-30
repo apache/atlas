@@ -40,7 +40,8 @@ const config = {
 		"dagre-d3": "dagreD3",
 		platform: "platform",
 		dagre: "dagre",
-		graphlib: "graphlib"
+		graphlib: "graphlib",
+		underscore: "underscore"
 	},
 	module: {
 		rules: [

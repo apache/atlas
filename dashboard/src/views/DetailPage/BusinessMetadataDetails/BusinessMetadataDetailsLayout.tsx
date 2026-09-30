@@ -60,7 +60,7 @@ const BusinessMetadataDetailsLayout = () => {
   const { businessMetadataDefs } = businessMetaData || {};
 
   const businessmetaDataObj = !isEmpty(businessMetadataDefs)
-    ? businessMetadataDefs.find((obj: { guid: string }) => obj.guid == bmguid)
+    ? businessMetadataDefs.find((obj: { guid: string }) => obj.guid == bmguid) || {}
     : {};
 
   const { description, attributeDefs, name } = businessmetaDataObj;

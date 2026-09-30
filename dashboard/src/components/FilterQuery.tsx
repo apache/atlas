@@ -74,16 +74,16 @@ export const FilterQuery = ({ value }: any) => {
             data-cy={`${obj.id}${key}`}
             label={
               <>
-                <Stack direction="row" gap="0.125em">
-                  <Typography className="searchKey">
+                <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+                  <Typography className="searchKey" sx={{ flexShrink: 0 }}>
                     {systemAttributes[obj.id]
                       ? systemAttributes[obj.id]
                       : obj.id}
                   </Typography>
-                  <Typography className="operator" fontWeight="600">
+                  <Typography className="operator" fontWeight="600" sx={{ flexShrink: 0 }}>
                     {getDisplayOperator(obj.operator)}{" "}
                   </Typography>
-                  <Typography className="searchValue">
+                  <Typography className="searchValue" title={filterQueryValue[obj.id] ? filterQueryValue[obj.id][obj.value] : obj.value}>
                     {filterQueryValue[obj.id]
                       ? filterQueryValue[obj.id][obj.value]
                       : obj.value}
@@ -97,6 +97,7 @@ export const FilterQuery = ({ value }: any) => {
             size="small"
             variant="outlined"
             clickable
+            sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
           />
         );
       }
@@ -281,11 +282,11 @@ export const FilterQuery = ({ value }: any) => {
         data-type="type"
         label={
           <>
-            <Stack direction="row">
-              <Typography className="searchKey" gap="0.125em">
+            <Stack direction="row" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" gap="0.125em" sx={{ flexShrink: 0 }}>
                 Type:
               </Typography>
-              <Typography className="searchValue">{value.type}</Typography>
+              <Typography className="searchValue" title={value.type}>{value.type}</Typography>
             </Stack>
           </>
         }
@@ -295,6 +296,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
     let entityFilters: any = attributeFilter.extractUrl({
@@ -341,9 +343,9 @@ export const FilterQuery = ({ value }: any) => {
         data-type="tag"
         label={
           <>
-            <Stack direction="row" gap="0.125em" alignItems="center">
-              <Typography className="searchKey">Classification: </Typography>
-              <Typography className="searchValue">{value.tag}</Typography>
+            <Stack direction="row" gap="0.125em" alignItems="center" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>Classification: </Typography>
+              <Typography className="searchValue" title={value.tag} noWrap>{value.tag}</Typography>
             </Stack>
           </>
         }
@@ -353,6 +355,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
     let tagFilters: any = attributeFilter.extractUrl({
@@ -397,9 +400,9 @@ export const FilterQuery = ({ value }: any) => {
         data-type="relationshipName"
         label={
           <>
-            <Stack direction="row" gap="0.125em">
-              <Typography className="searchKey">Relationship: </Typography>
-              <Typography className="searchValue">
+            <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>Relationship: </Typography>
+              <Typography className="searchValue" title={value.relationshipName}>
                 {value.relationshipName}
               </Typography>
             </Stack>
@@ -411,6 +414,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
     let relationshipFilters: any = attributeFilter.extractUrl({
@@ -421,7 +425,7 @@ export const FilterQuery = ({ value }: any) => {
     if (value.relationshipFilters) {
       const conditionForRelationship: any =
         value.relationshipFilters.rules &&
-        value?.relationshipFilters?.rules?.length === 1
+          value?.relationshipFilters?.rules?.length === 1
           ? ""
           : "AND";
       relationshipKeyValue = (
@@ -461,9 +465,9 @@ export const FilterQuery = ({ value }: any) => {
         data-type="term"
         label={
           <>
-            <Stack direction="row" gap="0.125em">
-              <Typography className="searchKey">Term: </Typography>
-              <Typography className="searchValue">{value.term}</Typography>
+            <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>Term: </Typography>
+              <Typography className="searchValue" title={value.term}>{value.term}</Typography>
             </Stack>
           </>
         }
@@ -473,6 +477,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
 
@@ -488,9 +493,9 @@ export const FilterQuery = ({ value }: any) => {
         data-type="query"
         label={
           <>
-            <Stack direction="row" gap="0.125em">
-              <Typography className="searchKey">Query: </Typography>
-              <Typography className="searchValue">
+            <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>Query: </Typography>
+              <Typography className="searchValue" title={value.query.trim()}>
                 {value.query.trim()}
               </Typography>
             </Stack>
@@ -502,6 +507,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
 
@@ -517,9 +523,9 @@ export const FilterQuery = ({ value }: any) => {
         data-type="excludeST"
         label={
           <>
-            <Stack direction="row" gap="0.125em">
-              <Typography className="searchKey">Exclude sub-types: </Typography>
-              <Typography className="searchValue">{value.excludeST}</Typography>
+            <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>Exclude sub-types: </Typography>
+              <Typography className="searchValue" title={value.excludeST}>{value.excludeST}</Typography>
             </Stack>
           </>
         }
@@ -529,6 +535,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
 
@@ -544,11 +551,11 @@ export const FilterQuery = ({ value }: any) => {
         data-type="excludeSC"
         label={
           <>
-            <Stack direction="row" gap="0.125em">
-              <Typography className="searchKey">
+            <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>
                 Exclude sub-classifications:{" "}
               </Typography>
-              <Typography className="searchValue">{value.excludeSC}</Typography>
+              <Typography className="searchValue" title={value.excludeSC}>{value.excludeSC}</Typography>
             </Stack>
           </>
         }
@@ -558,6 +565,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
 
@@ -573,11 +581,11 @@ export const FilterQuery = ({ value }: any) => {
         data-type="includeDE"
         label={
           <>
-            <Stack direction="row" gap="0.125em">
-              <Typography className="searchKey">
+            <Stack direction="row" gap="0.125em" sx={{ maxWidth: '100%', overflow: 'hidden' }}>
+              <Typography className="searchKey" sx={{ flexShrink: 0 }}>
                 Show historical entities:{" "}
               </Typography>
-              <Typography className="searchValue">{value.includeDE}</Typography>
+              <Typography className="searchValue" title={value.includeDE}>{value.includeDE}</Typography>
             </Stack>
           </>
         }
@@ -587,6 +595,7 @@ export const FilterQuery = ({ value }: any) => {
         size="small"
         variant="outlined"
         clickable
+        sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', display: 'flex', alignItems: 'center' } }}
       />
     );
 

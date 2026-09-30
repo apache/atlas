@@ -16,6 +16,8 @@ services:
       - atlas
     volumes:
       - ./data:/home/atlas/data
+      - ./config/atlas/${ATLAS_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application.properties:ro
+      - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties:ro
     ports:
       - "21000:21000"
     depends_on:

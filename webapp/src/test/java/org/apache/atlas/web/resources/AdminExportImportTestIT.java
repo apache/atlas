@@ -105,7 +105,17 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         try {
             performImport(FILE_TO_IMPORT, request, 32); // initial import has 5 entities already in deleted state, hence current import will have 32 processed-entities
         } catch (AtlasServiceException e) {
+            if (isConnectionClosedDuringTeardown(e)) {
+                LOG.warn("performTeardown: server connection closed during cleanup import, skipping.");
+                return;
+            }
             throw new SkipException("performTeardown: failed! Subsequent tests results may be affected.");
+        } catch (Exception e) {
+            if (isConnectionClosedDuringTeardown(e)) {
+                LOG.warn("performTeardown: server connection closed during cleanup import, skipping.");
+                return;
+            }
+            throw e;
         }
     }
 
@@ -145,5 +155,17 @@ public class AdminExportImportTestIT extends BaseResourceIT {
         assertNotNull(server);
         assertNotNull(server.getAdditionalInfo());
         assertTrue(server.getAdditionalInfo().size() > 0);
+    }
+
+    private boolean isConnectionClosedDuringTeardown(Throwable error) {
+        for (Throwable current = error; current != null; current = current.getCause()) {
+            if (current instanceof IOException && "Stream Closed".equals(current.getMessage())) {
+                return true;
+            }
+            if (current.getMessage() != null && current.getMessage().contains("Stream Closed")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

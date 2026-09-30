@@ -68,6 +68,7 @@ fi
 # log dir for applications
 ATLAS_LOG_DIR="${ATLAS_LOG_DIR:-/var/log/atlas}"
 export ATLAS_LOG_DIR
+mkdir -p "${ATLAS_LOG_DIR}"
 LOGFILE="$ATLAS_LOG_DIR/import-hbase.log"
 
 TIME=`date +%Y%m%d%H%M%s`
@@ -104,6 +105,7 @@ HBASE_CP="${HBASE_CONF}"
 
 # Multiple jars in HBASE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HBASE_CP_EXCLUDE_LIST="commons-configuration-1."
+# commons-configuration 1.x is in atlas-hbase-plugin-impl (Hadoop needs it; Atlas uses configuration2).
 HBASE_CP_EXCLUDE_LIST="commons-configuration-1\|jersey-client"
 
 for i in "${HBASE_HOME}/lib/"*.jar "${HBASE_HOME}/lib/client-facing-thirdparty/"*.jar; do

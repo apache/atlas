@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.impexp;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
@@ -170,12 +169,11 @@ public class TypeAttributeDifference {
             if (relationshipType == null) {
                 difference.add(incoming);
             }
-        } else {
-            if (!existingAttribute.getTypeName().equals(incoming.getTypeName())) {
-                LOG.error("Attribute definition difference found: {}, {}", existingAttribute, incoming);
+        } else if (!existingAttribute.getTypeName().equals(incoming.getTypeName())) {
+            LOG.info("Attribute type changed for {}.{}: {} -> {}; updating typedef during import",
+                    existing.getName(), existingAttribute.getName(), existingAttribute.getTypeName(), incoming.getTypeName());
 
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED, existing.getName(), existingAttribute.getName(), existingAttribute.getTypeName(), incoming.getTypeName());
-            }
+            difference.add(incoming);
         }
     }
 

@@ -18,12 +18,20 @@
     <div id="download-header" class="download-header">
         <span data-id="downloadtitle">Downloads</span>
         <div class="download-header-actions">
-            <div class="pretty p-switch p-fill" style="margin-right: 20px">
-                <input type="checkbox" data-id="toggleDownloads" title="" />
-                <div class="state p-primary">
-                    <label></label>
+            <span class="download-header-toggle-wrap">
+                <div class="pretty p-switch p-fill download-header-toggle">
+                    <input type="checkbox" data-id="toggleDownloads" title="" />
+                    <div class="state p-primary">
+                        <label></label>
+                    </div>
                 </div>
-            </div><button data-id="refreshDownloads" class="btn btn-action btn-sm"><i class="fa fa-refresh" aria-hidden="true"></i></button>&nbsp;<button data-id="closeDownloads" class="btn btn-action btn-sm"><i class="fa fa-times" aria-hidden="true"></i></button>
+            </span>
+            <button data-id="refreshDownloads" class="btn btn-action btn-sm download-header-btn" type="button" aria-label="Refresh downloads">
+                <i class="fa fa-refresh" aria-hidden="true"></i>
+            </button>
+            <button data-id="closeDownloads" class="btn btn-action btn-sm download-header-btn" type="button" aria-label="Close downloads">
+                <i class="fa fa-times" aria-hidden="true"></i>
+            </button>
         </div>
     </div>
     <div id="download-body" class="download-body">

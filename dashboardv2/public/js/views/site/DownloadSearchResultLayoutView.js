@@ -53,13 +53,9 @@ define(['require',
                 events['click ' + this.ui.closeDownloadsButton] = "onHideDownloads";
                 events['click ' + this.ui.refreshDownloadsButton] = "onRefreshDownloads";
                 events['change ' + this.ui.toggleDownloads] = function(e) {
-                    this.showCompletedDownloads = !this.showCompletedDownloads;
-                    if(this.showCompletedDownloads){
-                        this.ui.toggleDownloads.attr("data-original-title", "Display All Files");
-                    } else {
-                        this.ui.toggleDownloads.attr("data-original-title", "Display Available Files");
-                    }
-                    this.genrateDownloadList();
+                    this.showAllDownloads = e.currentTarget.checked;
+                    this.updateDownloadToggleTooltip();
+                    this.generateDownloadList();
                 }
                 return events;
             },
@@ -70,8 +66,10 @@ define(['require',
             initialize: function(options) {
                 this.options = options;
                 this.showDownloads = new VDownloadList();
-                this.showCompletedDownloads = true;
+                this.showAllDownloads = true;
                 this.downloadsData = [];
+                this.isDownloadsPanelOpen = false;
+                this.onDocumentClickBound = _.bind(this.onDocumentClick, this);
                 this.bindEvents();
             },
             bindEvents: function() {
@@ -80,51 +78,92 @@ define(['require',
                 });
             },
             onRender: function() {
-                this.ui.toggleDownloads.attr("data-original-title", "Display All Files");
+                this.ui.toggleDownloads.prop('checked', this.showAllDownloads);
+                this.updateDownloadToggleTooltip();
+            },
+            updateDownloadToggleTooltip: function() {
+                var tooltip = this.showAllDownloads
+                    ? "Showing all files (including in progress)"
+                    : "Showing completed files only";
+                this.ui.toggleDownloads.attr("data-original-title", tooltip);
             },
             initializeValues: function() {},
             fetchDownloadsData: function() {
-                var that = this;
-                var apiObj = {
-                    success: function(data, response) {
-                        that.downloadsData = data.searchDownloadRecords;
-                        that.genrateDownloadList();
-                    },
-                    complete: function() {
+                var that = this,
+                    merged = [],
+                    pending = 2,
+                    hadFailure = false;
+
+                var finishIfDone = function() {
+                    pending -= 1;
+                    if (pending === 0) {
+                        that.downloadsData = merged;
+                        that.generateDownloadList();
                         that.hideLoader();
+                        if (hadFailure && merged.length === 0) {
+                            Utils.notifyError({ content: 'Failed to fetch download records' });
+                        }
+                    }
+                };
+
+                this.showDownloads.getDownloadsList({
+                    success: function(data) {
+                        var records = (data && data.searchDownloadRecords) || [];
+                        _.each(records, function(record) {
+                            merged.push(_.extend({}, record, { source: 'search' }));
+                        });
                     },
+                    error: function() {
+                        hadFailure = true;
+                    },
+                    complete: finishIfDone,
                     reset: true
-                }
-                this.showDownloads.getDownloadsList(apiObj);
+                });
+
+                this.showDownloads.getGlossaryDownloadsList({
+                    success: function(data) {
+                        // Backend reuses searchDownloadRecords for glossary export status.
+                        var records = (data && (data.glossaryDownloadRecords || data.searchDownloadRecords)) || [];
+                        _.each(records, function(record) {
+                            merged.push(_.extend({}, record, { source: 'glossary' }));
+                        });
+                    },
+                    error: function() {
+                        hadFailure = true;
+                    },
+                    complete: finishIfDone
+                });
             },
-            genrateDownloadList: function() {
+            // Keep timestamp parsing/sorting aligned with dashboard/src/utils/downloadRecords.ts
+            generateDownloadList: function() {
                 var that = this,
                     stateIconEl = "",
                     completedDownloads = "",
                     allDownloads = "",
                     downloadList = "",
-                    sortedData = _.sortBy(this.downloadsData, function(obj){
-                        return obj.createdTime;
-                    }).reverse();
+                    sortedData = that.sortDownloadRecordsByLatest(this.downloadsData);
                 if (sortedData.length) {
                     _.each(sortedData, function(obj) {
+                        var downloadUrl = obj.source === 'glossary'
+                            ? UrlLinks.glossaryDownloadFileUrl(obj.fileName)
+                            : UrlLinks.downloadSearchResultsFileUrl(obj.fileName);
                         if (obj.status === "PENDING") {
                             stateIconEl = "<span class='download-state'><i class='fa fa-refresh fa-spin-custom' aria-hidden='true'></i></span>";
                         } else {
-                            stateIconEl = "<span class='download-state'><a href=" + UrlLinks.downloadSearchResultsFileUrl(obj.fileName) + "><i class='fa fa-arrow-circle-o-down fa-lg' aria-hidden='true'></i></a></span>";
-                            completedDownloads += "<li><i class='fa fa-file-excel-o fa-lg' aria-hidden='true'></i><span class='file-name'>" + obj.fileName + "</span>" + stateIconEl + "</li>"
+                            stateIconEl = "<span class='download-state'><a href='" + downloadUrl + "'><i class='fa fa-arrow-circle-o-down fa-lg' aria-hidden='true'></i></a></span>";
+                            completedDownloads += "<li><i class='fa fa-file-excel-o fa-lg' aria-hidden='true'></i><span class='file-name'>" + obj.fileName + "</span>" + stateIconEl + "</li>";
                         }
                         allDownloads += "<li><i class='fa fa-file-excel-o fa-lg' aria-hidden='true'></i><span class='file-name'>" + obj.fileName + "</span>" + stateIconEl + "</li>";
                     });
                 } else {
-                    completedDownloads = allDownloads = "<li class='text-center' style='border-bottom:none'>No Data Found</li>"
+                    completedDownloads = allDownloads = "<li class='text-center download-list-empty'>No Data Found</li>";
                 }
 
                 if (this.downloadsData.length && completedDownloads === "") {
-                    completedDownloads = "<li class='text-center' style='border-bottom:none'>No Data Found</li>";
+                    completedDownloads = "<li class='text-center download-list-empty'>No Data Found</li>";
                 }
 
-                downloadList = this.showCompletedDownloads ? completedDownloads : allDownloads;
+                downloadList = this.showAllDownloads ? allDownloads : completedDownloads;
                 this.ui.downloadListContainer.empty();
                 this.ui.downloadListContainer.html(downloadList);
             },
@@ -138,15 +177,80 @@ define(['require',
                 this.fetchDownloadsData();
                 this.showLoader();
                 this.ui.downloadsPanel.css("right", "20px");
+                if (!this.isDownloadsPanelOpen) {
+                    this.isDownloadsPanelOpen = true;
+                    var that = this;
+                    setTimeout(function() {
+                        $(document).on('click.downloadsPanel', that.onDocumentClickBound);
+                    }, 0);
+                }
             },
             onHideDownloads: function() {
-                this.ui.downloadsPanel.css("right", "-700px")
+                this.ui.downloadsPanel.css("right", "-700px");
+                if (this.isDownloadsPanelOpen) {
+                    this.isDownloadsPanelOpen = false;
+                    $(document).off('click.downloadsPanel');
+                }
+            },
+            onDocumentClick: function(e) {
+                var $target = $(e.target);
+                if ($target.closest('.downloads-panel').length) {
+                    return;
+                }
+                if ($target.closest('[data-id="showDownloads"]').length) {
+                    return;
+                }
+                this.onHideDownloads();
+            },
+            onBeforeDestroy: function() {
+                $(document).off('click.downloadsPanel');
             },
             showLoader: function() {
                 this.$('.downloadListLoader').show();
             },
             hideLoader: function(options) {
                 this.$('.downloadListLoader').hide();
+            },
+            parseCreatedTime: function(createdTime) {
+                if (createdTime === undefined || createdTime === null || createdTime === '') {
+                    return null;
+                }
+
+                if (typeof createdTime === 'number' && isFinite(createdTime)) {
+                    return createdTime;
+                }
+
+                var parsed = Date.parse(String(createdTime));
+                return isNaN(parsed) ? null : parsed;
+            },
+            parseTimestampFromFileName: function(fileName) {
+                if (!fileName) {
+                    return null;
+                }
+
+                var match = fileName.match(/(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2}(?:\.\d{3})?)/);
+                if (!match) {
+                    return null;
+                }
+
+                var normalized = match[1] + 'T' + match[2] + ':' + match[3] + ':' + match[4];
+                var parsed = Date.parse(normalized);
+                return isNaN(parsed) ? null : parsed;
+            },
+            resolveDownloadRecordTime: function(record) {
+                var fromApi = this.parseCreatedTime(record.createdTime);
+                if (fromApi !== null) {
+                    return fromApi;
+                }
+
+                var fromFileName = this.parseTimestampFromFileName(record.fileName);
+                return fromFileName !== null ? fromFileName : 0;
+            },
+            sortDownloadRecordsByLatest: function(records) {
+                var that = this;
+                return _.sortBy(records, function(record) {
+                    return -that.resolveDownloadRecordTime(record);
+                });
             }
         });
     return DownloadSearchResultLayoutView;

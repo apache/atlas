@@ -96,7 +96,7 @@ require.config({
             'exports': ['d3-tip']
         },
         'LineageHelper': {
-            'deps': ['d3'],
+            'deps': ['d3', 'underscore'],
         },
         'dagreD3': {
             'deps': ['d3'],
