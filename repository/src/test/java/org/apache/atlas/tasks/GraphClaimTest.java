@@ -154,6 +154,40 @@ public class GraphClaimTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void holderOfUsesUniqueKeyLookupInsteadOfAVertexScan() {
+        AtlasGraph graph = mock(AtlasGraph.class);
+        org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler uniqueKeys =
+                mock(org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler.class);
+        AtlasVertex holder = mock(AtlasVertex.class);
+
+        when(graph.getUniqueKeyHandler()).thenReturn(uniqueKeys);
+        when(uniqueKeys.supportsUniqueKeyLookup()).thenReturn(true);
+        when(uniqueKeys.findVertexIdByUniqueKey(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(42L);
+        when(graph.getVertex("42")).thenReturn(holder);
+        when(holder.getProperty(Constants.CLAIM_KEY, String.class)).thenReturn(CLAIM_NAME);
+
+        assertEquals(GraphClaim.holderOf(graph, CLAIM_NAME), holder);
+        verify(graph, never()).query();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void holderOfFallsBackToGraphQueryWhenUniqueKeyLookupIsUnavailable() {
+        AtlasGraph      graph  = mock(AtlasGraph.class);
+        AtlasGraphQuery query  = mock(AtlasGraphQuery.class);
+        AtlasVertex     holder = mock(AtlasVertex.class);
+
+        when(graph.getUniqueKeyHandler()).thenReturn(null);
+        when(graph.query()).thenReturn(query);
+        when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
+        when(query.vertices()).thenReturn(Collections.singletonList(holder));
+
+        assertEquals(GraphClaim.holderOf(graph, CLAIM_NAME), holder);
+        verify(graph, times(1)).query();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void releaseIfNoLiveHolderAndCommit_clearsExpiredLeaseMarker() {
         AtlasGraph      graph      = mock(AtlasGraph.class);
         AtlasGraphQuery query      = mock(AtlasGraphQuery.class);

@@ -114,6 +114,7 @@ public class GraphBackedSearchIndexerActivationTest {
         when(management.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
         when(management.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(management.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
+        when(management.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
         when(management.getPropertyKey(anyString())).thenReturn(propertyKey);
         when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
@@ -173,6 +174,7 @@ public class GraphBackedSearchIndexerActivationTest {
         when(waitManagementThird.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
         when(waitManagementThird.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(waitManagementThird.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
+        when(waitManagementThird.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
 
         GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
 
@@ -217,6 +219,7 @@ public class GraphBackedSearchIndexerActivationTest {
         when(waitManagement.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
         when(waitManagement.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(waitManagement.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
+        when(waitManagement.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
         when(waitManagement.getPropertyKey(anyString())).thenReturn(propertyKey);
         when(waitManagement.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
@@ -268,6 +271,7 @@ public class GraphBackedSearchIndexerActivationTest {
         when(management.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
         when(management.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(management.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
+        when(management.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
         when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
         // the peer has not created __typeName yet when this node first looks
@@ -392,6 +396,7 @@ public class GraphBackedSearchIndexerActivationTest {
             indexer.instanceIsActive();
 
             verify(management, times(1)).ensureCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY);
+            verify(management, times(1)).ensureCompositeIndexEnabled(Constants.CLAIM_KEY);
         }
     }
 

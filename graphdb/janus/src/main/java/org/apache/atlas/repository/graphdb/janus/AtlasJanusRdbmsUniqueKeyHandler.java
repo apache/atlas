@@ -56,4 +56,14 @@ public class AtlasJanusRdbmsUniqueKeyHandler extends AtlasUniqueKeyHandler {
     public void removeUniqueKeysForEdgeId(Object edgeId) {
         uniqueKeyHandler.removeUniqueKeysForEdgeId(edgeId);
     }
+
+    @Override
+    public boolean supportsUniqueKeyLookup() {
+        return uniqueKeyHandler.supportsUniqueKeyLookup();
+    }
+
+    @Override
+    public Object findVertexIdByUniqueKey(String keyName, Object value) {
+        return uniqueKeyHandler.findVertexIdByUniqueKey(keyName, value);
+    }
 }

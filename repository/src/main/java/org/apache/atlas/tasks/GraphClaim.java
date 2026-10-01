@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.lang3.StringUtils;
@@ -184,11 +185,50 @@ public final class GraphClaim {
     /**
      * The vertex currently holding {@code claimName}, or {@code null} if nobody holds it.  There can
      * only be one, which is the whole point.
+     *
+     * <p>On rdbms the uniqueness table is keyed by ({@link Constants#CLAIM_KEY}, name), so a hit is
+     * a point lookup.  A graph query is the fallback: that path full-scans when the {@code __claim}
+     * composite index is still REGISTERED, which is the AMRA default because the ATLAS_INDEX lease
+     * vertex exists before the index is created.
      */
     public static AtlasVertex holderOf(AtlasGraph graph, String claimName) {
+        AtlasVertex fromUniqueKey = holderFromUniqueKey(graph, claimName);
+
+        if (fromUniqueKey != null) {
+            return fromUniqueKey;
+        }
+
         Iterator<AtlasVertex> holders = graph.query().has(Constants.CLAIM_KEY, claimName).vertices().iterator();
 
         return holders.hasNext() ? holders.next() : null;
+    }
+
+    private static AtlasVertex holderFromUniqueKey(AtlasGraph graph, String claimName) {
+        try {
+            AtlasUniqueKeyHandler uniqueKeyHandler = graph.getUniqueKeyHandler();
+
+            if (uniqueKeyHandler == null || !uniqueKeyHandler.supportsUniqueKeyLookup()) {
+                return null;
+            }
+
+            Object vertexId = uniqueKeyHandler.findVertexIdByUniqueKey(Constants.CLAIM_KEY, claimName);
+
+            if (vertexId == null) {
+                return null;
+            }
+
+            AtlasVertex vertex = graph.getVertex(String.valueOf(vertexId));
+
+            if (vertex == null || !StringUtils.equals(claimName, heldClaim(vertex))) {
+                return null;
+            }
+
+            return vertex;
+        } catch (Exception exception) {
+            LOG.debug("GraphClaim: unique-key lookup for '{}' failed; falling back to graph query", claimName, exception);
+
+            return null;
+        }
     }
 
     // ------------------------------------------------------------------ leases

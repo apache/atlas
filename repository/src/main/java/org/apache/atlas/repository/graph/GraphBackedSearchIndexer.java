@@ -324,10 +324,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             try {
                 initializeWithRetries(claimManager, ownerId);
 
-                // Only the node that actually created the indexes makes the typedef-bootstrap
-                // lookup index usable; a node that stood down to a peer must not reindex.
+                // Only the node that actually created the indexes makes bootstrap lookup indexes
+                // usable; a node that stood down to a peer must not reindex.
                 if (!stoodDownFromIndexSetup) {
-                    ensureTypedefBootstrapIndexUsable();
+                    ensureBootstrapLookupIndexesUsable();
                 }
             } catch (RepositoryException | IndexException e) {
                 throw new AtlasException("Error in reacting to active on initialization", e);
@@ -362,24 +362,31 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     /**
-     * Makes the typedef-bootstrap lookup index usable before {@link org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer}
-     * (which runs after index setup) queries it. On a fresh cluster the composite index is created
-     * together with its property key and is ENABLED immediately, so this is a cheap status check. On
-     * a cluster where {@code __typedef.bootstrap.file} already carried data before the index existed,
-     * the composite index is left REGISTERED (ignored by the query planner, forcing full scans);
-     * this enables and reindexes it once so bootstrap lookups hit the index instead of scanning.
+     * Makes AMRA bootstrap lookup indexes usable before typedef loading and GraphClaim queries them.
+     *
+     * <p>On a fresh cluster a composite index created together with its property key is ENABLED
+     * immediately, so this is a cheap status check. When the key already carried data before the
+     * index existed, JanusGraph leaves the composite index REGISTERED (ignored by the query planner,
+     * forcing full vertex scans). {@code __claim} always hits that case: the ATLAS_INDEX lease
+     * vertex is written before indexes are created. Reindex once so later dual-node bootstrap
+     * lookups do not hold RDBMS connections on full-graph scans.
      */
-    private void ensureTypedefBootstrapIndexUsable() {
+    private void ensureBootstrapLookupIndexesUsable() {
+        ensureLookupIndexUsable(TYPEDEF_BOOTSTRAP_FILE_KEY);
+        ensureLookupIndexUsable(Constants.CLAIM_KEY);
+    }
+
+    private void ensureLookupIndexUsable(String indexName) {
         try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
-            boolean usable = management.ensureCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY);
+            boolean usable = management.ensureCompositeIndexEnabled(indexName);
 
             if (usable) {
-                LOG.info("GraphBackedSearchIndexer: typedef-bootstrap lookup index '{}' is ENABLED for bootstrap", TYPEDEF_BOOTSTRAP_FILE_KEY);
+                LOG.info("GraphBackedSearchIndexer: bootstrap lookup index '{}' is ENABLED", indexName);
             } else {
-                LOG.warn("GraphBackedSearchIndexer: typedef-bootstrap lookup index '{}' is not ENABLED; bootstrap may fall back to full graph scans", TYPEDEF_BOOTSTRAP_FILE_KEY);
+                LOG.warn("GraphBackedSearchIndexer: bootstrap lookup index '{}' is not ENABLED; lookups may fall back to full graph scans", indexName);
             }
         } catch (Exception e) {
-            LOG.warn("GraphBackedSearchIndexer: could not verify/enable typedef-bootstrap lookup index '{}'", TYPEDEF_BOOTSTRAP_FILE_KEY, e);
+            LOG.warn("GraphBackedSearchIndexer: could not verify/enable bootstrap lookup index '{}'", indexName, e);
         }
     }
 
@@ -469,12 +476,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             boolean complete = management.getGraphIndex(VERTEX_INDEX) != null
                     && management.getGraphIndex(EDGE_INDEX) != null
                     && management.getGraphIndex(FULLTEXT_INDEX) != null
-                    // Guard AMRA bootstrap: the node that waits for a peer must not proceed until the
-                    // typedef-bootstrap lookup index is not just present but ENABLED. A composite index
-                    // that exists in REGISTERED state (e.g. built over a key that already had data) is
-                    // ignored by the query planner, so bootstrap would fall back to full graph scans.
-                    // Requiring ENABLED forces one node to take ownership and enable/reindex it.
-                    && management.isCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY);
+                    // Guard AMRA bootstrap: the node that waits for a peer must not proceed until
+                    // lookup indexes are not just present but ENABLED. A composite index that exists
+                    // in REGISTERED state (e.g. built over a key that already had data) is ignored by
+                    // the query planner, so bootstrap would fall back to full graph scans.
+                    && management.isCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY)
+                    && management.isCompositeIndexEnabled(Constants.CLAIM_KEY);
 
             management.setIsSuccess(true);
 

@@ -30,4 +30,19 @@ public abstract class AtlasUniqueKeyHandler {
     public abstract void removeUniqueKeysForVertexId(Object vertexId);
 
     public abstract void removeUniqueKeysForEdgeId(Object edgeId);
+
+    /**
+     * Whether {@link #findVertexIdByUniqueKey(String, Object)} can answer from this backend's
+     * uniqueness table.  RDBMS can; other backends leave claim lookups on the graph query.
+     */
+    public boolean supportsUniqueKeyLookup() {
+        return false;
+    }
+
+    /**
+     * Vertex id that currently holds {@code keyName}={@code value}, or {@code null} if none does.
+     */
+    public Object findVertexIdByUniqueKey(String keyName, Object value) {
+        return null;
+    }
 }
