@@ -32,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
@@ -40,9 +39,12 @@ import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_K
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -86,7 +88,6 @@ public class SemanticTextBuilderTest {
                 .thenReturn("region=eu");
         when(vertex.getProperty("make", String.class)).thenReturn("Toyota");
         when(vertex.getProperty("model", String.class)).thenReturn("Camry");
-        graphHelper.when(() -> GraphHelper.getAllClassificationEdges(vertex)).thenReturn(Collections.emptyList());
 
         String text = builder.buildText(vertex);
 
@@ -107,7 +108,6 @@ public class SemanticTextBuilderTest {
                 .thenReturn(null);
         when(vertex.getProperty("__state", String.class)).thenReturn("ACTIVE");
         when(vertex.getProperty("color", String.class)).thenReturn("red");
-        graphHelper.when(() -> GraphHelper.getAllClassificationEdges(vertex)).thenReturn(Collections.emptyList());
 
         String text = builder.buildText(vertex);
 
@@ -130,16 +130,8 @@ public class SemanticTextBuilderTest {
         when(entityVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.IN)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
-        when(query.edges()).thenReturn(Collections.singletonList(edge));
+        when(query.edges(100)).thenReturn(Collections.singletonList(edge));
         when(edge.getOutVertex()).thenReturn(termVertex);
-        AtlasVertexQuery synonymQuery = mock(AtlasVertexQuery.class);
-        AtlasVertexQuery seeAlsoQuery = mock(AtlasVertexQuery.class);
-        when(termVertex.query()).thenReturn(query);
-        when(query.direction(AtlasEdgeDirection.BOTH)).thenReturn(query);
-        when(query.label("r:AtlasGlossarySynonym")).thenReturn(synonymQuery);
-        when(query.label("r:AtlasGlossaryRelatedTerm")).thenReturn(seeAlsoQuery);
-        when(synonymQuery.edges()).thenReturn(Collections.emptyList());
-        when(seeAlsoQuery.edges()).thenReturn(Collections.emptyList());
 
         graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(entityVertex)).thenReturn("demo_table");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(entityVertex), any(), eq(String.class)))
@@ -150,7 +142,6 @@ public class SemanticTextBuilderTest {
                 .thenReturn("CD");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, "AtlasGlossaryTerm.description", String.class))
                 .thenReturn(null);
-        graphHelper.when(() -> GraphHelper.getAllClassificationEdges(entityVertex)).thenReturn(Collections.emptyList());
 
         String text = builder.buildText(entityVertex);
 
@@ -160,84 +151,45 @@ public class SemanticTextBuilderTest {
     }
 
     @Test
-    public void buildTextIncludesSynonymAndSeeAlsoTermNames() {
-        AtlasVertex entityVertex   = mock(AtlasVertex.class);
-        AtlasVertex assignedTerm   = mock(AtlasVertex.class);
-        AtlasVertex synonymTerm    = mock(AtlasVertex.class);
-        AtlasVertex seeAlsoTerm    = mock(AtlasVertex.class);
-        AtlasEdge   assignmentEdge = mock(AtlasEdge.class);
-        AtlasEdge   synonymEdge    = mock(AtlasEdge.class);
-        AtlasEdge   seeAlsoEdge    = mock(AtlasEdge.class);
-        AtlasVertexQuery entityQuery  = mock(AtlasVertexQuery.class);
-        AtlasVertexQuery termQuery    = mock(AtlasVertexQuery.class);
-        AtlasVertexQuery synonymQuery = mock(AtlasVertexQuery.class);
-        AtlasVertexQuery seeAlsoQuery = mock(AtlasVertexQuery.class);
+    public void buildTextDoesNotFollowTermsLinkedToAssignedTerms() {
+        AtlasVertex      entityVertex   = mock(AtlasVertex.class);
+        AtlasVertex      assignedTerm   = mock(AtlasVertex.class);
+        AtlasEdge        assignmentEdge = mock(AtlasEdge.class);
+        AtlasVertexQuery entityQuery    = mock(AtlasVertexQuery.class);
 
         when(entityVertex.getPropertyKeys()).thenReturn(Collections.emptyList());
         when(entityVertex.query()).thenReturn(entityQuery);
         when(entityQuery.direction(AtlasEdgeDirection.IN)).thenReturn(entityQuery);
         when(entityQuery.label(TERM_ASSIGNMENT_LABEL)).thenReturn(entityQuery);
-        when(entityQuery.edges()).thenReturn(Collections.singletonList(assignmentEdge));
+        when(entityQuery.edges(anyInt())).thenReturn(Collections.singletonList(assignmentEdge));
         when(assignmentEdge.getOutVertex()).thenReturn(assignedTerm);
-
-        when(assignedTerm.query()).thenReturn(termQuery);
-        when(termQuery.direction(AtlasEdgeDirection.BOTH)).thenReturn(termQuery);
-        when(termQuery.label("r:AtlasGlossarySynonym")).thenReturn(synonymQuery);
-        when(termQuery.label("r:AtlasGlossaryRelatedTerm")).thenReturn(seeAlsoQuery);
-        when(synonymQuery.edges()).thenReturn(Collections.singletonList(synonymEdge));
-        when(seeAlsoQuery.edges()).thenReturn(Collections.singletonList(seeAlsoEdge));
-        when(synonymEdge.getOutVertex()).thenReturn(assignedTerm);
-        when(synonymEdge.getInVertex()).thenReturn(synonymTerm);
-        when(seeAlsoEdge.getOutVertex()).thenReturn(assignedTerm);
-        when(seeAlsoEdge.getInVertex()).thenReturn(seeAlsoTerm);
 
         graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(entityVertex)).thenReturn("demo_table");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(entityVertex), any(), eq(String.class)))
                 .thenReturn(null);
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(assignedTerm, "AtlasGlossaryTerm.name", String.class))
                 .thenReturn("Customer Lifetime Value");
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(assignedTerm, "AtlasGlossaryTerm.abbreviation", String.class))
-                .thenReturn("CLV");
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(assignedTerm, "AtlasGlossaryTerm.description", String.class))
-                .thenReturn(null);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(synonymTerm, "AtlasGlossaryTerm.name", String.class))
-                .thenReturn("LTV");
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(synonymTerm, "AtlasGlossaryTerm.abbreviation", String.class))
-                .thenReturn(null);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(seeAlsoTerm, "AtlasGlossaryTerm.name", String.class))
-                .thenReturn("Attrition");
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(seeAlsoTerm, "AtlasGlossaryTerm.abbreviation", String.class))
-                .thenReturn(null);
-        graphHelper.when(() -> GraphHelper.getAllClassificationEdges(entityVertex)).thenReturn(Collections.emptyList());
 
         String text = builder.buildText(entityVertex);
 
         assertTrue(text.contains("Customer Lifetime Value"));
-        assertTrue(text.contains("CLV"));
-        assertTrue(text.contains("LTV"));
-        assertTrue(text.contains("Attrition"));
+        verify(assignedTerm, never()).query();
     }
 
     @Test
-    public void buildTextIncludesClassificationVertexAttributes() {
-        AtlasVertex entityVertex          = mock(AtlasVertex.class);
-        AtlasVertex classificationVertex    = mock(AtlasVertex.class);
-        AtlasEdge   classificationEdge    = mock(AtlasEdge.class);
+    public void buildTextUsesClassificationTextWithoutReadingClassificationVertices() {
+        AtlasVertex entityVertex = mock(AtlasVertex.class);
 
         when(entityVertex.getPropertyKeys()).thenReturn(Collections.emptyList());
-        when(classificationVertex.getPropertyKeys()).thenReturn((Collection) Set.of("Certified.level"));
-        when(classificationEdge.getInVertex()).thenReturn(classificationVertex);
         graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(entityVertex)).thenReturn("demo_table");
-        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(classificationVertex)).thenReturn("Certified");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(entityVertex), any(), eq(String.class)))
                 .thenReturn(null);
-        when(classificationVertex.getProperty("Certified.level", String.class)).thenReturn("gold");
-        graphHelper.when(() -> GraphHelper.getAllClassificationEdges(entityVertex))
-                .thenReturn(List.of(classificationEdge));
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(entityVertex, CLASSIFICATION_TEXT_KEY, String.class))
+                .thenReturn("Certified gold");
 
         String text = builder.buildText(entityVertex);
 
-        assertTrue(text.contains("Certified"));
-        assertTrue(text.contains("gold"));
+        assertTrue(text.contains("Certified gold"));
+        graphHelper.verify(() -> GraphHelper.getAllClassificationEdges(any()), never());
     }
 }

@@ -34,6 +34,10 @@ import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 
+/**
+ * Reads entities from the graph and patches their embeddings. Callers own the thread-bound graph transaction
+ * and roll it back after each batch.
+ */
 public class SemanticEntityIndexer {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticEntityIndexer.class);
 
@@ -73,11 +77,15 @@ public class SemanticEntityIndexer {
         public boolean hasFailures() {
             return failed > 0;
         }
+
+        public IndexStats add(IndexStats other) {
+            return new IndexStats(indexed + other.indexed, skipped + other.skipped, failed + other.failed);
+        }
     }
 
     private IndexStats indexGuids(Set<String> guids) {
         if (guids == null || guids.isEmpty()) {
-            return new IndexStats(0, 0, 0);
+            return IndexStats.EMPTY;
         }
 
         int indexed = 0;
@@ -100,7 +108,7 @@ public class SemanticEntityIndexer {
             }
         }
 
-        if (indexed > 0) {
+        if (indexed > 0 || failed > 0) {
             LOG.info("Indexed {} of {} guid(s) (skipped={}, failed={})", indexed, guids.size(), skipped, failed);
         }
 
@@ -109,7 +117,7 @@ public class SemanticEntityIndexer {
 
     public IndexStats indexGuidsInBatches(Set<String> guids, int batchSize) {
         if (guids == null || guids.isEmpty()) {
-            return new IndexStats(0, 0, 0);
+            return IndexStats.EMPTY;
         }
 
         int indexed = 0;
@@ -143,13 +151,29 @@ public class SemanticEntityIndexer {
     }
 
     private IndexOutcome indexGuid(String guid) {
-        AtlasVertex vertex = loadIndexableVertex(guid);
+        AtlasVertex vertex;
+
+        try {
+            vertex = loadIndexableVertex(guid);
+        } catch (RuntimeException e) {
+            LOG.error("Semantic indexing failed while loading vertex for guid={}", guid, e);
+            return IndexOutcome.FAILED;
+        }
+
         if (vertex == null) {
-            LOG.debug("Skipping semantic update for guid={}: not indexable", guid);
+            LOG.debug("Skipping semantic update for guid={}: not indexable or not found", guid);
             return IndexOutcome.SKIPPED;
         }
 
-        String text = textBuilder.buildText(vertex);
+        String text;
+
+        try {
+            text = textBuilder.buildText(vertex);
+        } catch (RuntimeException e) {
+            LOG.error("Failed to build semantic text for guid={}", guid, e);
+            return IndexOutcome.FAILED;
+        }
+
         if (StringUtils.isBlank(text)) {
             LOG.debug("Skipping semantic update for guid={}: no embeddable text", guid);
             return IndexOutcome.SKIPPED;
@@ -160,9 +184,12 @@ public class SemanticEntityIndexer {
             LOG.debug("Updated semantic embedding for guid={}", guid);
             return IndexOutcome.INDEXED;
         } catch (SemanticSearchException e) {
-            LOG.error("Abandoning semantic indexing for guid={} after {} retry attempt(s): {}",
+            LOG.error("Abandoning semantic indexing for guid={} (max attempts={}): {}",
                     guid, SemanticSearchConfiguration.getRetryMaxAttempts(), e.getMessage());
-            return IndexOutcome.SKIPPED;
+            return IndexOutcome.FAILED;
+        } catch (RuntimeException e) {
+            LOG.error("Semantic indexing failed for guid={}", guid, e);
+            return IndexOutcome.FAILED;
         }
     }
 
@@ -171,25 +198,20 @@ public class SemanticEntityIndexer {
             return null;
         }
 
-        try {
-            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
-            if (vertex == null) {
-                return null;
-            }
-
-            String typeName = AtlasGraphUtilsV2.getEncodedProperty(vertex, TYPE_NAME_PROPERTY_KEY, String.class);
-            if (!SemanticNotificationGuidExpander.isEmbeddableEntityType(typeName)) {
-                return null;
-            }
-
-            if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
-                return null;
-            }
-
-            return vertex;
-        } catch (RuntimeException e) {
-            LOG.error("Semantic indexing failed while loading vertex for guid={}", guid, e);
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
+        if (vertex == null) {
             return null;
         }
+
+        String typeName = AtlasGraphUtilsV2.getEncodedProperty(vertex, TYPE_NAME_PROPERTY_KEY, String.class);
+        if (!SemanticNotificationGuidExpander.isEmbeddableEntityType(typeName)) {
+            return null;
+        }
+
+        if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
+            return null;
+        }
+
+        return vertex;
     }
 }

@@ -23,6 +23,8 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -36,6 +38,11 @@ import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
  * Glossary term updates are mapped to their assigned entities; glossary-only types are skipped.
  */
 public final class SemanticNotificationGuidExpander {
+    private static final Logger LOG = LoggerFactory.getLogger(SemanticNotificationGuidExpander.class);
+
+    // Glossary objects are entity vertices too: their supertype is __internal, but their names lack the "__" prefix
+    // that isInternalType() checks, so Atlas notifies them and the repair scan would match them like any entity.
+    // Names, not the supertype, because __superTypeNames is a SET property and is not in the OpenSearch vertex index.
     private static final Set<String> NON_EMBEDDABLE_ENTITY_TYPES = Set.of(
             "AtlasGlossaryTerm",
             "AtlasGlossary",
@@ -54,6 +61,10 @@ public final class SemanticNotificationGuidExpander {
             expandGuid(guid, expanded);
         }
         return expanded;
+    }
+
+    public static Set<String> getNonEmbeddableEntityTypes() {
+        return NON_EMBEDDABLE_ENTITY_TYPES;
     }
 
     public static boolean isEmbeddableEntityType(String typeName) {
@@ -78,7 +89,7 @@ public final class SemanticNotificationGuidExpander {
         }
 
         if ("AtlasGlossaryTerm".equals(typeName)) {
-            addAssignedEntityGuids(vertex, expanded);
+            addAssignedEntityGuids(guid, vertex, expanded);
             return;
         }
 
@@ -87,19 +98,34 @@ public final class SemanticNotificationGuidExpander {
         }
     }
 
+    // capped: a poll that takes longer than max.poll.interval.ms is redelivered, so an unbounded fan-out could loop
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void addAssignedEntityGuids(AtlasVertex termVertex, Set<String> expanded) {
+    private static void addAssignedEntityGuids(String termGuid, AtlasVertex termVertex, Set<String> expanded) {
+        int maxEntities = SemanticSearchConfiguration.getSemanticIndexerMaxTermEntities();
+        if (maxEntities == 0) {
+            LOG.debug("Glossary term {} updated: fan-out disabled ({}=0)", termGuid, SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF);
+            return;
+        }
+
         Iterable<?> edges = termVertex.query()
                 .direction(AtlasEdgeDirection.OUT)
                 .label(TERM_ASSIGNMENT_LABEL)
-                .edges();
+                .edges(maxEntities + 1);
         if (edges == null) {
             return;
         }
 
+        int count = 0;
         for (AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
             if (edge == null) {
                 continue;
+            }
+
+            if (++count > maxEntities) {
+                LOG.warn("Glossary term {} has more than {} assigned entities ({}): only the first {} are re-embedded;"
+                        + " run atlas_semantic_repair.sh --all to refresh the others",
+                        termGuid, maxEntities, SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF, maxEntities);
+                break;
             }
 
             AtlasVertex entityVertex = edge.getInVertex();

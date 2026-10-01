@@ -145,6 +145,7 @@
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>atlas_semantic_repair.sh</include>
+                <include>atlas_vertex_index_enable_knn.sh</include>
             </includes>
             <fileMode>0755</fileMode>
         </fileSet>

@@ -44,8 +44,8 @@ print_atlas_config_guide() {
 
 ==> Set these in atlas-application.properties (must match OpenSearch):
 
-atlas.search.semantic.opensearch.model.id=${model_id}
-atlas.search.semantic.opensearch.embedding.dimension=${dimension}
+atlas.semantic.model.id=${model_id}
+atlas.semantic.embedding.dimension=${dimension}
 
 OpenSearch bootstrap applied knn + ingest pipeline (${pipeline_name}) + embedding mapping
 on the JanusGraph vertex index (${VERTEX_INDEX_NAME}).
@@ -250,10 +250,11 @@ ensure_vertex_index_knn() {
     return 0
   fi
 
-  echo "==> Enabling knn on ${index_name} ..."
-  curl -sf -X PUT "${url}/${index_name}/_settings" \
-    -H 'Content-Type: application/json' \
-    -d '{"settings":{"index":{"knn":true}}}'
+  # index.knn is final: OpenSearch only accepts it at index creation, not on an existing (open or closed) index
+  echo "ERROR: index.knn is not enabled on ${index_name}." >&2
+  echo "       Set atlas.graph.index.search.opensearch.create.ext.knn=true before JanusGraph creates the index," >&2
+  echo "       or clone the existing index with index.knn=true (see SemanticSearch.md)." >&2
+  return 1
 }
 
 ensure_semantic_ingest_pipeline() {

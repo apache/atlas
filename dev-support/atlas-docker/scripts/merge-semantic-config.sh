@@ -33,7 +33,7 @@ if [ -f "${ATLAS_HOME}/conf/users-credentials.properties" ]; then
   cp "${ATLAS_HOME}/conf/users-credentials.properties" "${RUNTIME_CONF}/users-credentials.properties"
 fi
 
-sed -i '/^atlas.search.semantic\./d;/^atlas.semantic.indexer\./d' \
+sed -i '/^atlas\.semantic\./d' \
   "${RUNTIME_CONF}/atlas-application.properties"
 echo "" >> "${RUNTIME_CONF}/atlas-application.properties"
 cat "${SEMANTIC_OVERLAY}" >> "${RUNTIME_CONF}/atlas-application.properties"

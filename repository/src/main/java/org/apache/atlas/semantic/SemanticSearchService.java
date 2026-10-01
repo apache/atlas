@@ -52,8 +52,11 @@ import java.util.Set;
 public class SemanticSearchService {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticSearchService.class);
 
+    private static final int MAX_TOP_K               = 100;
+    // hard ceiling on text sent to the ML model, regardless of atlas.query.param.max.length
+    private static final int MAX_QUERY_LENGTH        = 30_000;
     private static final int SEARCH_OVERFETCH_FACTOR = 2;
-    private static final int SEARCH_OVERFETCH_MAX      = 100;
+    private static final int SEARCH_OVERFETCH_MAX    = MAX_TOP_K * SEARCH_OVERFETCH_FACTOR;
 
     private final OpenSearchSemanticStore semanticStore;
     private final EntityGraphRetriever    entityRetriever;
@@ -78,6 +81,7 @@ public class SemanticSearchService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "query");
         }
 
+        validateQueryLength(parameters.getQuery());
         int topK      = resolveTopK(parameters.getTopK());
         double minScore = parameters.getMinScore() > 0 ? parameters.getMinScore() : SemanticSearchConfiguration.getMinScore();
 
@@ -104,7 +108,7 @@ public class SemanticSearchService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid");
         }
 
-        int topK        = resolveTopK(parameters != null ? parameters.getTopK() : 0);
+        int topK = resolveTopK(parameters != null ? parameters.getTopK() : 0);
         double minScore = parameters != null && parameters.getMinScore() > 0 ? parameters.getMinScore() : SemanticSearchConfiguration.getMinScore();
         boolean excludeDeleted = parameters == null || parameters.getExcludeDeletedEntities();
         Set<String> attributes = parameters != null ? parameters.getAttributes() : null;
@@ -212,8 +216,22 @@ public class SemanticSearchService {
         return semanticStore.neuralSearch(sourceText, fetchSize, filter);
     }
 
-    private int resolveTopK(int topK) {
-        return topK > 0 ? topK : SemanticSearchConfiguration.getDefaultTopK();
+    private int resolveTopK(int topK) throws AtlasBaseException {
+        int resolved = topK > 0 ? topK : SemanticSearchConfiguration.getDefaultTopK();
+
+        if (resolved > MAX_TOP_K) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                    "topK (" + resolved + ") exceeds maximum allowed (" + MAX_TOP_K + ")");
+        }
+
+        return resolved;
+    }
+
+    private static void validateQueryLength(String query) throws AtlasBaseException {
+        if (query != null && query.length() > MAX_QUERY_LENGTH) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
+                    "query length (" + query.length() + ") exceeds maximum allowed (" + MAX_QUERY_LENGTH + ")");
+        }
     }
 
     private static int overfetchSize(int minimumHits) {

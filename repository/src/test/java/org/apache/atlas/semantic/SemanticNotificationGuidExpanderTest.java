@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -28,15 +29,20 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -73,13 +79,64 @@ public class SemanticNotificationGuidExpanderTest {
         when(termVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.OUT)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
-        when(query.edges()).thenReturn(Collections.singletonList(edge));
+        when(query.edges(anyInt())).thenReturn(Collections.singletonList(edge));
         when(edge.getInVertex()).thenReturn(entityVertex);
         graphHelper.when(() -> GraphHelper.getGuid(entityVertex)).thenReturn("entity-guid");
 
         Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid"));
 
         assertEquals(expanded, Set.of("entity-guid"));
+    }
+
+    @Test
+    public void expandForIndexingCapsGlossaryTermFanOut() throws Exception {
+        AtlasVertex      termVertex = mock(AtlasVertex.class);
+        AtlasVertexQuery query      = mock(AtlasVertexQuery.class);
+        List<AtlasEdge>  edges      = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            AtlasEdge   edge         = mock(AtlasEdge.class);
+            AtlasVertex entityVertex = mock(AtlasVertex.class);
+            String      entityGuid   = "entity-" + i;
+
+            when(edge.getInVertex()).thenReturn(entityVertex);
+            graphHelper.when(() -> GraphHelper.getGuid(entityVertex)).thenReturn(entityGuid);
+            edges.add(edge);
+        }
+
+        graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("term-guid")).thenReturn(termVertex);
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, TYPE_NAME_PROPERTY_KEY, String.class))
+                .thenReturn("AtlasGlossaryTerm");
+        when(termVertex.query()).thenReturn(query);
+        when(query.direction(AtlasEdgeDirection.OUT)).thenReturn(query);
+        when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
+        when(query.edges(3)).thenReturn(edges);
+
+        ApplicationProperties.get().setProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF, 2);
+        try {
+            Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid"));
+
+            assertEquals(expanded, Set.of("entity-0", "entity-1"));
+        } finally {
+            ApplicationProperties.get().clearProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF);
+        }
+    }
+
+    @Test
+    public void expandForIndexingSkipsGlossaryTermFanOutWhenDisabled() throws Exception {
+        AtlasVertex termVertex = mock(AtlasVertex.class);
+
+        graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("term-guid")).thenReturn(termVertex);
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, TYPE_NAME_PROPERTY_KEY, String.class))
+                .thenReturn("AtlasGlossaryTerm");
+
+        ApplicationProperties.get().setProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF, 0);
+        try {
+            assertTrue(SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid")).isEmpty());
+            verify(termVertex, never()).query();
+        } finally {
+            ApplicationProperties.get().clearProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF);
+        }
     }
 
     @Test

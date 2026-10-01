@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.semantic;
 
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -50,14 +49,12 @@ public class SemanticTextBuilder {
     private static final int MAX_CUSTOM_ATTRIBUTES   = 500;
     private static final int MAX_GLOSSARY_TERM       = 200;
     private static final int MAX_ATTRIBUTE_VALUE     = 500;
+    private static final int MAX_GLOSSARY_TERMS      = 100; // assigned terms read per entity
 
     /** Encoded vertex properties for {@link org.apache.atlas.model.glossary.AtlasGlossaryTerm}. */
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
     private static final String GLOSSARY_TERM_ABBREVIATION_ATTR = "AtlasGlossaryTerm.abbreviation";
     private static final String GLOSSARY_TERM_DESCRIPTION_ATTR  = "AtlasGlossaryTerm.description";
-
-    private static final String GLOSSARY_SYNONYM_EDGE_LABEL   = "r:AtlasGlossarySynonym";
-    private static final String GLOSSARY_SEE_ALSO_EDGE_LABEL  = "r:AtlasGlossaryRelatedTerm";
 
     private static final Set<String> HANDLED_PROPERTY_KEYS = new HashSet<>();
 
@@ -72,52 +69,22 @@ public class SemanticTextBuilder {
             return "";
         }
 
+        // the entity's own attributes first, so classifications and terms can't push them past MAX_TEXT_LENGTH
         StringBuilder sb = new StringBuilder();
         appendToken(sb, AtlasGraphUtilsV2.getTypeName(vertex), MAX_TYPE_NAME);
+        appendRemainingStringProperties(sb, vertex);
+        // Atlas keeps the type names and attribute values of all classifications (own and propagated) here
         appendVertexProperty(sb, vertex, CLASSIFICATION_TEXT_KEY, MAX_CLASSIFICATION_TEXT);
-        appendClassificationVertices(sb, vertex);
         appendVertexProperty(sb, vertex, LABELS_PROPERTY_KEY, MAX_LABELS);
         appendVertexProperty(sb, vertex, CUSTOM_ATTRIBUTES_PROPERTY_KEY, MAX_CUSTOM_ATTRIBUTES);
         appendGlossaryTerms(sb, vertex);
-        appendRemainingStringProperties(sb, vertex);
 
         return truncate(StringUtils.trimToEmpty(sb.toString()));
     }
 
-    private static void appendClassificationVertices(StringBuilder sb, AtlasVertex entityVertex) {
-        List<AtlasEdge> edges = GraphHelper.getAllClassificationEdges(entityVertex);
-        if (edges == null || edges.isEmpty()) {
-            return;
-        }
-
-        for (AtlasEdge edge : edges) {
-            if (edge == null) {
-                continue;
-            }
-
-            AtlasVertex classificationVertex = edge.getInVertex();
-            if (classificationVertex == null) {
-                continue;
-            }
-
-            appendToken(sb, AtlasGraphUtilsV2.getTypeName(classificationVertex), MAX_CLASSIFICATION_TEXT);
-            appendClassificationVertexAttributes(sb, classificationVertex);
-        }
-    }
-
-    private static void appendClassificationVertexAttributes(StringBuilder sb, AtlasVertex classificationVertex) {
-        Collection<? extends String> propertyKeys = classificationVertex.getPropertyKeys();
-        if (propertyKeys == null || propertyKeys.isEmpty()) {
-            return;
-        }
-
-        for (String propertyKey : propertyKeys) {
-            if (StringUtils.isBlank(propertyKey) || isInternalPropertyKey(propertyKey)) {
-                continue;
-            }
-
-            appendVertexStringProperty(sb, classificationVertex, propertyKey);
-        }
+    // once the text is full, stop reading more vertices: the rest would be truncated anyway
+    private static boolean isFull(StringBuilder sb) {
+        return sb.length() >= MAX_TEXT_LENGTH;
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -130,12 +97,16 @@ public class SemanticTextBuilder {
         Iterable<?> edges = vertexQuery
                 .direction(AtlasEdgeDirection.IN)
                 .label(TERM_ASSIGNMENT_LABEL)
-                .edges();
+                .edges(MAX_GLOSSARY_TERMS);
         if (edges == null) {
             return;
         }
 
         for (AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
+            if (isFull(sb)) {
+                return;
+            }
+
             if (edge == null) {
                 continue;
             }
@@ -149,6 +120,8 @@ public class SemanticTextBuilder {
         }
     }
 
+    // only the assigned term itself: terms linked to it (synonyms, related, antonyms, ...) are not followed, so a
+    // change to a linked term never needs a second-level fan-out
     private static void appendGlossaryTermText(StringBuilder sb, AtlasVertex termVertex) {
         appendToken(sb, AtlasGraphUtilsV2.getEncodedProperty(termVertex, GLOSSARY_TERM_DISPLAY_NAME_ATTR, String.class),
                 MAX_GLOSSARY_TERM);
@@ -156,49 +129,6 @@ public class SemanticTextBuilder {
                 MAX_GLOSSARY_TERM);
         appendToken(sb, AtlasGraphUtilsV2.getEncodedProperty(termVertex, GLOSSARY_TERM_DESCRIPTION_ATTR, String.class),
                 MAX_GLOSSARY_TERM);
-        appendRelatedGlossaryTermNames(sb, termVertex, GLOSSARY_SYNONYM_EDGE_LABEL);
-        appendRelatedGlossaryTermNames(sb, termVertex, GLOSSARY_SEE_ALSO_EDGE_LABEL);
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void appendRelatedGlossaryTermNames(StringBuilder sb, AtlasVertex termVertex, String edgeLabel) {
-        AtlasVertexQuery vertexQuery = termVertex.query();
-        if (vertexQuery == null) {
-            return;
-        }
-
-        Iterable<?> edges = vertexQuery
-                .direction(AtlasEdgeDirection.BOTH)
-                .label(edgeLabel)
-                .edges();
-        if (edges == null) {
-            return;
-        }
-
-        for (AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
-            if (edge == null) {
-                continue;
-            }
-
-            AtlasVertex relatedTermVertex = getOtherVertex(edge, termVertex);
-            if (relatedTermVertex == null) {
-                continue;
-            }
-
-            appendToken(sb, AtlasGraphUtilsV2.getEncodedProperty(relatedTermVertex, GLOSSARY_TERM_DISPLAY_NAME_ATTR, String.class),
-                    MAX_GLOSSARY_TERM);
-            appendToken(sb, AtlasGraphUtilsV2.getEncodedProperty(relatedTermVertex, GLOSSARY_TERM_ABBREVIATION_ATTR, String.class),
-                    MAX_GLOSSARY_TERM);
-        }
-    }
-
-    private static AtlasVertex getOtherVertex(AtlasEdge edge, AtlasVertex termVertex) {
-        AtlasVertex outVertex = edge.getOutVertex();
-        if (outVertex != null && !outVertex.equals(termVertex)) {
-            return outVertex;
-        }
-
-        return edge.getInVertex();
     }
 
     private static void appendRemainingStringProperties(StringBuilder sb, AtlasVertex vertex) {
@@ -208,6 +138,10 @@ public class SemanticTextBuilder {
         }
 
         for (String propertyKey : propertyKeys) {
+            if (isFull(sb)) {
+                return;
+            }
+
             if (StringUtils.isBlank(propertyKey) || isInternalPropertyKey(propertyKey)) {
                 continue;
             }

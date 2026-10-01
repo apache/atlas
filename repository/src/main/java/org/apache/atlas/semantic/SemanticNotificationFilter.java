@@ -18,6 +18,7 @@
 package org.apache.atlas.semantic;
 
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +33,8 @@ import java.util.Set;
  * Uses an explicit allowlist of operation types that can change embeddable entity text.
  */
 public final class SemanticNotificationFilter {
+    private static final String TERM_ASSIGNMENT_RELATIONSHIP = "AtlasGlossarySemanticAssignment";
+
     private static final Set<OperationType> INDEXED_OPERATION_TYPES = Collections.unmodifiableSet(EnumSet.of(
             OperationType.ENTITY_CREATE,
             OperationType.ENTITY_UPDATE,
@@ -39,7 +42,6 @@ public final class SemanticNotificationFilter {
             OperationType.CLASSIFICATION_DELETE,
             OperationType.CLASSIFICATION_UPDATE,
             OperationType.RELATIONSHIP_CREATE,
-            OperationType.RELATIONSHIP_UPDATE,
             OperationType.RELATIONSHIP_DELETE));
 
     private SemanticNotificationFilter() {
@@ -68,9 +70,12 @@ public final class SemanticNotificationFilter {
             guids.add(notification.getEntity().getGuid());
         }
 
-        if (notification.getRelationship() != null) {
-            addObjectIdGuid(guids, notification.getRelationship().getEnd1());
-            addObjectIdGuid(guids, notification.getRelationship().getEnd2());
+        // A term assignment (or removal) changes the assigned terms in the entity's text; other relationships are
+        // edges the text builder doesn't follow. Only end2 (the entity): end1 is the term, whose text didn't change,
+        // and expanding it would re-embed every entity of that term.
+        AtlasRelationshipHeader relationship = notification.getRelationship();
+        if (relationship != null && TERM_ASSIGNMENT_RELATIONSHIP.equals(relationship.getTypeName())) {
+            addObjectIdGuid(guids, relationship.getEnd2());
         }
 
         return guids;

@@ -26,27 +26,28 @@ import org.apache.commons.lang3.StringUtils;
  * Configuration for semantic search read path, Semantic Indexer service, and repair tool.
  */
 public final class SemanticSearchConfiguration {
-    public static final String SEMANTIC_SEARCH_ENABLE_CONF                      = "atlas.search.semantic.enable";
-    public static final String SEMANTIC_OPENSEARCH_MODEL_ID_CONF                = "atlas.search.semantic.opensearch.model.id";
-    public static final String SEMANTIC_OPENSEARCH_EMBEDDING_DIMENSION_CONF     = "atlas.search.semantic.opensearch.embedding.dimension";
-    public static final String SEMANTIC_DEFAULT_TOP_K_CONF                      = "atlas.search.semantic.default.topK";
-    public static final String SEMANTIC_MIN_SCORE_CONF                          = "atlas.search.semantic.min.score";
-    public static final String SEMANTIC_RETRY_MAX_ATTEMPTS_CONF                 = "atlas.search.semantic.retry.max.attempts";
-    public static final String SEMANTIC_RETRY_SLEEP_MS_CONF                     = "atlas.search.semantic.retry.sleep.ms";
+    public static final String SEMANTIC_ENABLED_CONF                            = "atlas.semantic.enabled";
+    public static final String SEMANTIC_MODEL_ID_CONF                           = "atlas.semantic.model.id";
+    public static final String SEMANTIC_EMBEDDING_DIMENSION_CONF                = "atlas.semantic.embedding.dimension";
+    public static final String SEMANTIC_RETRY_MAX_ATTEMPTS_CONF                 = "atlas.semantic.retry.max.attempts";
+    public static final String SEMANTIC_RETRY_SLEEP_MS_CONF                     = "atlas.semantic.retry.sleep.ms";
+
+    public static final String SEMANTIC_SEARCH_DEFAULT_TOP_K_CONF               = "atlas.semantic.search.default.topK";
+    public static final String SEMANTIC_SEARCH_MIN_SCORE_CONF                   = "atlas.semantic.search.min.score";
 
     public static final String SEMANTIC_INDEXER_KAFKA_GROUP_ID_CONF             = "atlas.semantic.indexer.kafka.group.id";
     public static final String SEMANTIC_INDEXER_BATCH_SIZE_CONF                 = "atlas.semantic.indexer.batch.size";
     public static final String SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS_CONF      = "atlas.semantic.indexer.kafka.poll.timeout.ms";
+    public static final String SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS_CONF = "atlas.semantic.indexer.kafka.max.poll.interval.ms";
+    public static final String SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS_CONF     = "atlas.semantic.indexer.kafka.max.poll.records";
+    public static final String SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF          = "atlas.semantic.indexer.max.term.entities";
     public static final String SEMANTIC_INDEXER_HEALTH_ENABLED_CONF             = "atlas.semantic.indexer.health.enabled";
     public static final String SEMANTIC_INDEXER_HEALTH_PORT_CONF                = "atlas.semantic.indexer.health.port";
     public static final String SEMANTIC_INDEXER_HEALTH_PATH_CONF                = "atlas.semantic.indexer.health.path";
 
-    public static final String GRAPH_INDEX_HOSTNAME_CONF                        = "atlas.graph.index.search.hostname";
-    public static final String GRAPH_INDEX_PORT_CONF                            = "atlas.graph.index.search.port";
+    public static final String GRAPH_INDEX_HOSTNAME_CONF                        = SemanticOpenSearchHttpClient.HOSTNAME_CONF;
     public static final String GRAPH_INDEX_NAME_CONF                            = "atlas.graph.index.search.index-name";
-    public static final String GRAPH_INDEX_USERNAME_CONF                        = "atlas.graph.index.search.opensearch.username";
-    public static final String GRAPH_INDEX_PASSWORD_CONF                        = "atlas.graph.index.search.opensearch.password";
-    public static final String GRAPH_INDEX_USE_HTTPS_CONF                       = "atlas.graph.index.search.opensearch.use.https";
+    public static final String GRAPH_INDEX_CREATE_KNN_CONF                      = "atlas.graph.index.search.opensearch.create.ext.knn";
 
     public static final String SEMANTIC_TEXT_FIELD                              = "atlas_semantic_text";
     public static final String SEMANTIC_EMBEDDING_FIELD                         = "atlas_semantic_embedding";
@@ -60,6 +61,9 @@ public final class SemanticSearchConfiguration {
     private static final long   DEFAULT_SEMANTIC_RETRY_SLEEP_MS                 = 500L;
     private static final String DEFAULT_SEMANTIC_INDEXER_KAFKA_GROUP_ID         = "atlas_semantic_indexer";
     private static final long   DEFAULT_SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS  = 5000L;
+    private static final int    DEFAULT_SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS = 30 * 60 * 1000;
+    private static final int    DEFAULT_SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS = 25;
+    private static final int    DEFAULT_SEMANTIC_INDEXER_MAX_TERM_ENTITIES      = 100;
     private static final int    DEFAULT_SEMANTIC_INDEXER_HEALTH_PORT            = 8089;
     private static final String DEFAULT_SEMANTIC_INDEXER_HEALTH_PATH            = "/health";
     private static final String DEFAULT_GRAPH_INDEX_NAME                        = "janusgraph";
@@ -69,7 +73,7 @@ public final class SemanticSearchConfiguration {
 
     public static boolean isSemanticSearchEnabled() {
         try {
-            return ApplicationProperties.get().getBoolean(SEMANTIC_SEARCH_ENABLE_CONF, false);
+            return ApplicationProperties.get().getBoolean(SEMANTIC_ENABLED_CONF, false);
         } catch (AtlasException e) {
             return false;
         }
@@ -77,7 +81,7 @@ public final class SemanticSearchConfiguration {
 
     public static String getOpenSearchModelId() {
         try {
-            return ApplicationProperties.get().getString(SEMANTIC_OPENSEARCH_MODEL_ID_CONF, "").trim();
+            return ApplicationProperties.get().getString(SEMANTIC_MODEL_ID_CONF, "").trim();
         } catch (AtlasException e) {
             return "";
         }
@@ -85,7 +89,7 @@ public final class SemanticSearchConfiguration {
 
     public static int getOpenSearchEmbeddingDimension() {
         try {
-            return ApplicationProperties.get().getInt(SEMANTIC_OPENSEARCH_EMBEDDING_DIMENSION_CONF, 384);
+            return ApplicationProperties.get().getInt(SEMANTIC_EMBEDDING_DIMENSION_CONF, 384);
         } catch (AtlasException e) {
             return 384;
         }
@@ -93,7 +97,7 @@ public final class SemanticSearchConfiguration {
 
     public static int getDefaultTopK() {
         try {
-            return ApplicationProperties.get().getInt(SEMANTIC_DEFAULT_TOP_K_CONF, DEFAULT_SEMANTIC_TOP_K);
+            return ApplicationProperties.get().getInt(SEMANTIC_SEARCH_DEFAULT_TOP_K_CONF, DEFAULT_SEMANTIC_TOP_K);
         } catch (AtlasException e) {
             return DEFAULT_SEMANTIC_TOP_K;
         }
@@ -101,7 +105,7 @@ public final class SemanticSearchConfiguration {
 
     public static double getMinScore() {
         try {
-            return ApplicationProperties.get().getDouble(SEMANTIC_MIN_SCORE_CONF, DEFAULT_SEMANTIC_MIN_SCORE);
+            return ApplicationProperties.get().getDouble(SEMANTIC_SEARCH_MIN_SCORE_CONF, DEFAULT_SEMANTIC_MIN_SCORE);
         } catch (AtlasException e) {
             return DEFAULT_SEMANTIC_MIN_SCORE;
         }
@@ -148,6 +152,37 @@ public final class SemanticSearchConfiguration {
         }
     }
 
+    public static int getSemanticIndexerKafkaMaxPollIntervalMs() {
+        try {
+            return ApplicationProperties.get().getInt(SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS_CONF,
+                    DEFAULT_SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS);
+        } catch (AtlasException e) {
+            return DEFAULT_SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS;
+        }
+    }
+
+    public static int getSemanticIndexerKafkaMaxPollRecords() {
+        try {
+            return ApplicationProperties.get().getInt(SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS_CONF,
+                    DEFAULT_SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS);
+        } catch (AtlasException e) {
+            return DEFAULT_SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS;
+        }
+    }
+
+    /**
+     * Max entities re-embedded when one glossary term changes (the term's text is part of each entity's text);
+     * 0 disables this fan-out.
+     */
+    public static int getSemanticIndexerMaxTermEntities() {
+        try {
+            return Math.max(0, ApplicationProperties.get().getInt(SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF,
+                    DEFAULT_SEMANTIC_INDEXER_MAX_TERM_ENTITIES));
+        } catch (AtlasException e) {
+            return DEFAULT_SEMANTIC_INDEXER_MAX_TERM_ENTITIES;
+        }
+    }
+
     public static boolean isSemanticIndexerHealthEnabled() {
         try {
             return ApplicationProperties.get().getBoolean(SEMANTIC_INDEXER_HEALTH_ENABLED_CONF, true);
@@ -186,60 +221,41 @@ public final class SemanticSearchConfiguration {
         return getGraphIndexName() + VERTEX_INDEX_SUFFIX;
     }
 
-    public static String getOpenSearchBaseUrl() throws SemanticSearchException {
-        try {
-            Configuration config = ApplicationProperties.get();
-            String        host   = config.getString(GRAPH_INDEX_HOSTNAME_CONF, "").trim();
-
-            if (StringUtils.isBlank(host)) {
-                throw new SemanticSearchException(GRAPH_INDEX_HOSTNAME_CONF + " must be set for semantic search");
-            }
-
-            boolean https = config.getBoolean(GRAPH_INDEX_USE_HTTPS_CONF, false);
-            int     port  = config.getInt(GRAPH_INDEX_PORT_CONF, https ? 443 : 9200);
-            String  scheme = https ? "https" : "http";
-
-            return scheme + "://" + host + ":" + port;
-        } catch (AtlasException e) {
-            throw new SemanticSearchException("Failed to read OpenSearch connection settings", e);
-        }
-    }
-
-    public static String getOpenSearchUsername() {
-        try {
-            return ApplicationProperties.get().getString(GRAPH_INDEX_USERNAME_CONF, "");
-        } catch (AtlasException e) {
-            return "";
-        }
-    }
-
-    public static String getOpenSearchPassword() {
-        try {
-            return ApplicationProperties.get().getString(GRAPH_INDEX_PASSWORD_CONF, "");
-        } catch (AtlasException e) {
-            return "";
-        }
-    }
-
+    /**
+     * Validates the configuration when {@link #SEMANTIC_ENABLED_CONF} is true. Must run before the graph is opened:
+     * JanusGraph creates the vertex index on first open, and index.knn can't be added to it afterwards.
+     */
     public static void validateWhenEnabled() throws SemanticSearchException {
-        if (!isSemanticSearchEnabled()) {
-            return;
+        if (isSemanticSearchEnabled()) {
+            validate();
         }
+    }
 
+    /**
+     * Validates the configuration regardless of {@link #SEMANTIC_ENABLED_CONF} (which only gates the REST search):
+     * used by the Semantic Indexer and repair tool, before they open the graph.
+     */
+    public static void validate() throws SemanticSearchException {
         try {
             Configuration config = ApplicationProperties.get();
 
             if (StringUtils.isBlank(config.getString(GRAPH_INDEX_HOSTNAME_CONF, ""))) {
-                throw new SemanticSearchException(GRAPH_INDEX_HOSTNAME_CONF + " must be set when semantic search is enabled");
+                throw new SemanticSearchException(GRAPH_INDEX_HOSTNAME_CONF + " must be set for semantic search");
             }
 
-            if (StringUtils.isBlank(config.getString(SEMANTIC_OPENSEARCH_MODEL_ID_CONF, ""))) {
-                throw new SemanticSearchException(SEMANTIC_OPENSEARCH_MODEL_ID_CONF + " must be set when semantic search is enabled");
+            if (!config.getBoolean(GRAPH_INDEX_CREATE_KNN_CONF, false)) {
+                throw new SemanticSearchException(GRAPH_INDEX_CREATE_KNN_CONF + "=true is required for semantic search:"
+                        + " index.knn can only be set when JanusGraph creates the vertex index"
+                        + " (an existing index must be cloned with index.knn=true, see SemanticSearch.md)");
             }
 
-            int dimensions = config.getInt(SEMANTIC_OPENSEARCH_EMBEDDING_DIMENSION_CONF, 0);
+            if (StringUtils.isBlank(config.getString(SEMANTIC_MODEL_ID_CONF, ""))) {
+                throw new SemanticSearchException(SEMANTIC_MODEL_ID_CONF + " must be set for semantic search");
+            }
+
+            int dimensions = config.getInt(SEMANTIC_EMBEDDING_DIMENSION_CONF, 0);
             if (dimensions <= 0) {
-                throw new SemanticSearchException(SEMANTIC_OPENSEARCH_EMBEDDING_DIMENSION_CONF + " must be a positive integer");
+                throw new SemanticSearchException(SEMANTIC_EMBEDDING_DIMENSION_CONF + " must be a positive integer");
             }
         } catch (AtlasException e) {
             throw new SemanticSearchException("Failed to read semantic search configuration", e);

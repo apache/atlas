@@ -61,16 +61,36 @@ public class SemanticNotificationFilterTest {
     }
 
     @Test
-    public void extractsGuidsFromRelationshipNotification() {
-        AtlasRelationshipHeader relationship = new AtlasRelationshipHeader();
-        relationship.setEnd1(objectId("end1-guid"));
-        relationship.setEnd2(objectId("end2-guid"));
-
+    public void termAssignmentKeepsOnlyTheEntityEnd() {
         EntityNotificationV2 notification = new EntityNotificationV2(
-                relationship, OperationType.RELATIONSHIP_UPDATE, System.currentTimeMillis());
+                relationship("AtlasGlossarySemanticAssignment"), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
 
         assertTrue(SemanticNotificationFilter.shouldProcess(notification));
-        assertEquals(SemanticNotificationFilter.extractGuids(notification), Set.of("end1-guid", "end2-guid"));
+        assertEquals(SemanticNotificationFilter.extractGuids(notification), Set.of("entity-guid"));
+    }
+
+    @Test
+    public void skipsTermAssignmentUpdate() {
+        EntityNotificationV2 notification = new EntityNotificationV2(
+                relationship("AtlasGlossarySemanticAssignment"), OperationType.RELATIONSHIP_UPDATE, System.currentTimeMillis());
+
+        assertFalse(SemanticNotificationFilter.shouldProcess(notification));
+    }
+
+    @Test
+    public void skipsOtherRelationships() {
+        EntityNotificationV2 notification = new EntityNotificationV2(
+                relationship("hive_table_columns"), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
+
+        assertFalse(SemanticNotificationFilter.shouldProcess(notification));
+    }
+
+    private static AtlasRelationshipHeader relationship(String typeName) {
+        AtlasRelationshipHeader relationship = new AtlasRelationshipHeader();
+        relationship.setTypeName(typeName);
+        relationship.setEnd1(objectId("term-guid"));
+        relationship.setEnd2(objectId("entity-guid"));
+        return relationship;
     }
 
     @Test

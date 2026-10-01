@@ -1051,6 +1051,8 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
             }
 
+            Servlets.validateQueryParamLength("query", searchParameters.getQuery());
+
             return discoveryService.semanticSearch(searchParameters);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1079,6 +1081,8 @@ public class DiscoveryREST {
             if (StringUtils.isEmpty(guid)) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid");
             }
+
+            Servlets.validateQueryParamLength("guid", guid);
 
             SimilarEntitySearchParameters searchParameters = new SimilarEntitySearchParameters();
             searchParameters.setTypeName(typeName);

@@ -47,9 +47,9 @@ if [ "${ATLAS_SEMANTIC_SKIP_INIT:-false}" != "true" ]; then
     source "${DOCKER_DIR}/config/.semantic-bootstrap-last.env"
     if [ "${MODEL_ID}" != "${PREVIOUS_MODEL_ID}" ]; then
       echo "==> Updating atlas-semantic-docker.properties with MODEL_ID=${MODEL_ID} ..."
-      sed -i.bak "/^atlas.search.semantic.opensearch.model.id=/d" \
+      sed -i.bak "/^atlas.semantic.model.id=/d" \
         "${DOCKER_DIR}/config/atlas-semantic-docker.properties"
-      echo "atlas.search.semantic.opensearch.model.id=${MODEL_ID}" \
+      echo "atlas.semantic.model.id=${MODEL_ID}" \
         >> "${DOCKER_DIR}/config/atlas-semantic-docker.properties"
       rm -f "${DOCKER_DIR}/config/atlas-semantic-docker.properties.bak"
       docker compose "${COMPOSE_FILES[@]}" restart atlas atlas-semantic-indexer

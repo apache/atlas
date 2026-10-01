@@ -20,49 +20,17 @@ package org.apache.atlas.semantic;
 import org.apache.atlas.utils.AtlasJson;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_EMBEDDING_FIELD;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_INGEST_PIPELINE_NAME;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_TEXT_FIELD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class OpenSearchSemanticStoreTest {
-    @Test
-    public void parseEmbeddingDimensionFromMappingResponse() {
-        String json = "{"
-                + "\"janusgraph_vertex_index\": {"
-                + "  \"mappings\": {"
-                + "    \"properties\": {"
-                + "      \"" + SEMANTIC_EMBEDDING_FIELD + "\": {"
-                + "        \"type\": \"knn_vector\","
-                + "        \"dimension\": 384"
-                + "      }"
-                + "    }"
-                + "  }"
-                + "}"
-                + "}";
-
-        Map<String, Object> mapping = AtlasJson.fromJson(json, Map.class);
-        assertEquals(OpenSearchSemanticStore.parseEmbeddingDimensionFromMapping(mapping, "janusgraph_vertex_index"),
-                Integer.valueOf(384));
-    }
-
-    @Test
-    public void parseEmbeddingDimensionReturnsNullWhenMissing() {
-        assertNull(OpenSearchSemanticStore.parseEmbeddingDimensionFromMapping(null, "janusgraph_vertex_index"));
-    }
-
-    @Test
-    public void parseOpenSearchDistributionFromVersion() {
-        Map<String, Object> version = AtlasJson.fromJson("{\"distribution\":\"opensearch\"}", Map.class);
-        assertEquals(OpenSearchSemanticStore.parseOpenSearchDistribution(version), "opensearch");
-    }
-
     @Test
     public void parseVertexIndexDocumentFromSearchResponse() {
         String json = "{"
@@ -115,51 +83,41 @@ public class OpenSearchSemanticStoreTest {
     }
 
     @Test
-    public void parseKnnEnabledFromNestedSettings() {
-        String json = "{"
-                + "\"janusgraph_vertex_index\": {"
-                + "  \"settings\": {"
-                + "    \"index\": {"
-                + "      \"knn\": \"true\""
-                + "    }"
-                + "  }"
-                + "}"
-                + "}";
+    public void entityScanBodyFiltersMissingEmbeddingsAndPagesByGuid() {
+        String missing = AtlasJson.toJson(OpenSearchSemanticStore.buildEntityScanBody(true, 50, "guid-50"));
+        assertTrue(missing.contains("\"exists\":{\"field\":\"" + SEMANTIC_EMBEDDING_FIELD + "\"}"));
+        assertTrue(missing.contains("\"search_after\":[\"guid-50\"]"));
+        assertTrue(missing.contains("__guid.keyword"));
 
-        assertTrue(OpenSearchSemanticStore.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class)));
+        String all = AtlasJson.toJson(OpenSearchSemanticStore.buildEntityScanBody(false, 50, null));
+        assertFalse(all.contains(SEMANTIC_EMBEDDING_FIELD));
+        assertFalse(all.contains("search_after"));
     }
 
     @Test
-    public void parseKnnEnabledFromDefaultsSection() {
-        String json = "{"
-                + "\"janusgraph_vertex_index\": {"
-                + "  \"settings\": {},"
-                + "  \"defaults\": {"
-                + "    \"index\": {"
-                + "      \"knn\": true"
-                + "    }"
-                + "  }"
-                + "}"
-                + "}";
+    public void vectorFilterCombinesTypesAndExcludedGuids() {
+        String json = AtlasJson.toJson(OpenSearchSemanticStore.buildVectorFilter(
+                new VectorSearchFilter(Collections.singleton("hive_table"), Collections.singleton("guid-1"))));
 
-        assertTrue(OpenSearchSemanticStore.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class)));
+        assertTrue(json.contains("\"filter\":[{\"terms\":{\"__typeName.keyword\":[\"hive_table\"]}}]"));
+        assertTrue(json.contains("\"must_not\":[{\"terms\":{\"__guid.keyword\":[\"guid-1\"]}}]"));
+        assertNull(OpenSearchSemanticStore.buildVectorFilter(new VectorSearchFilter(Collections.emptySet(), Collections.emptySet())));
     }
 
     @Test
-    public void parseKnnEnabledReturnsFalseWhenMissing() {
-        assertFalse(OpenSearchSemanticStore.parseKnnEnabledFromSettingsResponse(
-                AtlasJson.fromJson("{\"janusgraph_vertex_index\":{\"settings\":{}}}", Map.class)));
-    }
+    public void parseEntityScanPageReturnsGuidsAndLastSortValue() {
+        String json = "{\"hits\":{\"hits\":["
+                + "{\"_id\":\"a\",\"_source\":{\"__guid\":\"g1\"},\"sort\":[\"g1\"]},"
+                + "{\"_id\":\"b\",\"_source\":{\"__guid\":\"g2\"},\"sort\":[\"g2\"]}"
+                + "]}}";
 
-    @Test
-    public void buildIngestPipelineBodyUsesVertexIndexFieldNames() {
-        Map<String, Object> body = OpenSearchSemanticStore.buildIngestPipelineBody("model-123");
-        assertTrue(body.containsKey("processors"));
-        assertEquals(((List<?>) body.get("processors")).size(), 2);
+        OpenSearchSemanticStore.EntityScanPage page = OpenSearchSemanticStore.parseEntityScanPage(json);
+        assertEquals(page.guids, java.util.Arrays.asList("g1", "g2"));
+        assertEquals(page.hitCount, 2);
+        assertEquals(page.lastSortValue, "g2");
 
-        String serialized = AtlasJson.toJson(body);
-        assertTrue(serialized.contains(SEMANTIC_TEXT_FIELD));
-        assertTrue(serialized.contains(SEMANTIC_EMBEDDING_FIELD));
-        assertTrue(serialized.contains(SEMANTIC_INGEST_PIPELINE_NAME) || serialized.contains("model-123"));
+        OpenSearchSemanticStore.EntityScanPage empty = OpenSearchSemanticStore.parseEntityScanPage("{\"hits\":{\"hits\":[]}}");
+        assertTrue(empty.guids.isEmpty());
+        assertNull(empty.lastSortValue);
     }
 }

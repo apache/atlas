@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provision a remote OpenSearch embedding model for Atlas semantic search (dev).
-# Also enables knn, ingest pipeline, and embedding mapping on the JanusGraph vertex index.
+# Also checks knn and ensures the ingest pipeline and embedding mapping on the JanusGraph vertex index.
 #
 # Use one of these paths:
 #
