@@ -21,6 +21,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
@@ -29,11 +30,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class TaskManagementTest extends BaseTaskFixture {
+    @BeforeMethod(alwaysRun = true)
+    public void clearTasks() throws AtlasBaseException {
+        for (AtlasTask task : taskRegistry.getAll()) {
+            taskRegistry.deleteByGuid(task.getGuid());
+        }
+        graph.commit();
+    }
+
     @Test
     public void factoryReturningNullIsHandled() throws AtlasException {
         TaskManagement taskManagement = new TaskManagement(null, taskRegistry, new NullFactory());
@@ -55,14 +65,24 @@ public class TaskManagementTest extends BaseTaskFixture {
 
         taskManagement.addAll(Arrays.asList(spyTask, spyTaskError));
 
-        TimeUnit.SECONDS.sleep(5);
+        waitForTaskCreation(spyingFactory);
 
+        assertNotNull(spyingFactory.getAddTask(), "add task should be created and executed");
+        assertNotNull(spyingFactory.getErrorTask(), "error task should be created and executed");
         assertTrue(spyingFactory.getAddTask().taskPerformed());
         assertTrue(spyingFactory.getErrorTask().taskPerformed());
 
         AtlasTask task = taskManagement.getByGuid(spyTask.getGuid());
 
         assertNull(task);
+    }
+
+    private void waitForTaskCreation(SpyingFactory spyingFactory) throws InterruptedException {
+        int waitIterations = 0;
+        while ((spyingFactory.getAddTask() == null || spyingFactory.getErrorTask() == null) && waitIterations < 20) {
+            TimeUnit.SECONDS.sleep(1);
+            waitIterations++;
+        }
     }
 
     @Test

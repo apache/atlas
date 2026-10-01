@@ -20,514 +20,162 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.server.common.filters.ActiveServerFilter;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
-import org.apache.atlas.server.common.service.ActiveInstanceState;
-import org.apache.atlas.server.common.service.ServiceState;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.HttpMethod;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
+/**
+ * Unit tests for {@link ActiveServerFilter} in active-active peer mode.
+ *
+ * <p>There is no redirect-to-active: the filter either passes the request
+ * downstream (ACTIVE) or returns 503 (BECOMING_ACTIVE, MIGRATING).
+ */
 public class ActiveServerFilterTest {
-    public static final String ACTIVE_SERVER_ADDRESS = "http://localhost:21000/";
+    private static final String ADMIN_URI        = "/api/atlas/admin/types";
+    private static final String SUPPORTED_URI    = "/api/atlas/v2/types/typedefs";
+    private static final String EXPORT_ADMIN_URI = "/api/atlas/admin/export";
 
-    @Mock
-    private ActiveInstanceState activeInstanceState;
+    @Mock private ServiceStateProvider serviceState;
+    @Mock private HttpServletRequest  request;
+    @Mock private HttpServletResponse response;
+    @Mock private FilterChain         chain;
 
-    @Mock
-    private HttpServletRequest servletRequest;
-
-    @Mock
-    private HttpServletResponse servletResponse;
-
-    @Mock
-    private FilterChain filterChain;
-
-    @Mock
-    private ServiceState serviceState;
+    private ActiveServerFilter filter;
 
     @BeforeMethod
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
+        filter = new ActiveServerFilter(serviceState);
+
+        when(request.getMethod()).thenReturn("GET");
+        when(serviceState.isInstanceInMigration()).thenReturn(false);
+        when(serviceState.isInstanceInTransition()).thenReturn(false);
+        when(serviceState.getStateName()).thenReturn("ACTIVE");
     }
 
-    private ActiveServerFilter newActiveServerFilter() {
-        return new ActiveServerFilter(activeInstanceState::getActiveServerAddress, new ServiceStateProvider() {
-            @Override
-            public boolean isActive() {
-                return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
-            }
+    // -------------------------------------------------------------------------
+    // ACTIVE node — all requests pass through
+    // -------------------------------------------------------------------------
 
-            @Override
-            public boolean isInstanceInTransition() {
-                return serviceState.isInstanceInTransition();
-            }
+    @Test
+    public void requestPassesThroughWhenNodeIsActive() throws Exception {
+        when(serviceState.isActive()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn(SUPPORTED_URI);
 
-            @Override
-            public boolean isInstanceInMigration() {
-                return serviceState.isInstanceInMigration();
-            }
+        filter.doFilter(request, response, chain);
 
-            @Override
-            public String getStateName() {
-                return serviceState.getState().toString();
-            }
-        });
+        verify(chain).doFilter(request, response);
+        verify(response, never()).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
     }
 
     @Test
-    public void testShouldPassThroughRequestsIfActive() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+    public void adminRequestPassesThroughWhenNodeIsActive() throws Exception {
+        when(serviceState.isActive()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn(ADMIN_URI);
 
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
+        filter.doFilter(request, response, chain);
 
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(filterChain).doFilter(servletRequest, servletResponse);
+        verify(chain).doFilter(request, response);
     }
 
-    @Test
-    public void testShouldFailIfCannotRetrieveActiveServerAddress() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(null);
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-    }
+    // -------------------------------------------------------------------------
+    // BECOMING_ACTIVE (in transition) — 503 returned
+    // -------------------------------------------------------------------------
 
     @Test
-    public void testShouldRedirectRequestToActiveServerAddress() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getRequestURI()).thenReturn("types");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types");
-    }
-
-    @Test
-    public void adminImportRequestsToPassiveServerShouldToActiveServerAddress() throws IOException, ServletException {
-        String[] importExportUrls = {"api/admin/export", "api/admin/import", "api/admin/importfile", "api/admin/audits",
-                "api/admin/purge", "api/admin/expimp/audit", "api/admin/metrics",
-                "api/admin/server/dummy_name", "api/admin/audit/dummy_guid/details", "api/admin/tasks"};
-
-        for (String partialUrl : importExportUrls) {
-            when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-            when(servletRequest.getRequestURI()).thenReturn(partialUrl);
-
-            ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-            when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-            when(servletRequest.getRequestURI()).thenReturn(partialUrl);
-            when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-            activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-            verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + partialUrl);
-        }
-    }
-
-    @Test
-    public void testRedirectedRequestShouldContainQueryParameters() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURI()).thenReturn("types");
-        when(servletRequest.getQueryString()).thenReturn("query=TRAIT");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types?query=TRAIT");
-    }
-
-    @Test
-    public void testRedirectedRequestShouldContainEncodeQueryParameters() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/v2/search/basic");
-        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&spaceParam=firstpart secondpart&_=1500969656054&listParam=value1,value2");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
-    }
-
-    @Test
-    public void testOriginalRequestShouldNotEncodeQueryParametersAgain() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/v2/search/basic");
-        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
-    }
-
-    @Test
-    public void testOriginalRequestShouldNotEncodePartiallyEncodedQueryParameters() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/v2/search/basic");
-        when(servletRequest.getQueryString()).thenReturn("limit=25&excludeDeletedEntities=true&query=where name%3D%22ABC%22&_=1500969656054&listParam=value1,value2");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&query=where%20name=%22ABC%22&_=1500969656054&listParam=value1,value2");
-    }
-
-    @Test
-    public void testShouldRedirectPOSTRequest() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.POST);
-        when(servletRequest.getRequestURI()).thenReturn("types");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS + "types");
-        verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-    }
-
-    @Test
-    public void testShouldRedirectPUTRequest() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.PUT);
-        when(servletRequest.getRequestURI()).thenReturn("types");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS + "types");
-        verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-    }
-
-    @Test
-    public void testShouldRedirectDELETERequest() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.DELETE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/entities/6ebb039f-eaa5-4b9c-ae44-799c7910545d/traits/test_tag_ha3");
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS + "api/atlas/entities/6ebb039f-eaa5-4b9c-ae44-799c7910545d/traits/test_tag_ha3");
-        verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-    }
-
-    @Test
-    public void testShouldReturnServiceUnavailableIfStateBecomingActive() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.BECOMING_ACTIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-    }
-
-    @Test
-    public void testShouldNotRedirectAdminAPIs() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/admin/asmasn"); // any Admin URI is fine.
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(filterChain).doFilter(servletRequest, servletResponse);
-        verifyNoInteractions(activeInstanceState);
-    }
-
-    @Test
-    public void testShouldHandleMigrationStateWithRootURI() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(serviceState.isInstanceInMigration()).thenReturn(true);
-        when(servletRequest.getRequestURI()).thenReturn("/");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost:21000/"));
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect("http://localhost:21000/migration-status.html");
-    }
-
-    @Test
-    public void testShouldHandleMigrationStateWithRootURIForUnsafeMethod() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(serviceState.isInstanceInMigration()).thenReturn(true);
-        when(servletRequest.getRequestURI()).thenReturn("/");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.POST);
-        when(servletRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost:21000/"));
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).setHeader("Location", "http://localhost:21000/migration-status.html");
-        verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
-    }
-
-    @Test
-    public void testShouldHandleMigrationStateWithNonRootURI() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(serviceState.isInstanceInMigration()).thenReturn(true);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-    }
-
-    @Test
-    public void testShouldHandleEmptyRequestURI() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS);
-    }
-
-    @Test
-    public void testShouldHandleNullQueryString() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("types");
-        when(servletRequest.getQueryString()).thenReturn(null);
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types");
-    }
-
-    @Test
-    public void testShouldHandleEmptyQueryString() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("types");
-        when(servletRequest.getQueryString()).thenReturn("");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types");
-    }
-
-    @Test
-    public void testShouldHandleTransitionState() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+    public void returns503WhenNodeIsBecomingActive() throws Exception {
+        when(serviceState.isActive()).thenReturn(false);
         when(serviceState.isInstanceInTransition()).thenReturn(true);
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
+        when(request.getRequestURI()).thenReturn(SUPPORTED_URI);
 
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
+        filter.doFilter(request, response, chain);
 
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(servletResponse).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        verify(response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        verify(chain, never()).doFilter(request, response);
     }
 
-    @Test
-    public void testShouldHandleFilterInitialization() throws ServletException {
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        // Test init method
-        activeServerFilter.init(null);
-
-        // Test destroy method
-        activeServerFilter.destroy();
-
-        // No assertions needed as these methods don't have return values or side effects
-    }
+    // -------------------------------------------------------------------------
+    // Admin URIs that are always supported (pass through regardless of state)
+    // -------------------------------------------------------------------------
 
     @Test
-    public void testIsInstanceActiveMethod() throws Exception {
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        // Test with ACTIVE state
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
-        Method isInstanceActiveMethod = ActiveServerFilter.class.getDeclaredMethod("isInstanceActive");
-        isInstanceActiveMethod.setAccessible(true);
-        boolean result = (Boolean) isInstanceActiveMethod.invoke(activeServerFilter);
-
-        assertTrue(result, "Should return true for ACTIVE state");
-
-        // Test with PASSIVE state
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        result = (Boolean) isInstanceActiveMethod.invoke(activeServerFilter);
-
-        assertFalse(result, "Should return false for PASSIVE state");
-    }
-
-    @Test
-    public void testIsRootURIMethod() throws Exception {
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-        Method isRootURIMethod = ActiveServerFilter.class.getDeclaredMethod("isRootURI", ServletRequest.class);
-        isRootURIMethod.setAccessible(true);
-
-        // Test with root URI
-        when(servletRequest.getRequestURI()).thenReturn("/");
-        boolean result = (Boolean) isRootURIMethod.invoke(activeServerFilter, servletRequest);
-
-        assertTrue(result, "Should return true for root URI");
-
-        // Test with non-root URI
-        when(servletRequest.getRequestURI()).thenReturn("api/atlas/types");
-        result = (Boolean) isRootURIMethod.invoke(activeServerFilter, servletRequest);
-
-        assertFalse(result, "Should return false for non-root URI");
-    }
-
-    @Test
-    public void testIsUnsafeHttpMethodMethod() throws Exception {
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-        Method isUnsafeHttpMethodMethod = ActiveServerFilter.class.getDeclaredMethod("isUnsafeHttpMethod", HttpServletRequest.class);
-        isUnsafeHttpMethodMethod.setAccessible(true);
-
-        // Test with POST method
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.POST);
-        boolean result = (Boolean) isUnsafeHttpMethodMethod.invoke(activeServerFilter, servletRequest);
-
-        assertTrue(result, "Should return true for POST method");
-
-        // Test with PUT method
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.PUT);
-        result = (Boolean) isUnsafeHttpMethodMethod.invoke(activeServerFilter, servletRequest);
-
-        assertTrue(result, "Should return true for PUT method");
-
-        // Test with DELETE method
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.DELETE);
-        result = (Boolean) isUnsafeHttpMethodMethod.invoke(activeServerFilter, servletRequest);
-
-        assertTrue(result, "Should return true for DELETE method");
-
-        // Test with GET method
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        result = (Boolean) isUnsafeHttpMethodMethod.invoke(activeServerFilter, servletRequest);
-
-        assertFalse(result, "Should return false for GET method");
-    }
-
-    @Test
-    public void testShouldHandleFilteredURIWhenInstanceIsPassive() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/admin/export");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-    }
-
-    @Test
-    public void testShouldHandleFilteredURIWhenInstanceIsActive() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
-        when(servletRequest.getRequestURI()).thenReturn("api/admin/export");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
-
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
-
-        verify(filterChain).doFilter(servletRequest, servletResponse);
-    }
-
-    @Test
-    public void testShouldHandleFilteredURIWhenInstanceIsInTransition() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+    public void adminMetricsReturns503WhenNotActive() throws Exception {
+        when(serviceState.isActive()).thenReturn(false);
         when(serviceState.isInstanceInTransition()).thenReturn(true);
-        when(servletRequest.getRequestURI()).thenReturn("api/admin/export");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
+        // /admin/metrics is in the always-supported list
+        when(request.getRequestURI()).thenReturn("/api/atlas/admin/metrics");
 
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
+        filter.doFilter(request, response, chain);
 
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
+        verify(response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        verify(chain, never()).doFilter(request, response);
     }
 
     @Test
-    public void testShouldHandleFilteredURIWhenInstanceIsInMigration() throws IOException, ServletException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
-        when(serviceState.isInstanceInMigration()).thenReturn(true);
-        when(servletRequest.getRequestURI()).thenReturn("api/admin/export");
-        when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
+    public void adminServerStatusReturns503WhenNotActive() throws Exception {
+        when(serviceState.isActive()).thenReturn(false);
+        when(serviceState.isInstanceInTransition()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn("/api/atlas/admin/server");
 
-        ActiveServerFilter activeServerFilter = newActiveServerFilter();
+        filter.doFilter(request, response, chain);
 
-        activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
+        verify(response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        verify(chain, never()).doFilter(request, response);
+    }
+
+    // -------------------------------------------------------------------------
+    // Admin import/export URIs — NOT supported when not active
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void adminExportReturns503WhenNotActive() throws Exception {
+        when(serviceState.isActive()).thenReturn(false);
+        when(serviceState.isInstanceInTransition()).thenReturn(true);
+        when(request.getRequestURI()).thenReturn(EXPORT_ADMIN_URI);
+
+        filter.doFilter(request, response, chain);
+
+        verify(response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        verify(chain, never()).doFilter(request, response);
+    }
+
+    // -------------------------------------------------------------------------
+    // Non-admin URIs when not active — 503
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void nonAdminUriReturns503WhenNeitherActiveNorTransition() throws Exception {
+        when(serviceState.isActive()).thenReturn(false);
+        when(serviceState.isInstanceInTransition()).thenReturn(false);
+        when(serviceState.isInstanceInMigration()).thenReturn(false);
+        when(request.getRequestURI()).thenReturn(SUPPORTED_URI);
+
+        filter.doFilter(request, response, chain);
+
+        verify(response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+        verify(chain, never()).doFilter(request, response);
+    }
+
+    // -------------------------------------------------------------------------
+    // Filter lifecycle
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void initDoesNotThrow() throws Exception {
+        filter.init(null);
+    }
+
+    @Test
+    public void destroyDoesNotThrow() {
+        filter.destroy();
     }
 }

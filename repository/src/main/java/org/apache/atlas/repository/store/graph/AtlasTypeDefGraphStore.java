@@ -51,6 +51,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -59,10 +60,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
@@ -89,6 +93,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasTypeRegistry getTypeRegistry() {
         return typeRegistry;
     }
+
+    /**
+     * @return the category of the type the store holds by this name, or null if the store has no
+     * such type.
+     */
+    protected abstract TypeCategory typeCategoryInStore(String typeName);
 
     /**
      * Registers a TypeDefChangeListener to receive notifications of type definition changes.
@@ -140,6 +150,198 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
             LOG.info("<== AtlasTypeDefGraphStore.init()");
         }
+    }
+
+    /**
+     * AMRA typedef-sync: apply only the types that differ between the graph and this node's
+     * registry. Holds the type-update lock for the delta, not a full catalog rebuild.
+     */
+    @Override
+    public void refreshFromStore() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.refreshFromStore()");
+
+        AtlasTransientTypeRegistry ttr           = null;
+        boolean                    commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(typeUpdateLockMaxWaitTimeSeconds);
+
+            Map<String, StoredTypeMeta>   stored   = getStoredTypeIndex();
+            Map<String, AtlasBaseTypeDef> registry = registryTypeIndex(ttr);
+
+            if (stored.isEmpty() && !registry.isEmpty()) {
+                LOG.warn("refreshFromStore(): store index empty with {} registry types; rebuilding from store",
+                        registry.size());
+
+                ttr.clear();
+
+                AtlasTypesDef typesDef = new AtlasTypesDef(getEnumDefStore(ttr).getAll(),
+                        getStructDefStore(ttr).getAll(),
+                        getClassificationDefStore(ttr).getAll(),
+                        getEntityDefStore(ttr).getAll(),
+                        getRelationshipDefStore(ttr).getAll(),
+                        getBusinessMetadataDefStore(ttr).getAll());
+
+                rectifyTypeErrorsIfAny(typesDef);
+                ttr.addTypes(typesDef);
+
+                commitUpdates = true;
+                return;
+            }
+
+            AtlasTypesDef toAdd    = new AtlasTypesDef();
+            AtlasTypesDef toUpdate = new AtlasTypesDef();
+            AtlasTypesDef toDelete = new AtlasTypesDef();
+
+            for (StoredTypeMeta meta : stored.values()) {
+                AtlasBaseTypeDef existing = registry.get(meta.name);
+
+                if (existing == null) {
+                    addToTypesDef(toAdd, loadStoredType(meta.name, meta.category, ttr));
+                    continue;
+                }
+
+                long existingVersion = existing.getVersion() == null ? 0L : existing.getVersion();
+
+                if (meta.version > existingVersion) {
+                    addToTypesDef(toUpdate, loadStoredType(meta.name, meta.category, ttr));
+                }
+            }
+
+            for (AtlasBaseTypeDef existing : registry.values()) {
+                if (!stored.containsKey(existing.getName())) {
+                    addToTypesDef(toDelete, existing);
+                }
+            }
+
+            if (toAdd.isEmpty() && toUpdate.isEmpty() && toDelete.isEmpty()) {
+                LOG.info("refreshFromStore(): registry already matches store");
+                return;
+            }
+
+            if (!toDelete.isEmpty()) {
+                ttr.removeTypesDef(toDelete);
+            }
+
+            if (!toUpdate.isEmpty()) {
+                rectifyTypeErrorsIfAny(toUpdate);
+                ttr.updateTypes(toUpdate);
+            }
+
+            if (!toAdd.isEmpty()) {
+                rectifyTypeErrorsIfAny(toAdd);
+                ttr.addTypes(toAdd);
+            }
+
+            LOG.info("refreshFromStore(): added={} updated={} deleted={}",
+                    typeCount(toAdd), typeCount(toUpdate), typeCount(toDelete));
+
+            commitUpdates = true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+
+            LOG.info("<== AtlasTypeDefGraphStore.refreshFromStore()");
+        }
+    }
+
+    protected abstract Map<String, StoredTypeMeta> getStoredTypeIndex();
+
+    protected static final class StoredTypeMeta {
+        final String       name;
+        final TypeCategory category;
+        final long         version;
+
+        public StoredTypeMeta(String name, TypeCategory category, long version) {
+            this.name     = name;
+            this.category = category;
+            this.version  = version;
+        }
+    }
+
+    private Map<String, AtlasBaseTypeDef> registryTypeIndex(AtlasTypeRegistry registry) {
+        Map<String, AtlasBaseTypeDef> index = new HashMap<>();
+
+        putAll(index, registry.getAllEnumDefs());
+        putAll(index, registry.getAllStructDefs());
+        putAll(index, registry.getAllClassificationDefs());
+        putAll(index, registry.getAllEntityDefs());
+        putAll(index, registry.getAllRelationshipDefs());
+        putAll(index, registry.getAllBusinessMetadataDefs());
+
+        return index;
+    }
+
+    private static void putAll(Map<String, AtlasBaseTypeDef> index, Collection<? extends AtlasBaseTypeDef> defs) {
+        if (defs == null) {
+            return;
+        }
+
+        for (AtlasBaseTypeDef def : defs) {
+            if (def != null && StringUtils.isNotBlank(def.getName())) {
+                index.put(def.getName(), def);
+            }
+        }
+    }
+
+    private AtlasBaseTypeDef loadStoredType(String name, TypeCategory category, AtlasTypeRegistry registry)
+            throws AtlasBaseException {
+        try {
+            switch (category) {
+                case ENUM:
+                    return getEnumDefStore(registry).getByName(name);
+                case STRUCT:
+                    return getStructDefStore(registry).getByName(name);
+                case TRAIT:
+                    return getClassificationDefStore(registry).getByName(name);
+                case CLASS:
+                    return getEntityDefStore(registry).getByName(name);
+                case RELATIONSHIP:
+                    return getRelationshipDefStore(registry).getByName(name);
+                case BUSINESS_METADATA:
+                    return getBusinessMetadataDefStore(registry).getByName(name);
+                default:
+                    return null;
+            }
+        } catch (AtlasBaseException e) {
+            if (AtlasErrorCode.TYPE_NAME_NOT_FOUND == e.getAtlasErrorCode()) {
+                LOG.warn("refreshFromStore(): {} ({}) disappeared while loading the delta", name, category);
+                return null;
+            }
+
+            throw e;
+        }
+    }
+
+    private static void addToTypesDef(AtlasTypesDef typesDef, AtlasBaseTypeDef typeDef) {
+        if (typeDef == null) {
+            return;
+        }
+
+        if (typeDef instanceof AtlasEnumDef) {
+            typesDef.getEnumDefs().add((AtlasEnumDef) typeDef);
+        } else if (typeDef instanceof AtlasStructDef && !(typeDef instanceof AtlasClassificationDef)
+                && !(typeDef instanceof AtlasEntityDef) && !(typeDef instanceof AtlasRelationshipDef)
+                && !(typeDef instanceof AtlasBusinessMetadataDef)) {
+            typesDef.getStructDefs().add((AtlasStructDef) typeDef);
+        } else if (typeDef instanceof AtlasClassificationDef) {
+            typesDef.getClassificationDefs().add((AtlasClassificationDef) typeDef);
+        } else if (typeDef instanceof AtlasEntityDef) {
+            typesDef.getEntityDefs().add((AtlasEntityDef) typeDef);
+        } else if (typeDef instanceof AtlasRelationshipDef) {
+            typesDef.getRelationshipDefs().add((AtlasRelationshipDef) typeDef);
+        } else if (typeDef instanceof AtlasBusinessMetadataDef) {
+            typesDef.getBusinessMetadataDefs().add((AtlasBusinessMetadataDef) typeDef);
+        }
+    }
+
+    private static int typeCount(AtlasTypesDef typesDef) {
+        return size(typesDef.getEnumDefs()) + size(typesDef.getStructDefs())
+                + size(typesDef.getClassificationDefs()) + size(typesDef.getEntityDefs())
+                + size(typesDef.getRelationshipDefs()) + size(typesDef.getBusinessMetadataDefs());
+    }
+
+    private static int size(Collection<?> collection) {
+        return collection == null ? 0 : collection.size();
     }
 
     @Override
@@ -774,8 +976,13 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "", name);
         }
 
-        AtlasType        type = typeRegistry.getType(name);
-        AtlasBaseTypeDef ret  = getTypeDefFromTypeWithNoAuthz(type);
+        AtlasBaseTypeDef ret;
+
+        if (typeRegistry.isRegisteredType(name)) {
+            ret = getTypeDefFromTypeWithNoAuthz(typeRegistry.getType(name));
+        } else {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
+        }
 
         if (ret != null) {
             AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, ret), "read type ", name);

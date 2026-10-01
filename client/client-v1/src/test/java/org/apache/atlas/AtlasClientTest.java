@@ -233,10 +233,10 @@ public class AtlasClientTest {
 
         when(firstResponse.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
 
-        String passiveStatus = "{\"Status\":\"PASSIVE\"}";
+        String becomingActiveStatus = "{\"Status\":\"BECOMING_ACTIVE\"}";
 
-        when(firstResponse.getEntity(String.class)).thenReturn(passiveStatus);
-        when(firstResponse.getLength()).thenReturn(passiveStatus.length());
+        when(firstResponse.getEntity(String.class)).thenReturn(becomingActiveStatus);
+        when(firstResponse.getLength()).thenReturn(becomingActiveStatus.length());
 
         ClientResponse secondResponse = mock(ClientResponse.class);
 
