@@ -49,13 +49,16 @@ Example graph around the column `customer.email` (boxes are vertices, arrows are
 
 Order of the text, starting at the entity vertex (the numbers match the diagram; 1 is the entity box itself):
 
-1. Type name, then the entity's own string attributes (`hive_column.name`, `.comment`, ...). Internal `__*`
-   properties are skipped. References to other entities are edges, not properties, so a column's text doesn't
+1. Type name, then a fixed list of text attributes, in this order: `name`, `displayName`, `description`,
+   `userDescription`, `qualifiedName`, then any `<type>.comment` (`hive_table.comment`, `hive_column.comment`).
+   Small embedding models only read the first ~256-512 tokens. Other attributes (`owner`, enums such as
+   `tableType`, SQL text, paths, numbers, maps) are not embedded. References to other entities are edges, not properties, so a column's text doesn't
    include its table.
 2. `__classificationsText`, `__labels` and `__customAttributes` (entity vertex properties). Atlas keeps the type
    names and attribute values of all classifications, own and propagated, in `__classificationsText`, so the
    `classifiedAs` edges are not followed.
-3. For each `r:AtlasGlossarySemanticAssignment` edge (term to entity, read from the entity side): the term's
+3. For each active `r:AtlasGlossarySemanticAssignment` edge (term to entity, read from the entity side; with
+   soft delete, removed assignments keep their edge as `DELETED` and are skipped): the term's
    name, abbreviation and description. At most 100 assigned terms are read per entity (code constant
    `MAX_GLOSSARY_TERMS` in `SemanticTextBuilder`), fewer once the text is full; which 100 is up to JanusGraph.
 
@@ -169,7 +172,6 @@ atlas.semantic.enabled=true
 atlas.semantic.model.id=<from init-opensearch-semantic-local.sh>
 atlas.semantic.embedding.dimension=384
 atlas.semantic.indexer.kafka.group.id=atlas_semantic_indexer
-atlas.semantic.indexer.batch.size=25
 atlas.semantic.indexer.kafka.poll.timeout.ms=5000
 # messages per poll (Atlas default is 1); guids are deduplicated across the messages of one poll
 atlas.semantic.indexer.kafka.max.poll.records=25
@@ -282,7 +284,7 @@ Repair reads candidates from the vertex index in OpenSearch (no JanusGraph scan)
 | `atlas_semantic_repair.sh --all` | **every** active entity (after a model change) |
 | `atlas_semantic_repair.sh --guid <guid>` | one entity |
 
-Options: `--batch-size N` (default 50), `--dry-run` (count only, no OpenSearch changes). Exit code is 1 if any
+Options: `--batch-size N` (entities per OpenSearch page, default 50), `--dry-run` (count only, no OpenSearch changes). Exit code is 1 if any
 entity failed. Entities with no vertex-index document are not visible to repair: run Atlas index repair first.
 
 OpenSearch only provides the list of entity guids: a vertex-index document holds the vertex's indexed
@@ -345,8 +347,15 @@ Content-Type: application/json
 **Similar entities**
 
 ```http
-GET /api/atlas/v2/search/similar?guid=<entity-guid>&topK=10
+GET /api/atlas/v2/search/similar?guid=<entity-guid>&topK=10&attributes=owner&attributes=createTime
 ```
+
+Without `topK`, both endpoints use `atlas.semantic.search.default.topK`. `attributes` adds those attributes to
+each returned entity header. `/similar` needs read access on the source entity. Backend failures return a
+generic error; the OpenSearch details are in the Atlas server log.
+
+After upgrading to a build that changes the embedding text (field order, skipped properties, glossary terms),
+run `atlas_semantic_repair.sh --all` so that all embeddings are built from the same text.
 
 ---
 

@@ -18,47 +18,91 @@
 package org.apache.atlas.semantic;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
 import org.apache.atlas.model.discovery.SemanticSearchParameters;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.expectThrows;
 
 public class SemanticSearchServiceTest {
-    private static final class StubSemanticStore extends OpenSearchSemanticStore {
+    private static final class StubSemanticStore implements SemanticVectorStore {
         @Override
-        public List<VectorSearchHit> neuralSearch(String queryText, int topK, VectorSearchFilter filter) {
+        public void initialize() {
+        }
+
+        @Override
+        public void updateEmbedding(String guid, String text) {
+        }
+
+        @Override
+        public List<VectorSearchHit> searchByText(String text, int topK, VectorSearchFilter filter) {
             return Collections.emptyList();
+        }
+
+        @Override
+        public List<VectorSearchHit> searchByVector(List<?> vector, int topK, VectorSearchFilter filter) {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public List<?> getStoredEmbedding(String guid) {
+            return null;
+        }
+
+        @Override
+        public void scanEntities(boolean missingEmbeddingOnly, int pageSize, Consumer<List<String>> onPage) {
         }
     }
 
-    @BeforeMethod
+    // once per class, before AtlasConfiguration is loaded: it keeps the Configuration instance it first sees
+    @BeforeClass
     public void loadSemanticTestConfig() throws Exception {
         System.setProperty(ApplicationProperties.ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF,
                 "atlas-semantic-test-application.properties");
         ApplicationProperties.forceReload();
     }
 
-    @AfterMethod
+    @AfterClass
     public void clearSemanticTestConfig() {
         System.clearProperty(ApplicationProperties.ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF);
         ApplicationProperties.forceReload();
     }
 
     @Test
-    public void semanticSearchRequiresEnableFlag() {
-        System.setProperty(ApplicationProperties.ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF,
-                "atlas-application.properties");
-        ApplicationProperties.forceReload();
+    public void semanticSearchRequiresEnableFlag() throws Exception {
+        String enabledConf = AtlasConfiguration.SEMANTIC_ENABLED.getPropertyName();
 
+        ApplicationProperties.get().setProperty(enabledConf, false);
+        try {
+            SemanticSearchService service = new SemanticSearchService(
+                    new StubSemanticStore(),
+                    null,
+                    new AtlasTypeRegistry(),
+                    null);
+
+            SemanticSearchParameters params = new SemanticSearchParameters();
+            params.setQuery("test");
+
+            expectThrows(Exception.class, () -> service.semanticSearch(params));
+        } finally {
+            ApplicationProperties.get().setProperty(enabledConf, true);
+        }
+    }
+
+    @Test
+    public void semanticSearchRejectsUnknownType() {
         SemanticSearchService service = new SemanticSearchService(
                 new StubSemanticStore(),
                 null,
@@ -66,9 +110,11 @@ public class SemanticSearchServiceTest {
                 null);
 
         SemanticSearchParameters params = new SemanticSearchParameters();
-        params.setQuery("test");
+        params.setQuery("cars");
+        params.setTypeName("no_such_type");
 
-        expectThrows(Exception.class, () -> service.semanticSearch(params));
+        AtlasBaseException e = expectThrows(AtlasBaseException.class, () -> service.semanticSearch(params));
+        assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.UNKNOWN_TYPENAME);
     }
 
     @Test

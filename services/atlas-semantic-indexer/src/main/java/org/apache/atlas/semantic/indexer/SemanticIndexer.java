@@ -18,6 +18,7 @@
 package org.apache.atlas.semantic.indexer;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.model.notification.EntityNotification;
@@ -27,11 +28,10 @@ import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.semantic.OpenSearchSemanticStore;
+import org.apache.atlas.semantic.SemanticEntityEmbedder;
 import org.apache.atlas.semantic.SemanticIndexSetup;
-import org.apache.atlas.semantic.SemanticNotificationFilter;
-import org.apache.atlas.semantic.SemanticNotificationGuidExpander;
-import org.apache.atlas.semantic.SemanticSearchConfiguration;
 import org.apache.atlas.semantic.SemanticTextBuilder;
+import org.apache.atlas.semantic.SemanticVectorStore;
 import org.apache.atlas.utils.SSLUtil;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.kafka.common.KafkaException;
@@ -84,33 +84,32 @@ public class SemanticIndexer {
             SSLUtil sslUtil = new SSLUtil();
             sslUtil.setSSLContext();
 
-            SemanticSearchConfiguration.validate(); // before opening the graph, which may create the vertex index
+            SemanticIndexSetup.validateConfiguration(); // before opening the graph, which may create the vertex index
 
             Configuration config = ApplicationProperties.get();
-            config.setProperty("atlas.kafka.entities.group.id", SemanticSearchConfiguration.getSemanticIndexerKafkaGroupId());
+            config.setProperty("atlas.kafka.entities.group.id", AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_GROUP_ID.getString());
             config.setProperty("atlas.kafka.poll.timeout.ms",
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaPollTimeoutMs());
+                    AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS.getLong());
             // a glossary-term update fans out to every assigned entity; allow long batches without a rebalance
             config.setProperty("atlas.kafka.max.poll.interval.ms",
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaMaxPollIntervalMs());
+                    AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS.getInt());
             // Atlas defaults to 1 record per poll; a larger poll lets processMessages dedup guids across messages
             config.setProperty("atlas.kafka.max.poll.records",
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaMaxPollRecords());
+                    AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS.getInt());
 
-            if (SemanticSearchConfiguration.isSemanticIndexerHealthEnabled()) {
+            if (AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_ENABLED.getBoolean()) {
                 healthServer = new SemanticIndexerHealthServer(
-                        SemanticSearchConfiguration.getSemanticIndexerHealthPort(),
-                        SemanticSearchConfiguration.getSemanticIndexerHealthPath(),
+                        AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PORT.getInt(),
+                        AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PATH.getString(),
                         () -> running);
                 healthServer.start();
             }
 
             AtlasJanusGraphDatabase.getGraphInstance();
-            OpenSearchSemanticStore semanticStore = new OpenSearchSemanticStore();
-            SemanticIndexSetup.initialize(semanticStore);
+            SemanticVectorStore semanticStore = new OpenSearchSemanticStore();
+            semanticStore.initialize();
 
-            SemanticTextBuilder textBuilder = new SemanticTextBuilder();
-            SemanticEntityIndexer entityIndexer = new SemanticEntityIndexer(textBuilder, semanticStore);
+            SemanticEntityEmbedder embedder = new SemanticEntityEmbedder(new SemanticTextBuilder(), semanticStore);
 
             kafkaNotification = new KafkaNotification(config);
             @SuppressWarnings({"unchecked", "rawtypes"})
@@ -123,11 +122,10 @@ public class SemanticIndexer {
                 throw new IllegalStateException("Kafka consumer could not be created or subscribed; check atlas.kafka.bootstrap.servers");
             }
 
-            int batchSize = SemanticSearchConfiguration.getSemanticIndexerBatchSize();
-            LOG.info("Semantic Indexer started (batchSize={}, groupId={}, pollTimeoutMs={}, maxPollRecords={})", batchSize,
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaGroupId(),
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaPollTimeoutMs(),
-                    SemanticSearchConfiguration.getSemanticIndexerKafkaMaxPollRecords());
+            LOG.info("Semantic Indexer started (groupId={}, pollTimeoutMs={}, maxPollRecords={})",
+                    AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_GROUP_ID.getString(),
+                    AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS.getLong(),
+                    AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS.getInt());
 
             while (running) {
                 List<AtlasKafkaMessage<EntityNotification>> messages;
@@ -146,7 +144,7 @@ public class SemanticIndexer {
                 }
 
                 try {
-                    processMessages(messages, entityIndexer, batchSize);
+                    processMessages(messages, embedder);
                 } catch (RuntimeException e) {
                     // commit anyway so one bad message can't block the partition; atlas_semantic_repair.sh backfills
                     LOG.error("Failed to process {} Kafka message(s) (first offset={}); committing and continuing",
@@ -195,8 +193,7 @@ public class SemanticIndexer {
     }
 
     private static void processMessages(List<AtlasKafkaMessage<EntityNotification>> messages,
-                                        SemanticEntityIndexer entityIndexer,
-                                        int batchSize) {
+                                        SemanticEntityEmbedder embedder) {
         Set<String> guids = new LinkedHashSet<>();
         for (AtlasKafkaMessage<EntityNotification> kafkaMessage : messages) {
             EntityNotification notification = kafkaMessage.getMessage();
@@ -224,7 +221,7 @@ public class SemanticIndexer {
         }
 
         LOG.info("Processing {} guid(s) from {} Kafka message(s)", guids.size(), messages.size());
-        SemanticEntityIndexer.IndexStats stats = entityIndexer.indexGuidsInBatches(guids, batchSize);
+        SemanticEntityEmbedder.IndexStats stats = embedder.embed(guids);
         if (stats.hasFailures()) {
             LOG.warn("Completed batch with {} indexing failure(s) (skipped={}, indexed={})",
                     stats.getFailed(), stats.getSkipped(), stats.getIndexed());

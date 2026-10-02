@@ -23,9 +23,9 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_EMBEDDING_FIELD;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_INGEST_PIPELINE_NAME;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_TEXT_FIELD;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_EMBEDDING_FIELD;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_INGEST_PIPELINE_NAME;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_TEXT_FIELD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;

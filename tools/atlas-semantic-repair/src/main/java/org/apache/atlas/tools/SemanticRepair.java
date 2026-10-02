@@ -21,11 +21,11 @@ import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.semantic.OpenSearchSemanticStore;
+import org.apache.atlas.semantic.SemanticEntityEmbedder;
+import org.apache.atlas.semantic.SemanticEntityEmbedder.IndexStats;
 import org.apache.atlas.semantic.SemanticIndexSetup;
-import org.apache.atlas.semantic.SemanticSearchConfiguration;
 import org.apache.atlas.semantic.SemanticTextBuilder;
-import org.apache.atlas.semantic.indexer.SemanticEntityIndexer;
-import org.apache.atlas.semantic.indexer.SemanticEntityIndexer.IndexStats;
+import org.apache.atlas.semantic.SemanticVectorStore;
 import org.apache.atlas.utils.SSLUtil;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -50,20 +49,19 @@ public class SemanticRepair {
 
     private static final int EXIT_CODE_SUCCESS = 0;
     private static final int EXIT_CODE_FAILED  = 1;
+    private static final int DEFAULT_PAGE_SIZE = 50;
 
-    private final SemanticEntityIndexer entityIndexer;
-    private final AtlasGraph            graph;
-    private final int                   batchSize;
-    private final boolean               dryRun;
+    private final SemanticEntityEmbedder embedder;
+    private final AtlasGraph             graph;
+    private final boolean                dryRun;
 
     private long       matched;
-    private IndexStats stats = IndexStats.EMPTY;
+    private IndexStats stats = new IndexStats(0, 0, 0);
 
-    private SemanticRepair(SemanticEntityIndexer entityIndexer, AtlasGraph graph, int batchSize, boolean dryRun) {
-        this.entityIndexer = entityIndexer;
-        this.graph         = graph;
-        this.batchSize     = batchSize;
-        this.dryRun        = dryRun;
+    private SemanticRepair(SemanticEntityEmbedder embedder, AtlasGraph graph, boolean dryRun) {
+        this.embedder = embedder;
+        this.graph    = graph;
+        this.dryRun   = dryRun;
     }
 
     public static void main(String[] args) {
@@ -71,7 +69,7 @@ public class SemanticRepair {
 
         try {
             CommandLine cmd       = parseArgs(args);
-            int         batchSize = Integer.parseInt(cmd.getOptionValue("batch-size", "50"));
+            int         batchSize = Integer.parseInt(cmd.getOptionValue("batch-size", String.valueOf(DEFAULT_PAGE_SIZE)));
             boolean     dryRun    = cmd.hasOption("dry-run");
             boolean     all       = cmd.hasOption("all");
             String      guid      = cmd.getOptionValue("guid");
@@ -87,25 +85,25 @@ public class SemanticRepair {
             SSLUtil sslUtil = new SSLUtil();
             sslUtil.setSSLContext();
 
-            SemanticSearchConfiguration.validate(); // before opening the graph, which may create the vertex index
+            SemanticIndexSetup.validateConfiguration(); // before opening the graph, which may create the vertex index
             AtlasJanusGraphDatabase.getGraphInstance();
             AtlasGraph graph = AtlasGraphProvider.getGraphInstance();
 
-            OpenSearchSemanticStore semanticStore = new OpenSearchSemanticStore();
+            SemanticVectorStore semanticStore = new OpenSearchSemanticStore();
             if (!dryRun) {
-                SemanticIndexSetup.initialize(semanticStore); // checks knn, creates/updates pipeline and mapping: skip on dry-run
+                semanticStore.initialize(); // checks knn, creates/updates pipeline and mapping: skip on dry-run
             }
 
-            SemanticEntityIndexer entityIndexer = new SemanticEntityIndexer(new SemanticTextBuilder(), semanticStore);
-            SemanticRepair        repair        = new SemanticRepair(entityIndexer, graph, batchSize, dryRun);
-            String                mode          = StringUtils.isNotBlank(guid) ? "guid" : all ? "all" : "missing";
+            SemanticEntityEmbedder embedder = new SemanticEntityEmbedder(new SemanticTextBuilder(), semanticStore);
+            SemanticRepair         repair   = new SemanticRepair(embedder, graph, dryRun);
+            String                 mode     = StringUtils.isNotBlank(guid) ? "guid" : all ? "all" : "missing";
 
             LOG.info("Semantic repair starting (mode={}, dryRun={}, batchSize={})", mode, dryRun, batchSize);
 
             if (StringUtils.isNotBlank(guid)) {
                 repair.repairPage(Collections.singletonList(guid));
             } else {
-                semanticStore.scanActiveEntityGuids(!all, batchSize, repair::repairPage);
+                semanticStore.scanEntities(!all, batchSize, repair::repairPage);
             }
 
             LOG.info("Semantic repair completed (mode={}, dryRun={}): matched={}, indexed={}, skipped={}, failed={}",
@@ -124,7 +122,7 @@ public class SemanticRepair {
 
         if (!dryRun) {
             try {
-                stats = stats.add(entityIndexer.indexGuidsInBatches(new LinkedHashSet<>(guids), batchSize));
+                stats = stats.add(embedder.embed(guids));
             } finally {
                 graph.rollback(); // read-only: close the thread-bound tx so cached vertices don't pile up across pages
             }
@@ -136,7 +134,7 @@ public class SemanticRepair {
 
     private static CommandLine parseArgs(String[] args) throws Exception {
         Options options = new Options();
-        options.addOption(Option.builder().longOpt("batch-size").hasArg().desc("Entities per OpenSearch page / indexing batch (default 50)").build());
+        options.addOption(Option.builder().longOpt("batch-size").hasArg().desc("Entities per OpenSearch page (default " + DEFAULT_PAGE_SIZE + ")").build());
         options.addOption(Option.builder().longOpt("dry-run").desc("Count candidate entities without indexing or changing OpenSearch").build());
         options.addOption(Option.builder().longOpt("all").desc("Re-embed every active entity (e.g. after a model change), not only those missing an embedding").build());
         options.addOption(Option.builder().longOpt("guid").hasArg().desc("Repair a single entity guid").build());

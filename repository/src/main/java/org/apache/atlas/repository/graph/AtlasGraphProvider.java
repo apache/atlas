@@ -24,7 +24,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
-import org.apache.atlas.semantic.SemanticSearchConfiguration;
+import org.apache.atlas.semantic.SemanticIndexSetup;
 import org.apache.atlas.semantic.SemanticSearchException;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.slf4j.Logger;
@@ -97,7 +97,7 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
                     me = graphDb;
 
                     if (me == null) {
-                        SemanticSearchConfiguration.validateWhenEnabled();
+                        SemanticIndexSetup.validateConfigurationWhenEnabled();
 
                         Class<?> implClass = AtlasRepositoryConfiguration.getGraphDatabaseImpl();
 

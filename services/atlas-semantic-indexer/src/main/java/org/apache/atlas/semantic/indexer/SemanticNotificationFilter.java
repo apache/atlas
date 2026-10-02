@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.semantic;
+package org.apache.atlas.semantic.indexer;
 
+import org.apache.atlas.glossary.GlossaryUtils;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
@@ -33,8 +34,6 @@ import java.util.Set;
  * Uses an explicit allowlist of operation types that can change embeddable entity text.
  */
 public final class SemanticNotificationFilter {
-    private static final String TERM_ASSIGNMENT_RELATIONSHIP = "AtlasGlossarySemanticAssignment";
-
     private static final Set<OperationType> INDEXED_OPERATION_TYPES = Collections.unmodifiableSet(EnumSet.of(
             OperationType.ENTITY_CREATE,
             OperationType.ENTITY_UPDATE,
@@ -74,7 +73,7 @@ public final class SemanticNotificationFilter {
         // edges the text builder doesn't follow. Only end2 (the entity): end1 is the term, whose text didn't change,
         // and expanding it would re-embed every entity of that term.
         AtlasRelationshipHeader relationship = notification.getRelationship();
-        if (relationship != null && TERM_ASSIGNMENT_RELATIONSHIP.equals(relationship.getTypeName())) {
+        if (relationship != null && GlossaryUtils.TERM_ASSIGNMENT.equals(relationship.getTypeName())) {
             addObjectIdGuid(guids, relationship.getEnd2());
         }
 

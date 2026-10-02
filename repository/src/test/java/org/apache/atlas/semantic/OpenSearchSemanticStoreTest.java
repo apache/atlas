@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_EMBEDDING_FIELD;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_EMBEDDING_FIELD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -32,7 +32,7 @@ import static org.testng.Assert.assertTrue;
 
 public class OpenSearchSemanticStoreTest {
     @Test
-    public void parseVertexIndexDocumentFromSearchResponse() {
+    public void parseStoredEmbedding() {
         String json = "{"
                 + "\"hits\": {"
                 + "  \"hits\": [{"
@@ -44,15 +44,13 @@ public class OpenSearchSemanticStoreTest {
                 + "}"
                 + "}";
 
-        OpenSearchSemanticStore.VertexIndexDocument document =
-                OpenSearchSemanticStore.parseVertexIndexDocumentFromSearchResponse(json);
-        assertEquals(document.getDocumentId(), "doc-abc");
-        assertEquals(((List<?>) document.getSource().get(SEMANTIC_EMBEDDING_FIELD)).size(), 2);
+        assertEquals(OpenSearchSemanticStore.parseStoredEmbedding(json).size(), 2);
     }
 
     @Test
-    public void parseVertexIndexDocumentReturnsNullWhenMissing() {
-        assertNull(OpenSearchSemanticStore.parseVertexIndexDocumentFromSearchResponse("{\"hits\":{\"hits\":[]}}"));
+    public void parseStoredEmbeddingReturnsNullWhenMissing() {
+        assertNull(OpenSearchSemanticStore.parseStoredEmbedding("{\"hits\":{\"hits\":[]}}"));
+        assertNull(OpenSearchSemanticStore.parseStoredEmbedding("{\"hits\":{\"hits\":[{\"_source\":{}}]}}"));
     }
 
     @Test

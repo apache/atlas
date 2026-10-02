@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.glossary.GlossaryUtils;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -25,14 +27,17 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.INTERNAL_PROPERTY_KEY_PREFIX;
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 
 /**
@@ -52,17 +57,20 @@ public class SemanticTextBuilder {
     private static final int MAX_GLOSSARY_TERMS      = 100; // assigned terms read per entity
 
     /** Encoded vertex properties for {@link org.apache.atlas.model.glossary.AtlasGlossaryTerm}. */
-    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "AtlasGlossaryTerm.name";
-    private static final String GLOSSARY_TERM_ABBREVIATION_ATTR = "AtlasGlossaryTerm.abbreviation";
-    private static final String GLOSSARY_TERM_DESCRIPTION_ATTR  = "AtlasGlossaryTerm.description";
+    private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + ".name";
+    private static final String GLOSSARY_TERM_ABBREVIATION_ATTR = GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + ".abbreviation";
+    private static final String GLOSSARY_TERM_DESCRIPTION_ATTR  = GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME + ".description";
 
-    private static final Set<String> HANDLED_PROPERTY_KEYS = new HashSet<>();
+    // only these attributes are embedded, in this order: small embedding models only read the first ~256-512 tokens
+    private static final List<String> ATTRIBUTE_PROPERTY_KEYS = Arrays.asList(
+            "Asset.name",
+            "Asset.displayName",
+            "Asset.description",
+            "Asset.userDescription",
+            QUALIFIED_NAME);
 
-    static {
-        HANDLED_PROPERTY_KEYS.add(CLASSIFICATION_TEXT_KEY);
-        HANDLED_PROPERTY_KEYS.add(LABELS_PROPERTY_KEY);
-        HANDLED_PROPERTY_KEYS.add(CUSTOM_ATTRIBUTES_PROPERTY_KEY);
-    }
+    // type-specific free text, e.g. hive_table.comment, hive_column.comment
+    private static final String COMMENT_PROPERTY_SUFFIX = ".comment";
 
     public String buildText(AtlasVertex vertex) {
         if (vertex == null) {
@@ -72,7 +80,10 @@ public class SemanticTextBuilder {
         // the entity's own attributes first, so classifications and terms can't push them past MAX_TEXT_LENGTH
         StringBuilder sb = new StringBuilder();
         appendToken(sb, AtlasGraphUtilsV2.getTypeName(vertex), MAX_TYPE_NAME);
-        appendRemainingStringProperties(sb, vertex);
+        for (String propertyKey : ATTRIBUTE_PROPERTY_KEYS) {
+            appendStringProperty(sb, vertex, propertyKey);
+        }
+        appendComments(sb, vertex);
         // Atlas keeps the type names and attribute values of all classifications (own and propagated) here
         appendVertexProperty(sb, vertex, CLASSIFICATION_TEXT_KEY, MAX_CLASSIFICATION_TEXT);
         appendVertexProperty(sb, vertex, LABELS_PROPERTY_KEY, MAX_LABELS);
@@ -87,22 +98,24 @@ public class SemanticTextBuilder {
         return sb.length() >= MAX_TEXT_LENGTH;
     }
 
+    /**
+     * Term-to-entity assignment edges of a term (OUT) or an entity (IN). With soft delete, removed assignments keep
+     * their edge in DELETED state: they are skipped.
+     */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private static void appendGlossaryTerms(StringBuilder sb, AtlasVertex entityVertex) {
-        AtlasVertexQuery vertexQuery = entityVertex.query();
-        if (vertexQuery == null) {
-            return;
-        }
-
-        Iterable<?> edges = vertexQuery
-                .direction(AtlasEdgeDirection.IN)
+    public static Iterable<AtlasEdge> activeTermAssignmentEdges(AtlasVertex vertex, AtlasEdgeDirection direction, int limit) {
+        AtlasVertexQuery query = vertex.query();
+        Iterable<AtlasEdge> edges = query == null ? null : query
+                .direction(direction)
                 .label(TERM_ASSIGNMENT_LABEL)
-                .edges(MAX_GLOSSARY_TERMS);
-        if (edges == null) {
-            return;
-        }
+                .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())
+                .edges(limit);
 
-        for (AtlasEdge edge : (Iterable<AtlasEdge>) edges) {
+        return edges != null ? edges : Collections.emptyList();
+    }
+
+    private static void appendGlossaryTerms(StringBuilder sb, AtlasVertex entityVertex) {
+        for (AtlasEdge edge : activeTermAssignmentEdges(entityVertex, AtlasEdgeDirection.IN, MAX_GLOSSARY_TERMS)) {
             if (isFull(sb)) {
                 return;
             }
@@ -131,55 +144,24 @@ public class SemanticTextBuilder {
                 MAX_GLOSSARY_TERM);
     }
 
-    private static void appendRemainingStringProperties(StringBuilder sb, AtlasVertex vertex) {
+    private static void appendComments(StringBuilder sb, AtlasVertex vertex) {
         Collection<? extends String> propertyKeys = vertex.getPropertyKeys();
-        if (propertyKeys == null || propertyKeys.isEmpty()) {
+        if (propertyKeys == null) {
             return;
         }
 
         for (String propertyKey : propertyKeys) {
-            if (isFull(sb)) {
-                return;
+            if (propertyKey != null && propertyKey.endsWith(COMMENT_PROPERTY_SUFFIX) && !propertyKey.startsWith(INTERNAL_PROPERTY_KEY_PREFIX)) {
+                appendStringProperty(sb, vertex, propertyKey);
             }
-
-            if (StringUtils.isBlank(propertyKey) || isInternalPropertyKey(propertyKey)) {
-                continue;
-            }
-
-            if (HANDLED_PROPERTY_KEYS.contains(propertyKey)) {
-                continue;
-            }
-
-            appendVertexStringProperty(sb, vertex, propertyKey);
         }
     }
 
-    private static boolean isInternalPropertyKey(String propertyKey) {
-        return propertyKey.startsWith("__");
-    }
-
-    private static void appendVertexStringProperty(StringBuilder sb, AtlasVertex vertex, String propertyKey) {
-        try {
-            String value = vertex.getProperty(propertyKey, String.class);
-            if (StringUtils.isNotBlank(value)) {
-                appendToken(sb, value, MAX_ATTRIBUTE_VALUE);
-                return;
-            }
-        } catch (Exception ignored) {
-            // not a single-valued string property
-        }
-
-        try {
-            List<String> values = vertex.getListProperty(propertyKey);
-            if (values == null || values.isEmpty()) {
-                return;
-            }
-
-            for (String value : values) {
-                appendToken(sb, value, MAX_ATTRIBUTE_VALUE);
-            }
-        } catch (Exception ignored) {
-            // skip non-string properties (numbers, references, etc.)
+    // getProperty() casts unchecked: read as Object, so a non-string value is skipped instead of throwing
+    private static void appendStringProperty(StringBuilder sb, AtlasVertex vertex, String propertyKey) {
+        Object value = vertex.getProperty(propertyKey, Object.class);
+        if (value instanceof String) {
+            appendToken(sb, (String) value, MAX_ATTRIBUTE_VALUE);
         }
     }
 

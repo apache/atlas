@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +34,8 @@ public final class SemanticRetry {
     }
 
     public static <T> T run(String operationName, Callable<T> operation) throws SemanticSearchException {
-        int  maxAttempts = SemanticSearchConfiguration.getRetryMaxAttempts();
-        long baseSleepMs = SemanticSearchConfiguration.getRetrySleepMs();
+        int  maxAttempts = AtlasConfiguration.SEMANTIC_RETRY_MAX_ATTEMPTS.getInt();
+        long baseSleepMs = AtlasConfiguration.SEMANTIC_RETRY_SLEEP_MS.getLong();
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {

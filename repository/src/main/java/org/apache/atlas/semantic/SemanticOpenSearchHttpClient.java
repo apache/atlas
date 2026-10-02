@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 final class SemanticOpenSearchHttpClient implements Closeable {
     static final String HOSTNAME_CONF = "atlas.graph.index.search.hostname";
-    static final String PORT_CONF     = "atlas.graph.index.search.port";
+    private static final String PORT_CONF = "atlas.graph.index.search.port";
 
     private static final String OS_PREFIX                         = "atlas.graph.index.search.opensearch.";
     private static final String SSL_ENABLED_CONF                  = OS_PREFIX + "ssl.enabled";

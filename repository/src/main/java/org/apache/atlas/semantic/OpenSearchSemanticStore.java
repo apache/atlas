@@ -18,9 +18,12 @@
 package org.apache.atlas.semantic;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -41,13 +44,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_EMBEDDING_FIELD;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_INGEST_PIPELINE_NAME;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_TEXT_FIELD;
-
 @Component
-public class OpenSearchSemanticStore {
+public class OpenSearchSemanticStore implements SemanticVectorStore {
     private static final Logger LOG = LoggerFactory.getLogger(OpenSearchSemanticStore.class);
+
+    static final String SEMANTIC_TEXT_FIELD           = "atlas_semantic_text";
+    static final String SEMANTIC_EMBEDDING_FIELD      = "atlas_semantic_embedding";
+    static final String SEMANTIC_INGEST_PIPELINE_NAME = "atlas-semantic-ingest";
+
+    private static final String GRAPH_INDEX_NAME_CONF = "atlas.graph.index.search.index-name";
 
     private volatile SemanticOpenSearchHttpClient httpClient;
 
@@ -66,8 +71,27 @@ public class OpenSearchSemanticStore {
         }
     }
 
+    /**
+     * The JanusGraph vertex index: index-name, else opensearch.index-name (which Atlas sets at startup for the
+     * OpenSearch backend), plus "_vertex_index".
+     */
+    static String getVertexIndexName() {
+        String indexName = ApplicationProperties.DEFAULT_INDEX_NAME;
+
+        try {
+            Configuration config = ApplicationProperties.get();
+
+            indexName = config.getString(GRAPH_INDEX_NAME_CONF,
+                    config.getString(ApplicationProperties.OPENSEARCH_INDEX_NAME_CONF, ApplicationProperties.DEFAULT_INDEX_NAME));
+        } catch (AtlasException e) {
+            // keep the default
+        }
+
+        return indexName + "_" + Constants.VERTEX_INDEX;
+    }
+
     // created lazily: this bean is instantiated even when semantic search is disabled
-    SemanticOpenSearchHttpClient httpClient() throws SemanticSearchException {
+    private SemanticOpenSearchHttpClient httpClient() throws SemanticSearchException {
         SemanticOpenSearchHttpClient ret = httpClient;
 
         if (ret == null) {
@@ -87,11 +111,17 @@ public class OpenSearchSemanticStore {
         return ret;
     }
 
+    @Override
+    public void initialize() throws SemanticSearchException {
+        new SemanticIndexSetup(httpClient()).run();
+    }
+
     /**
-     * Computes an embedding and patches {@link SemanticSearchConfiguration#SEMANTIC_EMBEDDING_FIELD} via
+     * Computes an embedding and patches {@link #SEMANTIC_EMBEDDING_FIELD} via
      * {@code _update_by_query} on the Atlas guid (no separate document-id lookup).
      */
-    public void updateEmbeddingByGuid(String guid, String semanticText) throws SemanticSearchException {
+    @Override
+    public void updateEmbedding(String guid, String semanticText) throws SemanticSearchException {
         if (StringUtils.isBlank(guid) || StringUtils.isBlank(semanticText)) {
             return;
         }
@@ -110,7 +140,7 @@ public class OpenSearchSemanticStore {
     }
 
     private void executeUpdateEmbeddingByGuid(String guid, String body) throws SemanticSearchException {
-        String indexName = SemanticSearchConfiguration.getVertexIndexName();
+        String indexName = getVertexIndexName();
 
         // conflicts=proceed: JanusGraph may bump the vertex doc seqNo on the same Kafka event; abort returns HTTP 409.
         HttpPost post = new HttpPost("/" + indexName + "/_update_by_query?conflicts=proceed");
@@ -226,92 +256,51 @@ public class OpenSearchSemanticStore {
         return (List<?>) embedding;
     }
 
-    public List<VectorSearchHit> neuralSearch(String queryText, int topK, VectorSearchFilter filter) throws SemanticSearchException {
+    @Override
+    public List<VectorSearchHit> searchByText(String queryText, int topK, VectorSearchFilter filter) throws SemanticSearchException {
         if (StringUtils.isBlank(queryText)) {
             return Collections.emptyList();
         }
 
-        String indexName = SemanticSearchConfiguration.getVertexIndexName();
-        String modelId   = SemanticSearchConfiguration.getOpenSearchModelId();
-
         Map<String, Object> neuralField = new HashMap<>();
         neuralField.put("query_text", queryText);
-        neuralField.put("model_id", modelId);
-        neuralField.put("k", topK);
-        putVectorFilter(neuralField, filter);
+        neuralField.put("model_id", AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim());
 
-        Map<String, Object> query = Collections.singletonMap("neural",
-                Collections.singletonMap(SEMANTIC_EMBEDDING_FIELD, neuralField));
-
-        return executeSearch(indexName, topK, query, filter);
+        return vectorSearch("neural", neuralField, topK, filter);
     }
 
-    /**
-     * k-NN search using a pre-computed embedding (used by similar-entities to avoid query-time ML inference).
-     */
-    public List<VectorSearchHit> knnSearch(List<?> queryVector, int topK, VectorSearchFilter filter)
+    @Override
+    public List<VectorSearchHit> searchByVector(List<?> queryVector, int topK, VectorSearchFilter filter)
             throws SemanticSearchException {
         if (queryVector == null || queryVector.isEmpty()) {
             return Collections.emptyList();
         }
 
-        String indexName = SemanticSearchConfiguration.getVertexIndexName();
-
         Map<String, Object> knnField = new HashMap<>();
         knnField.put("vector", queryVector);
-        knnField.put("k", topK);
-        putVectorFilter(knnField, filter);
 
-        Map<String, Object> query = Collections.singletonMap("knn",
-                Collections.singletonMap(SEMANTIC_EMBEDDING_FIELD, knnField));
-
-        return executeSearch(indexName, topK, query, filter);
+        return vectorSearch("knn", knnField, topK, filter);
     }
 
-    /**
-     * Reads the stored embedding for an entity by Atlas guid from the JanusGraph vertex index.
-     */
-    @SuppressWarnings("unchecked")
-    public List<?> getStoredEmbeddingByGuid(String guid) throws SemanticSearchException {
-        VertexIndexDocument document = findVertexIndexDocumentByGuid(guid,
-                Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
-        if (document == null) {
-            return null;
-        }
-
-        Object embedding = document.getSource().get(SEMANTIC_EMBEDDING_FIELD);
-        if (!(embedding instanceof List) || ((List<?>) embedding).isEmpty()) {
-            return null;
-        }
-
-        return (List<?>) embedding;
-    }
-
-    private VertexIndexDocument findVertexIndexDocumentByGuid(String guid, List<String> sourceFields)
-            throws SemanticSearchException {
+    @Override
+    public List<?> getStoredEmbedding(String guid) throws SemanticSearchException {
         if (StringUtils.isBlank(guid)) {
             return null;
         }
 
-        String indexName = SemanticSearchConfiguration.getVertexIndexName();
-
         Map<String, Object> body = new HashMap<>();
         body.put("size", 1);
         body.put("query", Collections.singletonMap("term", Collections.singletonMap(guidFilterField(), guid)));
-        if (sourceFields == null || sourceFields.isEmpty()) {
-            body.put("_source", false);
-        } else {
-            body.put("_source", sourceFields);
-        }
+        body.put("_source", Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
 
-        HttpPost post = new HttpPost("/" + indexName + "/_search");
+        HttpPost post = new HttpPost("/" + getVertexIndexName() + "/_search");
         post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
 
-        return parseVertexIndexDocumentFromSearchResponse(executeRequestForBody(post));
+        return parseStoredEmbedding(executeRequestForBody(post));
     }
 
     @SuppressWarnings("unchecked")
-    static VertexIndexDocument parseVertexIndexDocumentFromSearchResponse(String responseJson) {
+    static List<?> parseStoredEmbedding(String responseJson) {
         Map<String, Object> root = AtlasJson.fromJson(responseJson, Map.class);
         if (root == null || !(root.get("hits") instanceof Map)) {
             return null;
@@ -323,52 +312,20 @@ public class OpenSearchSemanticStore {
         }
 
         Object firstHit = ((List<?>) hitsArray).get(0);
-        if (!(firstHit instanceof Map)) {
-            return null;
-        }
+        Object source   = firstHit instanceof Map ? ((Map<String, Object>) firstHit).get("_source") : null;
+        Object embedding = source instanceof Map ? ((Map<String, Object>) source).get(SEMANTIC_EMBEDDING_FIELD) : null;
 
-        Map<String, Object> hit = (Map<String, Object>) firstHit;
-        Object documentId = hit.get("_id");
-        if (documentId == null || StringUtils.isBlank(documentId.toString())) {
-            return null;
-        }
-
-        Map<String, Object> source = Collections.emptyMap();
-        Object sourceObj = hit.get("_source");
-        if (sourceObj instanceof Map) {
-            source = (Map<String, Object>) sourceObj;
-        }
-
-        return new VertexIndexDocument(documentId.toString(), source);
-    }
-
-    static final class VertexIndexDocument {
-        private final String              documentId;
-        private final Map<String, Object> source;
-
-        VertexIndexDocument(String documentId, Map<String, Object> source) {
-            this.documentId = documentId;
-            this.source     = source != null ? source : Collections.emptyMap();
-        }
-
-        String getDocumentId() {
-            return documentId;
-        }
-
-        Map<String, Object> getSource() {
-            return source;
-        }
+        return embedding instanceof List && !((List<?>) embedding).isEmpty() ? (List<?>) embedding : null;
     }
 
     /**
-     * Pages through active entity documents of the vertex index in guid order ({@code search_after}), passing each
-     * page of guids to {@code onPage}. With {@code missingEmbeddingOnly}, only documents without an embedding are
-     * returned; documents embedded while scanning simply drop out, which the guid cursor tolerates.
-     * The graph stays the source of truth: callers must still check state/type on the vertex.
+     * Pages with {@code search_after} on the guid: documents embedded while scanning with
+     * {@code missingEmbeddingOnly} simply drop out, which the guid cursor tolerates.
      */
-    public void scanActiveEntityGuids(boolean missingEmbeddingOnly, int pageSize, Consumer<List<String>> onPage)
+    @Override
+    public void scanEntities(boolean missingEmbeddingOnly, int pageSize, Consumer<List<String>> onPage)
             throws SemanticSearchException {
-        String indexName   = SemanticSearchConfiguration.getVertexIndexName();
+        String indexName   = getVertexIndexName();
         Object searchAfter = null;
 
         while (true) {
@@ -396,12 +353,12 @@ public class OpenSearchSemanticStore {
         filter.add(Collections.singletonMap("exists", Collections.singletonMap("field", Constants.GUID_PROPERTY_KEY)));
         filter.add(Collections.singletonMap("exists", Collections.singletonMap("field", Constants.ENTITY_TYPE_PROPERTY_KEY)));
         // match (not term) works whether __state is mapped as keyword (legacy) or text with a keyword subfield
-        filter.add(Collections.singletonMap("match", Collections.singletonMap(Constants.STATE_PROPERTY_KEY, "ACTIVE")));
+        filter.add(Collections.singletonMap("match", Collections.singletonMap(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())));
 
         List<Map<String, Object>> mustNot = new ArrayList<>();
-        mustNot.add(Collections.singletonMap("prefix", Collections.singletonMap(typeNameFilterField(), "__")));
+        mustNot.add(Collections.singletonMap("prefix", Collections.singletonMap(typeNameFilterField(), Constants.INTERNAL_PROPERTY_KEY_PREFIX)));
         mustNot.add(Collections.singletonMap("terms", Collections.singletonMap(typeNameFilterField(),
-                new ArrayList<>(SemanticNotificationGuidExpander.getNonEmbeddableEntityTypes()))));
+                new ArrayList<>(SemanticEntityEmbedder.getNonEmbeddableEntityTypes()))));
         if (missingEmbeddingOnly) {
             mustNot.add(Collections.singletonMap("exists", Collections.singletonMap("field", SEMANTIC_EMBEDDING_FIELD)));
         }
@@ -466,29 +423,26 @@ public class OpenSearchSemanticStore {
         }
     }
 
-    private List<VectorSearchHit> executeSearch(String indexName,
-                                                int topK,
-                                                Map<String, Object> query,
-                                                VectorSearchFilter filter) throws SemanticSearchException {
-        Map<String, Object> body = new HashMap<>();
-        body.put("size", topK);
-        body.put("query", query);
-        body.put("_source", Collections.singletonList(Constants.GUID_PROPERTY_KEY));
+    private List<VectorSearchHit> vectorSearch(String queryType, Map<String, Object> vectorField, int topK,
+                                               VectorSearchFilter filter) throws SemanticSearchException {
+        vectorField.put("k", topK);
 
-        HttpPost post = new HttpPost("/" + indexName + "/_search");
-        post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
-
-        String response = executeRequestForBody(post);
-        return parseSearchHits(response, filter);
-    }
-
-    // The filter goes inside the knn/neural clause: OpenSearch then returns the k nearest documents that match it.
-    // A bool filter around the clause would only filter the global top k, and can return nothing.
-    private static void putVectorFilter(Map<String, Object> vectorField, VectorSearchFilter filter) {
+        // The filter goes inside the knn/neural clause: OpenSearch then returns the k nearest documents that match it.
+        // A bool filter around the clause would only filter the global top k, and can return nothing.
         Map<String, Object> vectorFilter = buildVectorFilter(filter);
         if (vectorFilter != null) {
             vectorField.put("filter", vectorFilter);
         }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("size", topK);
+        body.put("query", Collections.singletonMap(queryType, Collections.singletonMap(SEMANTIC_EMBEDDING_FIELD, vectorField)));
+        body.put("_source", Collections.singletonList(Constants.GUID_PROPERTY_KEY));
+
+        HttpPost post = new HttpPost("/" + getVertexIndexName() + "/_search");
+        post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
+
+        return parseSearchHits(executeRequestForBody(post));
     }
 
     static Map<String, Object> buildVectorFilter(VectorSearchFilter filter) {
@@ -519,7 +473,7 @@ public class OpenSearchSemanticStore {
     }
 
     @SuppressWarnings("unchecked")
-    private List<VectorSearchHit> parseSearchHits(String responseJson, VectorSearchFilter filter) {
+    private static List<VectorSearchHit> parseSearchHits(String responseJson) {
         Map<String, Object> response = AtlasJson.fromJson(responseJson, Map.class);
         Object              hitsObj  = response != null ? response.get("hits") : null;
 
@@ -540,7 +494,7 @@ public class OpenSearchSemanticStore {
 
             Map<String, Object> hit = (Map<String, Object>) hitObj;
             String guid = extractGuid(hit);
-            if (StringUtils.isBlank(guid) || filter.getExcludeGuids().contains(guid)) {
+            if (StringUtils.isBlank(guid)) {
                 continue;
             }
 

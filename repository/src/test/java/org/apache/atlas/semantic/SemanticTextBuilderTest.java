@@ -37,6 +37,7 @@ import java.util.Set;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -68,17 +69,9 @@ public class SemanticTextBuilderTest {
     }
 
     @Test
-    public void buildTextIncludesTypeNameKnownInternalFieldsAndUserAttributes() {
+    public void buildTextIncludesTypeNameClassificationsLabelsAndCustomAttributes() {
         AtlasVertex vertex = mock(AtlasVertex.class);
-        Set<String> keys   = new LinkedHashSet<>(Arrays.asList(
-                CLASSIFICATION_TEXT_KEY,
-                LABELS_PROPERTY_KEY,
-                CUSTOM_ATTRIBUTES_PROPERTY_KEY,
-                "make",
-                "model",
-                "__guid"));
-
-        when(vertex.getPropertyKeys()).thenReturn((Collection) keys);
+        when(vertex.getPropertyKeys()).thenReturn(Collections.emptyList());
         graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("demo_car");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(vertex, CLASSIFICATION_TEXT_KEY, String.class))
                 .thenReturn("PII");
@@ -86,32 +79,25 @@ public class SemanticTextBuilderTest {
                 .thenReturn("fleet");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(vertex, CUSTOM_ATTRIBUTES_PROPERTY_KEY, String.class))
                 .thenReturn("region=eu");
-        when(vertex.getProperty("make", String.class)).thenReturn("Toyota");
-        when(vertex.getProperty("model", String.class)).thenReturn("Camry");
 
-        String text = builder.buildText(vertex);
-
-        assertTrue(text.contains("demo_car"));
-        assertTrue(text.contains("PII"));
-        assertTrue(text.contains("fleet"));
-        assertTrue(text.contains("region=eu"));
-        assertTrue(text.contains("Toyota"));
-        assertTrue(text.contains("Camry"));
+        assertEquals(builder.buildText(vertex), "demo_car PII fleet region=eu");
     }
 
     @Test
-    public void buildTextSkipsInternalUnderscorePropertiesExceptHandledOnes() {
+    public void buildTextEmbedsOnlyKnownAttributesAndSkipsNonStringValues() {
         AtlasVertex vertex = mock(AtlasVertex.class);
-        when(vertex.getPropertyKeys()).thenReturn((Collection) Set.of("__state", "color"));
-        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("demo_car");
+        when(vertex.getPropertyKeys()).thenReturn((Collection) new LinkedHashSet<>(Arrays.asList(
+                "__state", "Asset.owner", "hive_table.tableType", "hive_table.createTime", "__comment", "hive_table.comment")));
+        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("hive_table");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(vertex), any(), eq(String.class)))
                 .thenReturn(null);
-        when(vertex.getProperty("__state", String.class)).thenReturn("ACTIVE");
-        when(vertex.getProperty("color", String.class)).thenReturn("red");
+        when(vertex.getProperty("Asset.owner", Object.class)).thenReturn("etl_user");
+        when(vertex.getProperty("hive_table.tableType", Object.class)).thenReturn("MANAGED_TABLE");
+        when(vertex.getProperty("Asset.displayName", Object.class)).thenReturn(42L);
+        when(vertex.getProperty("__comment", Object.class)).thenReturn("internal");
+        when(vertex.getProperty("hive_table.comment", Object.class)).thenReturn("raw orders");
 
-        String text = builder.buildText(vertex);
-
-        assertEquals(text, "demo_car red");
+        assertEquals(builder.buildText(vertex), "hive_table raw orders");
     }
 
     @Test
@@ -130,6 +116,7 @@ public class SemanticTextBuilderTest {
         when(entityVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.IN)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
+        when(query.has(STATE_PROPERTY_KEY, "ACTIVE")).thenReturn(query);
         when(query.edges(100)).thenReturn(Collections.singletonList(edge));
         when(edge.getOutVertex()).thenReturn(termVertex);
 
@@ -161,6 +148,7 @@ public class SemanticTextBuilderTest {
         when(entityVertex.query()).thenReturn(entityQuery);
         when(entityQuery.direction(AtlasEdgeDirection.IN)).thenReturn(entityQuery);
         when(entityQuery.label(TERM_ASSIGNMENT_LABEL)).thenReturn(entityQuery);
+        when(entityQuery.has(STATE_PROPERTY_KEY, "ACTIVE")).thenReturn(entityQuery);
         when(entityQuery.edges(anyInt())).thenReturn(Collections.singletonList(assignmentEdge));
         when(assignmentEdge.getOutVertex()).thenReturn(assignedTerm);
 
@@ -191,5 +179,24 @@ public class SemanticTextBuilderTest {
 
         assertTrue(text.contains("Certified gold"));
         graphHelper.verify(() -> GraphHelper.getAllClassificationEdges(any()), never());
+    }
+
+    @Test
+    public void buildTextOrdersKnownAttributesAndSkipsUniqueShadowCopies() {
+        AtlasVertex vertex = mock(AtlasVertex.class);
+        when(vertex.getPropertyKeys()).thenReturn((Collection) new LinkedHashSet<>(Arrays.asList(
+                "hive_table.comment", "Referenceable.__u_qualifiedName", "Referenceable.qualifiedName",
+                "Asset.description", "Asset.name")));
+        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("hive_table");
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(vertex), any(), eq(String.class)))
+                .thenReturn(null);
+        when(vertex.getProperty("Asset.name", Object.class)).thenReturn("orders");
+        when(vertex.getProperty("Asset.description", Object.class)).thenReturn("all orders");
+        when(vertex.getProperty("Asset.userDescription", Object.class)).thenReturn("one row per order");
+        when(vertex.getProperty("Referenceable.qualifiedName", Object.class)).thenReturn("db.orders@cl1");
+        when(vertex.getProperty("Referenceable.__u_qualifiedName", Object.class)).thenReturn("db.orders@cl1");
+        when(vertex.getProperty("hive_table.comment", Object.class)).thenReturn("raw");
+
+        assertEquals(builder.buildText(vertex), "hive_table orders all orders one row per order db.orders@cl1 raw");
     }
 }

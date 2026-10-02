@@ -17,8 +17,13 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.semantic.SemanticOpenSearchHttpClient.Response;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.commons.configuration2.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPut;
@@ -32,33 +37,73 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_EMBEDDING_FIELD;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_INGEST_PIPELINE_NAME;
-import static org.apache.atlas.semantic.SemanticSearchConfiguration.SEMANTIC_TEXT_FIELD;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_EMBEDDING_FIELD;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_INGEST_PIPELINE_NAME;
+import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_TEXT_FIELD;
 
 /**
- * One-time OpenSearch setup for semantic search, run by the Semantic Indexer and the repair tool at startup:
- * checks the cluster and {@code index.knn} on the JanusGraph vertex index, then ensures the ingest pipeline and
- * the embedding field mapping. The Atlas webapp does not run it.
+ * OpenSearch setup for semantic search. {@link #run()}, behind {@link OpenSearchSemanticStore#initialize()}, checks
+ * the cluster and {@code index.knn} on the JanusGraph vertex index, then ensures the ingest pipeline and the
+ * embedding field mapping. The configuration checks are static: they run before the graph is opened, also in the
+ * Atlas webapp.
  */
 public final class SemanticIndexSetup {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticIndexSetup.class);
 
+    private static final String GRAPH_INDEX_CREATE_KNN_CONF = "atlas.graph.index.search.opensearch.create.ext.knn";
+
     private final SemanticOpenSearchHttpClient httpClient;
 
-    private SemanticIndexSetup(SemanticOpenSearchHttpClient httpClient) {
+    SemanticIndexSetup(SemanticOpenSearchHttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
     /**
-     * Runs the setup over the store's OpenSearch connection.
+     * Validates the configuration when atlas.semantic.enabled is true. Must run before the graph is opened:
+     * JanusGraph creates the vertex index on first open, and index.knn can't be added to it afterwards.
      */
-    public static void initialize(OpenSearchSemanticStore semanticStore) throws SemanticSearchException {
-        SemanticIndexSetup setup = new SemanticIndexSetup(semanticStore.httpClient());
+    public static void validateConfigurationWhenEnabled() throws SemanticSearchException {
+        if (AtlasConfiguration.SEMANTIC_ENABLED.getBoolean()) {
+            validateConfiguration();
+        }
+    }
 
-        setup.validateCluster();
-        setup.ensureIngestPipeline();
-        setup.ensureVertexIndexSemanticFields();
+    /**
+     * Validates the configuration regardless of atlas.semantic.enabled (which only gates the REST search):
+     * used by the Semantic Indexer and repair tool, before they open the graph.
+     */
+    public static void validateConfiguration() throws SemanticSearchException {
+        Configuration config;
+
+        try {
+            config = ApplicationProperties.get();
+        } catch (AtlasException e) {
+            throw new SemanticSearchException("Failed to read semantic search configuration", e);
+        }
+
+        if (StringUtils.isBlank(config.getString(SemanticOpenSearchHttpClient.HOSTNAME_CONF, ""))) {
+            throw new SemanticSearchException(SemanticOpenSearchHttpClient.HOSTNAME_CONF + " must be set for semantic search");
+        }
+
+        if (!config.getBoolean(GRAPH_INDEX_CREATE_KNN_CONF, false)) {
+            throw new SemanticSearchException(GRAPH_INDEX_CREATE_KNN_CONF + "=true is required for semantic search:"
+                    + " index.knn can only be set when JanusGraph creates the vertex index"
+                    + " (an existing index must be cloned with index.knn=true, see SemanticSearch.md)");
+        }
+
+        if (StringUtils.isBlank(AtlasConfiguration.SEMANTIC_MODEL_ID.getString())) {
+            throw new SemanticSearchException(AtlasConfiguration.SEMANTIC_MODEL_ID.getPropertyName() + " must be set for semantic search");
+        }
+
+        if (AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt() <= 0) {
+            throw new SemanticSearchException(AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName() + " must be a positive integer");
+        }
+    }
+
+    void run() throws SemanticSearchException {
+        validateCluster();
+        ensureIngestPipeline();
+        ensureVertexIndexSemanticFields();
     }
 
     @SuppressWarnings("unchecked")
@@ -67,7 +112,7 @@ public final class SemanticIndexSetup {
 
         if (root == null || !(root.get("version") instanceof Map)) {
             throw new SemanticSearchException(
-                    SemanticSearchConfiguration.GRAPH_INDEX_HOSTNAME_CONF
+                    SemanticOpenSearchHttpClient.HOSTNAME_CONF
                             + " does not point to OpenSearch (missing cluster version in response)");
         }
 
@@ -75,7 +120,7 @@ public final class SemanticIndexSetup {
 
         if (!"opensearch".equalsIgnoreCase(distribution)) {
             throw new SemanticSearchException(
-                    SemanticSearchConfiguration.GRAPH_INDEX_HOSTNAME_CONF
+                    SemanticOpenSearchHttpClient.HOSTNAME_CONF
                             + " must point to an OpenSearch cluster with neural search support (got distribution="
                             + distribution + ")");
         }
@@ -90,7 +135,7 @@ public final class SemanticIndexSetup {
     }
 
     private void ensureIngestPipeline() throws SemanticSearchException {
-        String modelId = SemanticSearchConfiguration.getOpenSearchModelId();
+        String modelId = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
 
         HttpPut put = new HttpPut("/_ingest/pipeline/" + SEMANTIC_INGEST_PIPELINE_NAME);
         put.setEntity(new StringEntity(AtlasJson.toJson(buildIngestPipelineBody(modelId)), ContentType.APPLICATION_JSON));
@@ -123,8 +168,8 @@ public final class SemanticIndexSetup {
     }
 
     private void ensureVertexIndexSemanticFields() throws SemanticSearchException {
-        String indexName  = SemanticSearchConfiguration.getVertexIndexName();
-        int    dimensions = SemanticSearchConfiguration.getOpenSearchEmbeddingDimension();
+        String indexName  = OpenSearchSemanticStore.getVertexIndexName();
+        int    dimensions = AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt();
 
         if (!indexExists(indexName)) {
             throw new SemanticSearchException("Vertex index '" + indexName + "' does not exist in OpenSearch");
@@ -149,7 +194,7 @@ public final class SemanticIndexSetup {
     private void ensureKnnEnabled(String indexName) throws SemanticSearchException {
         if (!isKnnEnabled(indexName)) {
             throw new SemanticSearchException("index.knn is not enabled on vertex index '" + indexName
-                    + "'; set " + SemanticSearchConfiguration.GRAPH_INDEX_CREATE_KNN_CONF + "=true before JanusGraph creates the index"
+                    + "'; set " + GRAPH_INDEX_CREATE_KNN_CONF + "=true before JanusGraph creates the index"
                     + " (existing index: clone it with index.knn=true, see SemanticSearch.md)");
         }
     }
@@ -228,7 +273,7 @@ public final class SemanticIndexSetup {
         if (indexDimension != configuredDimensions) {
             throw new SemanticSearchException(
                     "Vertex index '" + indexName + "' embedding dimension is " + indexDimension
-                            + " but " + SemanticSearchConfiguration.SEMANTIC_EMBEDDING_DIMENSION_CONF
+                            + " but " + AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName()
                             + " is " + configuredDimensions);
         }
     }

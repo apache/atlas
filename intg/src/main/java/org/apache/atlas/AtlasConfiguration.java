@@ -126,7 +126,25 @@ public enum AtlasConfiguration {
     ASYNC_IMPORT_TOPIC_PREFIX("atlas.async.import.topic.prefix", "ATLAS_IMPORT_"),
     ASYNC_IMPORT_REQUEST_ID_PREFIX("atlas.async.import.request_id.prefix", "async_import_"),
     REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false),
-    PURGE_API_MAX_REQUEST_SIZE("atlas.purge.api.max.request.size", 1000);
+    PURGE_API_MAX_REQUEST_SIZE("atlas.purge.api.max.request.size", 1000),
+
+    //semantic search configuration
+    SEMANTIC_ENABLED("atlas.semantic.enabled", false),
+    SEMANTIC_MODEL_ID("atlas.semantic.model.id", ""),
+    SEMANTIC_EMBEDDING_DIMENSION("atlas.semantic.embedding.dimension", 0),
+    SEMANTIC_RETRY_MAX_ATTEMPTS("atlas.semantic.retry.max.attempts", 3),
+    SEMANTIC_RETRY_SLEEP_MS("atlas.semantic.retry.sleep.ms", 500),
+    SEMANTIC_SEARCH_DEFAULT_TOP_K("atlas.semantic.search.default.topK", 25),
+    SEMANTIC_SEARCH_MIN_SCORE("atlas.semantic.search.min.score", 0.0),
+    SEMANTIC_INDEXER_KAFKA_GROUP_ID("atlas.semantic.indexer.kafka.group.id", "atlas_semantic_indexer"),
+    SEMANTIC_INDEXER_KAFKA_POLL_TIMEOUT_MS("atlas.semantic.indexer.kafka.poll.timeout.ms", 5000),
+    SEMANTIC_INDEXER_KAFKA_MAX_POLL_INTERVAL_MS("atlas.semantic.indexer.kafka.max.poll.interval.ms", 30 * 60 * 1000),
+    SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS("atlas.semantic.indexer.kafka.max.poll.records", 25),
+    SEMANTIC_INDEXER_MAX_TERM_ENTITIES("atlas.semantic.indexer.max.term.entities", 100), // 0 disables the term fan-out
+    SEMANTIC_INDEXER_HEALTH_ENABLED("atlas.semantic.indexer.health.enabled", true),
+    SEMANTIC_INDEXER_HEALTH_PORT("atlas.semantic.indexer.health.port", 8089),
+    SEMANTIC_INDEXER_HEALTH_PATH("atlas.semantic.indexer.health.path", "/health");
+
     private static final Configuration APPLICATION_PROPERTIES;
 
     private final String propertyName;
@@ -147,6 +165,10 @@ public enum AtlasConfiguration {
 
     public long getLong() {
         return APPLICATION_PROPERTIES.getLong(propertyName, Long.valueOf(defaultValue.toString()).longValue());
+    }
+
+    public double getDouble() {
+        return APPLICATION_PROPERTIES.getDouble(propertyName, Double.parseDouble(defaultValue.toString()));
     }
 
     public boolean getBoolean() {

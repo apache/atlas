@@ -1047,11 +1047,7 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.semanticSearch(" + searchParameters + ")");
             }
 
-            if (searchParameters == null || StringUtils.isEmpty(searchParameters.getQuery())) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
-            }
-
-            Servlets.validateQueryParamLength("query", searchParameters.getQuery());
+            Servlets.validateQueryParamLength("query", searchParameters != null ? searchParameters.getQuery() : null);
 
             return discoveryService.semanticSearch(searchParameters);
         } finally {
@@ -1069,17 +1065,14 @@ public class DiscoveryREST {
                                              @QueryParam("typeName") String typeName,
                                              @QueryParam("excludeDeletedEntities") @DefaultValue("true") boolean excludeDeletedEntities,
                                              @QueryParam("includeSubTypes") @DefaultValue("true") boolean includeSubTypes,
-                                             @QueryParam("topK") @DefaultValue("25") int topK,
-                                             @QueryParam("minScore") @DefaultValue("0.0") double minScore) throws AtlasBaseException {
+                                             @QueryParam("topK") int topK, // 0: atlas.semantic.search.default.topK
+                                             @QueryParam("minScore") double minScore, // 0: atlas.semantic.search.min.score
+                                             @QueryParam("attributes") Set<String> attributes) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.similarEntities(" + guid + ")");
-            }
-
-            if (StringUtils.isEmpty(guid)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "guid");
             }
 
             Servlets.validateQueryParamLength("guid", guid);
@@ -1090,6 +1083,7 @@ public class DiscoveryREST {
             searchParameters.setIncludeSubTypes(includeSubTypes);
             searchParameters.setTopK(topK);
             searchParameters.setMinScore(minScore);
+            searchParameters.setAttributes(attributes);
 
             return discoveryService.similarEntities(guid, searchParameters);
         } finally {

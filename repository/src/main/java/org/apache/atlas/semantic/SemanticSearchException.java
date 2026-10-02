@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.semantic;
 
-import java.io.IOException;
-
 public class SemanticSearchException extends Exception {
     private final boolean retryable;
 
@@ -31,7 +29,7 @@ public class SemanticSearchException extends Exception {
     }
 
     public SemanticSearchException(String message, Throwable cause) {
-        this(message, cause, cause instanceof IOException);
+        this(message, cause, false);
     }
 
     public SemanticSearchException(String message, Throwable cause, boolean retryable) {

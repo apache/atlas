@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.semantic;
+package org.apache.atlas.semantic.indexer;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -34,6 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,7 +47,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SemanticNotificationGuidExpanderTest {
@@ -79,6 +80,7 @@ public class SemanticNotificationGuidExpanderTest {
         when(termVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.OUT)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
+        when(query.has(STATE_PROPERTY_KEY, "ACTIVE")).thenReturn(query);
         when(query.edges(anyInt())).thenReturn(Collections.singletonList(edge));
         when(edge.getInVertex()).thenReturn(entityVertex);
         graphHelper.when(() -> GraphHelper.getGuid(entityVertex)).thenReturn("entity-guid");
@@ -110,15 +112,16 @@ public class SemanticNotificationGuidExpanderTest {
         when(termVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.OUT)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
+        when(query.has(STATE_PROPERTY_KEY, "ACTIVE")).thenReturn(query);
         when(query.edges(3)).thenReturn(edges);
 
-        ApplicationProperties.get().setProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF, 2);
+        ApplicationProperties.get().setProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName(), 2);
         try {
             Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid"));
 
             assertEquals(expanded, Set.of("entity-0", "entity-1"));
         } finally {
-            ApplicationProperties.get().clearProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF);
+            ApplicationProperties.get().clearProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName());
         }
     }
 
@@ -130,12 +133,12 @@ public class SemanticNotificationGuidExpanderTest {
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, TYPE_NAME_PROPERTY_KEY, String.class))
                 .thenReturn("AtlasGlossaryTerm");
 
-        ApplicationProperties.get().setProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF, 0);
+        ApplicationProperties.get().setProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName(), 0);
         try {
             assertTrue(SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid")).isEmpty());
             verify(termVertex, never()).query();
         } finally {
-            ApplicationProperties.get().clearProperty(SemanticSearchConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES_CONF);
+            ApplicationProperties.get().clearProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName());
         }
     }
 
@@ -165,13 +168,5 @@ public class SemanticNotificationGuidExpanderTest {
         Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("glossary-guid"));
 
         assertTrue(expanded.isEmpty());
-    }
-
-    @Test
-    public void isEmbeddableEntityTypeRejectsGlossaryTerms() {
-        graphHelper.when(() -> GraphHelper.isInternalType("AtlasGlossaryTerm")).thenReturn(false);
-
-        assertFalse(SemanticNotificationGuidExpander.isEmbeddableEntityType("AtlasGlossaryTerm"));
-        assertTrue(SemanticNotificationGuidExpander.isEmbeddableEntityType("DataSet"));
     }
 }
