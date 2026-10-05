@@ -1647,12 +1647,18 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void setBlockedClassificationIds(AtlasEdge edge, List<String> classificationIds) {
-        if (edge != null) {
-            if (classificationIds.isEmpty()) {
-                edge.removeProperty(org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY);
-            } else {
-                edge.setListProperty(org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY, classificationIds);
-            }
+        if (edge == null) {
+            return;
+        }
+
+        // Copy-on-write (remove then set new list) so the PUT response can read the new blocked list immediately and
+        // readClassificationsFromEdge sees it when building the PUT response on first block.
+        String key = org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_BLOCKED_PROPAGATED_CLASSIFICATIONS_KEY;
+
+        edge.removeProperty(key);
+
+        if (CollectionUtils.isNotEmpty(classificationIds)) {
+            edge.setListProperty(key, new ArrayList<>(classificationIds));
         }
     }
 }
