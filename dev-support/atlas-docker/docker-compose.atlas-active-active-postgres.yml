@@ -1,0 +1,37 @@
+services:
+  atlas-initializer:
+    depends_on:
+      atlas-db-init:
+        condition: service_completed_successfully
+
+  atlas-db-init:
+    image: postgres:13.21
+    container_name: atlas-db-init
+    hostname: atlas-db-init.example.com
+    networks:
+      - atlas
+    depends_on:
+      atlas-backend:
+        condition: service_healthy
+      atlas-db:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: atlas-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: atlasR0cks!
+      HIVE_DB_PASSWORD: atlasR0cks!
+      ATLAS_DB_PASSWORD: atlasR0cks!
+      ATLAS_SCHEMA_FILE: /tmp/create_schema.sql
+    volumes:
+      - ./config/init_postgres.sh:/tmp/init_postgres.sh:ro
+      - ../../graphdb/janusgraph-rdbms/src/main/resources/META-INF/postgres/create_schema.sql:/tmp/create_schema.sql:ro
+    command:
+      - /bin/bash
+      - /tmp/init_postgres.sh
+    restart: "no"
+
+networks:
+  atlas:
+    name: atlasnw

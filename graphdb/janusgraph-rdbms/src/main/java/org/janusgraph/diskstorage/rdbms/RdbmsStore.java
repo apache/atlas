@@ -41,7 +41,6 @@ import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -242,8 +241,19 @@ public class RdbmsStore implements KeyColumnValueStore {
                     ret = store != null ? store.getId() : null;
 
                     LOG.debug("attempt #{}: created store(name={}): id={}", attempt, name, ret);
-                } catch (IOException excp) {
-                    LOG.error("attempt #{}: failed to create store(name={})", attempt, name, excp);
+                } catch (Exception excp) {
+                    // A store row is created on first use exactly like a key row, and races the same
+                    // way when two nodes start against an empty schema, so it is recovered the same
+                    // way: read the winner's row rather than insert again.  This used to catch
+                    // IOException, which the persistence layer never throws, so the duplicate key
+                    // violation escaped the loop and failed the caller outright.
+                    ret = readStoreId(trx);
+
+                    if (ret != null) {
+                        LOG.debug("attempt #{}: store(name={}) was created by another writer: id={}", attempt, name, ret);
+                    } else {
+                        LOG.error("attempt #{}: failed to create store(name={})", attempt, name, excp);
+                    }
                 }
 
                 if (ret != null || attempt >= STORE_CREATE_MAX_ATTEMPTS) {
@@ -268,6 +278,43 @@ public class RdbmsStore implements KeyColumnValueStore {
         return ret;
     }
 
+    /**
+     * The id of the {@code janus_key} row for this key, creating that row if no one has yet.
+     *
+     * <p>Every property key is given a row of its own the first time any node writes it, and
+     * {@code janus_key} constrains (store_id, name) to be unique.  Two nodes that touch a new key at
+     * the same time therefore both try to insert the same row, and the database picks one winner: the
+     * loser's insert fails at commit with a duplicate key violation.
+     *
+     * <p>What matters is what the loser does next.  The row it was trying to create now exists, and
+     * it is the row the loser has to use, because the unique constraint means there can only ever be
+     * one row for this key.  Only a look-up can produce that row's id.  Inserting again cannot: the
+     * winner's row is still there, so every further attempt fails exactly as the first one did.
+     *
+     * <p>So a failed insert is answered by reading the key back, in {@link #readKeyId}.  Previously it
+     * was answered by inserting again: the loop retried the insert for all
+     * {@value #KEY_CREATE_MAX_ATTEMPTS} attempts, every one of them failing on the same constraint,
+     * and then returned null.  A null id fails the whole graph operation and reaches the client as a
+     * server error, so two nodes writing the same new property key at the same time - which is what
+     * attaching classifications concurrently does - could lose one of the writes outright.
+     *
+     * <p>The read-back is a separate step rather than the next turn of the loop because it resolves
+     * the race at once, and because it does not depend on the caller's transaction being able to see
+     * the other writer's commit: {@link #readKeyId} opens a transaction of its own, which is correct
+     * whatever isolation level the database is configured with.
+     *
+     * <p>The insert deliberately runs in its own transaction ({@code trx2}) and commits on its own:
+     * the key row has to survive regardless of what happens to the caller's transaction, since the
+     * key is shared by every writer rather than owned by this one operation.  That also means a failed
+     * insert leaves the caller's transaction untouched and still usable.
+     *
+     * <p>The catch is on {@link Exception} rather than {@link Throwable}: a duplicate key arrives as a
+     * persistence exception, while an {@link Error} says something is wrong with the JVM rather than
+     * with this row, and absorbing it here would only hide it.
+     *
+     * <p>A lost race is logged at debug, because it is ordinary and fully recovered from.  Only an
+     * insert that failed for a reason the read-back cannot explain is logged as an error.
+     */
     private Long getKeyIdOrCreate(byte[] key, StoreTransaction trx) {
         Long        storeId = getStoreIdOrCreate(trx);
         JanusKeyDao dao     = new JanusKeyDao((RdbmsTransaction) trx);
@@ -283,8 +330,14 @@ public class RdbmsStore implements KeyColumnValueStore {
                 ret = createdKey != null ? createdKey.getId() : null;
 
                 LOG.debug("attempt #{}: created key(storeId={}, key={}): id={}", attempt, storeId, key, ret);
-            } catch (Throwable t) {
-                LOG.error("attempt #{}: failed to create key(storeId={}, key.length={}, key={}): {}", attempt, storeId, key.length, new String(key), t);
+            } catch (Exception excp) {
+                ret = readKeyId(storeId, key, trx);
+
+                if (ret != null) {
+                    LOG.debug("attempt #{}: key(storeId={}, key.length={}) was created by another writer: id={}", attempt, storeId, key.length, ret);
+                } else {
+                    LOG.error("attempt #{}: failed to create key(storeId={}, key.length={})", attempt, storeId, key.length, excp);
+                }
             }
 
             if (ret != null || attempt >= KEY_CREATE_MAX_ATTEMPTS) {
@@ -300,6 +353,40 @@ public class RdbmsStore implements KeyColumnValueStore {
         }
 
         return ret;
+    }
+
+    /**
+     * Reads the id of a key row in a transaction of its own.
+     *
+     * <p>The read has to be in its own transaction to be sure of seeing the row.  The caller's
+     * transaction may have begun before the other writer committed, and under snapshot-based
+     * isolation a query in that transaction can only see the state as of its own start.  A
+     * transaction opened now begins after that commit and therefore sees it.
+     *
+     * <p>Returning null here does not distinguish "no such row" from "the read itself failed": the
+     * caller treats both the same way, by trying again on its next attempt, so there is nothing for
+     * this method to decide.  The failure is logged at debug for the case where the read, and not the
+     * race, is what went wrong.
+     */
+    private Long readKeyId(Long storeId, byte[] key, StoreTransaction trx) {
+        try (RdbmsTransaction trx2 = new RdbmsTransaction(trx.getConfiguration(), daoManager)) {
+            return new JanusKeyDao(trx2).getIdByStoreIdAndName(storeId, key);
+        } catch (Exception excp) {
+            LOG.debug("failed to read key(storeId={}, key.length={}) back", storeId, key.length, excp);
+
+            return null;
+        }
+    }
+
+    /** Reads the id of this store's row, in a transaction of its own and for the reason given in {@link #readKeyId}. */
+    private Long readStoreId(StoreTransaction trx) {
+        try (RdbmsTransaction trx2 = new RdbmsTransaction(trx.getConfiguration(), daoManager)) {
+            return new JanusStoreDao(trx2).getIdByName(name);
+        } catch (Exception excp) {
+            LOG.debug("failed to read store(name={}) back", name, excp);
+
+            return null;
+        }
     }
 
     public final StaticArrayEntry.GetColVal<JanusColumnValue, StaticBuffer> toEntry =

@@ -126,25 +126,25 @@ public class SearchResultDownloadTask extends AbstractTask {
     protected void run(Map<String, Object> parameters) throws AtlasBaseException, IOException {
         Map<String, String>              attributeLabelMap;
         AtlasSearchResult                searchResult = null;
-        AtlasSearchResult.AtlasQueryType queryType    = null;
+        AtlasSearchResult.AtlasQueryType queryType    = resolveQueryType(parameters.get(SEARCH_TYPE_KEY));
 
-        if (parameters.get(SEARCH_TYPE_KEY) == BASIC) {
+        if (queryType == BASIC) {
             String           searchParametersJson = (String) parameters.get(SEARCH_PARAMETERS_JSON_KEY);
             SearchParameters searchParameters     = AtlasJson.fromJson(searchParametersJson, SearchParameters.class);
 
             searchParameters.setLimit(AtlasConfiguration.SEARCH_MAX_LIMIT.getInt());
 
             searchResult = discoveryService.searchWithParameters(searchParameters);
-            queryType    = BASIC;
-        } else if (parameters.get(SEARCH_TYPE_KEY) == DSL) {
+        } else if (queryType == DSL) {
             String query          = (String) parameters.get(QUERY_KEY);
             String typeName       = (String) parameters.get(TYPE_NAME_KEY);
             String classification = (String) parameters.get(CLASSIFICATION_KEY);
-            int    offset         = (int) parameters.get(OFFSET_KEY);
+            int    offset         = intParam(parameters.get(OFFSET_KEY), 0);
             String queryStr       = discoveryService.getDslQueryUsingTypeNameClassification(query, typeName, classification);
 
             searchResult = discoveryService.searchUsingDslQuery(queryStr, AtlasConfiguration.SEARCH_MAX_LIMIT.getInt(), offset);
-            queryType    = DSL;
+        } else {
+            LOG.warn("Task: {}: Unable to process task: unknown search type {}", getTaskGuid(), parameters.get(SEARCH_TYPE_KEY));
         }
 
         String attributeLabelMapJson = (String) parameters.get(ATTRIBUTE_LABEL_MAP_KEY);
@@ -279,5 +279,34 @@ public class SearchResultDownloadTask extends AbstractTask {
         } else {
             DOWNLOAD_DIR_PATH = DOWNLOAD_DIR_PATH_DEFAULT + File.separator + CSV_DOWNLOAD_DIR;
         }
+    }
+
+    // Task parameters are JSON-round-tripped through the graph, so enums arrive as strings.
+    private static AtlasSearchResult.AtlasQueryType resolveQueryType(Object rawType) {
+        if (rawType instanceof AtlasSearchResult.AtlasQueryType) {
+            return (AtlasSearchResult.AtlasQueryType) rawType;
+        }
+        if (rawType != null) {
+            try {
+                return AtlasSearchResult.AtlasQueryType.valueOf(String.valueOf(rawType));
+            } catch (IllegalArgumentException e) {
+                LOG.warn("Unknown search type: {}", rawType);
+            }
+        }
+        return null;
+    }
+
+    private static int intParam(Object raw, int defaultValue) {
+        if (raw instanceof Number) {
+            return ((Number) raw).intValue();
+        }
+        if (raw != null) {
+            try {
+                return Integer.parseInt(String.valueOf(raw));
+            } catch (NumberFormatException e) {
+                LOG.warn("Unable to parse integer task parameter: {}", raw);
+            }
+        }
+        return defaultValue;
     }
 }

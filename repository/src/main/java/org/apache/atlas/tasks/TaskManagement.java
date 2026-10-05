@@ -20,8 +20,8 @@ package org.apache.atlas.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.Service;
@@ -89,36 +89,61 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
 
     @Override
     public void start() throws AtlasException {
-        if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
-            startInternal();
-        } else {
-            LOG.info("TaskManagement.start(): deferring until instance activation");
-        }
-
-        this.hasStarted = true;
+        // activation is handled exclusively by instanceIsActive()
     }
 
     @Override
-    public void stop() throws AtlasException {
+    public synchronized void stop() throws AtlasException {
+        if (this.taskExecutor != null) {
+            this.taskExecutor.shutdown();
+        }
+
         LOG.info("TaskManagement: Stopped!");
+    }
+
+    static long getPollIntervalMs() {
+        return AtlasConfiguration.TASKS_POLL_INTERVAL_MS.getLong();
     }
 
     public boolean hasStarted() {
         return this.hasStarted;
     }
 
+    /**
+     * Every active peer node runs its own task worker pool.  Task state is persisted in
+     * JanusGraph, so concurrent pickup across nodes is serialised by graph transactions.
+     */
     @Override
     public void instanceIsActive() throws AtlasException {
         LOG.info("==> TaskManagement.instanceIsActive()");
 
+        // Task workers run on all long-lived nodes: MONOLITHIC, METADATA_SERVER,
+        // NOTIFICATION_PROCESSOR. Entity writes from hook processing can enqueue tasks,
+        // so NOTIFICATION_PROCESSOR needs workers too. Skipped for INITIALIZER.
+        if (!AtlasRunMode.current().runsServer()) {
+            LOG.info("TaskManagement.instanceIsActive(): RUN_MODE={} — skipping task workers",
+                    AtlasRunMode.current());
+            return;
+        }
         startInternal();
+        this.hasStarted = true;
 
         LOG.info("<== TaskManagement.instanceIsActive()");
     }
 
-    @Override
-    public void instanceIsPassive() throws AtlasException {
-        LOG.info("TaskManagement.instanceIsPassive(): no action needed");
+    /**
+     * Invoked once the task factories are known.  Activation runs before Spring finishes wiring
+     * them up, so without this callback a node would come up with workers that have no factory
+     * to execute anything with, and tasks left pending by the previous run would never be picked up.
+     */
+    public void onFactoriesRegistered() {
+        if (!hasStarted) {
+            LOG.info("TaskManagement.onFactoriesRegistered(): node not activated — nothing to start");
+
+            return;
+        }
+
+        startInternal();
     }
 
     @Override
@@ -201,41 +226,35 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             return;
         }
 
-        if (this.taskExecutor == null) {
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
-        }
-
-        this.taskExecutor.addAll(tasks);
+        ensureExecutor().addAll(tasks);
 
         this.statistics.print();
     }
 
-    private void startInternal() {
+    private synchronized TaskExecutor ensureExecutor() {
+        if (this.taskExecutor == null) {
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics);
+        }
+
+        return this.taskExecutor;
+    }
+
+    private synchronized void startInternal() {
         if (!AtlasConfiguration.TASKS_USE_ENABLED.getBoolean()) {
+            return;
+        }
+
+        if (this.taskTypeFactoryMap.isEmpty()) {
+            LOG.warn("No factories registered! Tasks will be picked up once factories are registered.");
+
             return;
         }
 
         LOG.info("TaskManagement: Started!");
 
-        if (this.taskTypeFactoryMap.isEmpty()) {
-            LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
-
-            return;
-        }
-
-        queuePendingTasks();
-    }
-
-    private void queuePendingTasks() {
-        if (!AtlasConfiguration.TASKS_USE_ENABLED.getBoolean()) {
-            return;
-        }
-
-        List<AtlasTask> pendingTasks = this.registry.getPendingTasks();
-
-        LOG.info("TaskManagement: Found: {}: Tasks in pending state.", pendingTasks.size());
-
-        addAll(pendingTasks);
+        // The worker pulls pending work straight from the graph, so anything left over by a
+        // previous run is picked up by this wake-up — no separate requeue step is needed.
+        ensureExecutor().wakeUp();
     }
 
     static class Statistics {
