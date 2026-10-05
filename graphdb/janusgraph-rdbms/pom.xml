@@ -38,9 +38,11 @@
             <artifactId>HikariCP</artifactId>
             <version>${HikariCP.version}</version>
         </dependency>
+        <!-- graphdb API (AtlasUniqueKeyHandler); pulls atlas-intg transitively for ApplicationProperties/AtlasException -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-intg</artifactId>
+            <artifactId>atlas-graphdb-api</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.persistence</groupId>
