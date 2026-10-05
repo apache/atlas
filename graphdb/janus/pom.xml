@@ -39,6 +39,15 @@
         <atlas.storage.backend>hbase</atlas.storage.backend>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <!--
+          ATLAS-5220: The production/distro default storage backend is hbase2 (root pom).
+          The graphdb unit tests, however, must run self-contained/offline against the embedded
+          BerkeleyDB backend (no external HBase/Zookeeper). Override the filtered test property so
+          src/test/resources/atlas-application.properties resolves to berkeleyje, and pull in the
+          janusgraph-berkeleyje jar as a test dependency below. This does not affect production
+          packaging, which continues to default to hbase2.
+        -->
+        <graph.storage.backend>berkeleyje</graph.storage.backend>
     </properties>
 
     <dependencies>
@@ -184,6 +193,27 @@
             <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!--
+          ATLAS-5220: embedded BerkeleyDB backend used only by the graphdb unit tests so they run
+          offline (see graph.storage.backend=berkeleyje override above). Not shipped in production.
+        -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-berkeleyje</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

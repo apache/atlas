@@ -34,6 +34,14 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <!--
+          This module contains no Atlas source code; it only unpacks the third-party
+          hbase-shaded-client jar (excluding 2 META-INF/services entries) and repacks it.
+          The unpacked classes are copied into target/classes, so running SpotBugs here
+          would analyze the entire shaded HBase client and exhaust the analysis heap
+          (java.lang.OutOfMemoryError). Skip SpotBugs for this module.
+        -->
+        <skipCheck>true</skipCheck>
     </properties>
 
     <dependencies>
