@@ -81,6 +81,30 @@ Docker files in this folder create docker images and run them to build Apache At
       docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml up -d --wait
       ```
 
+   5. To build and start the Atlas REST notification server (`atlas-rest`), execute following commands after
+      Atlas is running from step 3 or 4 (Kafka and ZooKeeper from the Atlas stack must be up):
+
+      ```shell
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-rest.yml up -d --build --wait atlas-rest
+      ```
+
+      If Atlas was started with a backend overlay, include the same compose files so services share one project:
+
+      ```shell
+      export ATLAS_BACKEND=postgres
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml -f docker-compose.atlas-rest.yml up -d --build --wait atlas-rest
+      ```
+
+      ```shell
+      export ATLAS_BACKEND=hbase
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-rest.yml up -d --build --wait atlas-rest
+      ```
+
+      The REST server package is produced by the atlas-build step
+      (`dist/apache-atlas-${ATLAS_VERSION}-rest-server.tar.gz`). Hook notifications are posted to port **41000**
+      (for example `http://localhost:41000/rest/api/atlas/v2/notification/topic/{topicName}`). Use the same
+      admin credentials as Atlas (`admin` / `atlasR0cks!`).
+
    Apache Atlas will be installed at /opt/atlas/, and logs are at /var/log/atlas directory.
 
 7. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)
