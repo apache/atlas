@@ -52,6 +52,15 @@
             <directoryMode>0755</directoryMode>
         </fileSet>
 
+        <!-- Default external-HBase build has no target/hbase; ship minimal client conf so atlas_start.py finds hbase-site.xml.
+             Builds with -Pembedded-hbase-solr unpack full HBase below, which overwrites/extends this tree. -->
+        <fileSet>
+            <directory>src/main/hbase-conf</directory>
+            <outputDirectory>hbase/conf</outputDirectory>
+            <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
         <fileSet>
             <directory>target/hbase</directory>
             <outputDirectory>hbase</outputDirectory>
