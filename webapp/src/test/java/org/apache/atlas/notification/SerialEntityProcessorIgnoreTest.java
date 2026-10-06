@@ -83,6 +83,34 @@ public class SerialEntityProcessorIgnoreTest {
     }
 
     @Test
+    public void partialUpdateV2IgnoresFromEntityIdWhenPatchHasNoQualifiedName() throws Exception {
+        AtlasEntity patch = new AtlasEntity("trino_table");
+        patch.setAttribute("parameters", Collections.singletonMap("comment", "x"));
+
+        AtlasObjectId entityId = new AtlasObjectId("trino_table", "qualifiedName", "iceberg.db.t@cm");
+        EntityPartialUpdateRequestV2 request =
+                new EntityPartialUpdateRequestV2("hook", entityId, new AtlasEntityWithExtInfo(patch));
+
+        processor.handleMessage(message(request));
+
+        verify(store, never()).updateEntity(any(), any(), anyBoolean());
+    }
+
+    @Test
+    public void partialUpdateV2WithoutQualifiedNameOnPatchIsAppliedForOtherType() throws Exception {
+        AtlasEntity patch = new AtlasEntity("hive_table");
+        patch.setAttribute("parameters", Collections.singletonMap("comment", "x"));
+
+        AtlasObjectId entityId = new AtlasObjectId("hive_table", "qualifiedName", "db.table@cm");
+        EntityPartialUpdateRequestV2 request =
+                new EntityPartialUpdateRequestV2("hook", entityId, new AtlasEntityWithExtInfo(patch));
+
+        processor.handleMessage(message(request));
+
+        verify(store).updateEntity(any(), any(), eq(true));
+    }
+
+    @Test
     public void partialUpdateOfOtherTypeIsApplied() throws Exception {
         processor.handleMessage(message(partialUpdate("hive_table", "db.table@cm")));
 

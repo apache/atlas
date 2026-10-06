@@ -584,7 +584,9 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                             final AtlasObjectId                entityId             = partialUpdateRequest.getEntityId();
                             final AtlasEntityWithExtInfo       entity               = partialUpdateRequest.getEntity();
 
-                            if (isIgnoredByConfiguredPattern(entity != null ? entity.getEntity() : entityId, kafkaMsg)) {
+                            // entityId has type + qualifiedName; the patch may only have parameters.
+                            if (isIgnoredByConfiguredPattern(entityId, kafkaMsg)
+                                    || (entity != null && isIgnoredByConfiguredPattern(entity.getEntity(), kafkaMsg))) {
                                 break;
                             }
 
