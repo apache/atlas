@@ -17,7 +17,9 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.graph.GraphSandboxUtil;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
@@ -27,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.runner.LocalSolrRunner;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
@@ -34,6 +37,7 @@ import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.ConsistencyModifier;
 import org.janusgraph.core.schema.JanusGraphIndex;
 import org.janusgraph.core.schema.JanusGraphManagement;
+import org.janusgraph.core.schema.Mapping;
 import org.janusgraph.core.schema.SchemaAction;
 import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendTransaction;
@@ -43,6 +47,7 @@ import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.MixedIndexType;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -89,6 +94,10 @@ public class AtlasJanusGraphManagementTest {
     public static void setupClass() throws Exception {
         GraphSandboxUtil.create();
 
+        // Force Constants static init before any MockedStatic<ApplicationProperties> usage.
+        assertNotNull(Constants.STATE_PROPERTY_KEY);
+        assertNotNull(Constants.ENTITY_TYPE_PROPERTY_KEY);
+
         if (useLocalSolr()) {
             LocalSolrRunner.start();
         }
@@ -104,6 +113,7 @@ public class AtlasJanusGraphManagementTest {
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.openMocks(this);
+        AtlasOpenSearchIndexClient.clearKeywordSubfieldFieldsForTests();
         database = new AtlasJanusGraphDatabase();
         atlasGraph = database.getGraph();
         management = new AtlasJanusGraphManagement(mockAtlasGraph, mockJanusManagement);
@@ -454,6 +464,135 @@ public class AtlasJanusGraphManagementTest {
 
         String result = management.addMixedIndex("testIndex", mockPropertyKey, true);
         assertEquals(result, "testProperty_string_encoded");
+    }
+
+    @Test
+    public void testAddMixedIndexOpenSearchStateUsesTextWithKeywordSubfield() throws Exception {
+        Configuration mockConfig = mock(Configuration.class);
+        when(mockConfig.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn("opensearch");
+
+        try (MockedStatic<ApplicationProperties> mockedAppProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            mockedAppProps.when(ApplicationProperties::get).thenReturn(mockConfig);
+
+            AtlasJanusPropertyKey mockPropertyKey = mock(AtlasJanusPropertyKey.class);
+            org.janusgraph.core.PropertyKey mockJanusPropertyKey = mock(org.janusgraph.core.PropertyKey.class);
+            when(mockPropertyKey.getWrappedPropertyKey()).thenReturn(mockJanusPropertyKey);
+            when(mockPropertyKey.getName()).thenReturn(Constants.STATE_PROPERTY_KEY);
+            JanusGraphIndex mockJanusGraphIndex = mock(JanusGraphIndex.class);
+
+            when(mockJanusManagement.getGraphIndex("testIndex")).thenReturn(mockJanusGraphIndex);
+            when(mockAtlasGraph.getIndexFieldName(any(), any(), any())).thenReturn("__state");
+
+            String result = management.addMixedIndex("testIndex", mockPropertyKey, false, true);
+
+            assertEquals(result, "__state");
+            verify(mockJanusManagement).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey), any());
+            verify(mockJanusManagement, never()).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey),
+                    eq(Mapping.STRING.asParameter()));
+            assertTrue(AtlasOpenSearchIndexClient.usesKeywordSubfield("__state"));
+        }
+    }
+
+    @Test
+    public void testAddMixedIndexOpenSearchTypeNameUsesTextWithKeywordSubfield() throws Exception {
+        Configuration mockConfig = mock(Configuration.class);
+        when(mockConfig.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn("opensearch");
+
+        try (MockedStatic<ApplicationProperties> mockedAppProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            mockedAppProps.when(ApplicationProperties::get).thenReturn(mockConfig);
+
+            AtlasJanusPropertyKey mockPropertyKey = mock(AtlasJanusPropertyKey.class);
+            org.janusgraph.core.PropertyKey mockJanusPropertyKey = mock(org.janusgraph.core.PropertyKey.class);
+            when(mockPropertyKey.getWrappedPropertyKey()).thenReturn(mockJanusPropertyKey);
+            when(mockPropertyKey.getName()).thenReturn(Constants.ENTITY_TYPE_PROPERTY_KEY);
+            JanusGraphIndex mockJanusGraphIndex = mock(JanusGraphIndex.class);
+
+            when(mockJanusManagement.getGraphIndex("testIndex")).thenReturn(mockJanusGraphIndex);
+            when(mockAtlasGraph.getIndexFieldName(any(), any(), any())).thenReturn("__typeName");
+
+            String result = management.addMixedIndex("testIndex", mockPropertyKey, false, true);
+
+            assertEquals(result, "__typeName");
+            verify(mockJanusManagement).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey), any());
+            verify(mockJanusManagement, never()).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey),
+                    eq(Mapping.STRING.asParameter()));
+            assertTrue(AtlasOpenSearchIndexClient.usesKeywordSubfield("__typeName"));
+        }
+    }
+
+    @Test
+    public void testAddMixedIndexSolrStateKeepsDefaultMapping() throws Exception {
+        Configuration mockConfig = mock(Configuration.class);
+        when(mockConfig.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn("solr");
+
+        try (MockedStatic<ApplicationProperties> mockedAppProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            mockedAppProps.when(ApplicationProperties::get).thenReturn(mockConfig);
+
+            AtlasJanusPropertyKey mockPropertyKey = mock(AtlasJanusPropertyKey.class);
+            org.janusgraph.core.PropertyKey mockJanusPropertyKey = mock(org.janusgraph.core.PropertyKey.class);
+            when(mockPropertyKey.getWrappedPropertyKey()).thenReturn(mockJanusPropertyKey);
+            when(mockPropertyKey.getName()).thenReturn(Constants.STATE_PROPERTY_KEY);
+            JanusGraphIndex mockJanusGraphIndex = mock(JanusGraphIndex.class);
+
+            when(mockJanusManagement.getGraphIndex("testIndex")).thenReturn(mockJanusGraphIndex);
+            when(mockAtlasGraph.getIndexFieldName(any(), any())).thenReturn("__state");
+
+            String result = management.addMixedIndex("testIndex", mockPropertyKey, false);
+
+            assertEquals(result, "__state");
+            verify(mockJanusManagement).addIndexKey(mockJanusGraphIndex, mockJanusPropertyKey);
+            verify(mockJanusManagement, never()).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey),
+                    eq(Mapping.STRING.asParameter()));
+        }
+    }
+
+    @Test
+    public void testAddMixedIndexElasticsearchStateKeepsDefaultMapping() throws Exception {
+        Configuration mockConfig = mock(Configuration.class);
+        when(mockConfig.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn("elasticsearch");
+
+        try (MockedStatic<ApplicationProperties> mockedAppProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            mockedAppProps.when(ApplicationProperties::get).thenReturn(mockConfig);
+
+            AtlasJanusPropertyKey mockPropertyKey = mock(AtlasJanusPropertyKey.class);
+            org.janusgraph.core.PropertyKey mockJanusPropertyKey = mock(org.janusgraph.core.PropertyKey.class);
+            when(mockPropertyKey.getWrappedPropertyKey()).thenReturn(mockJanusPropertyKey);
+            when(mockPropertyKey.getName()).thenReturn(Constants.STATE_PROPERTY_KEY);
+            JanusGraphIndex mockJanusGraphIndex = mock(JanusGraphIndex.class);
+
+            when(mockJanusManagement.getGraphIndex("testIndex")).thenReturn(mockJanusGraphIndex);
+            when(mockAtlasGraph.getIndexFieldName(any(), any())).thenReturn("__state");
+
+            String result = management.addMixedIndex("testIndex", mockPropertyKey, false);
+
+            assertEquals(result, "__state");
+            verify(mockJanusManagement).addIndexKey(mockJanusGraphIndex, mockJanusPropertyKey);
+            verify(mockJanusManagement, never()).addIndexKey(eq(mockJanusGraphIndex), eq(mockJanusPropertyKey),
+                    eq(Mapping.STRING.asParameter()));
+        }
+    }
+
+    @Test
+    public void testGetIndexFieldNameOpenSearchStateUsesTextWithKeywordSubfield() throws Exception {
+        Configuration mockConfig = mock(Configuration.class);
+        when(mockConfig.getString(ApplicationProperties.INDEX_BACKEND_CONF)).thenReturn("opensearch");
+
+        try (MockedStatic<ApplicationProperties> mockedAppProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            mockedAppProps.when(ApplicationProperties::get).thenReturn(mockConfig);
+
+            AtlasJanusPropertyKey mockPropertyKey = mock(AtlasJanusPropertyKey.class);
+            org.janusgraph.core.PropertyKey mockJanusPropertyKey = mock(org.janusgraph.core.PropertyKey.class);
+            when(mockPropertyKey.getWrappedPropertyKey()).thenReturn(mockJanusPropertyKey);
+            when(mockPropertyKey.getName()).thenReturn(Constants.STATE_PROPERTY_KEY);
+            JanusGraphIndex mockJanusGraphIndex = mock(JanusGraphIndex.class);
+
+            when(mockJanusManagement.getGraphIndex("testIndex")).thenReturn(mockJanusGraphIndex);
+            when(mockAtlasGraph.getIndexFieldName(any(), any(), any())).thenReturn("__state");
+
+            String result = management.getIndexFieldName("testIndex", mockPropertyKey, false, true);
+
+            assertEquals(result, "__state");
+        }
     }
 
     @Test
