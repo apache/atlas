@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -57,6 +58,7 @@ import org.janusgraph.graphdb.log.StandardTransactionLogProcessor;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.IndexType;
 import org.janusgraph.graphdb.types.MixedIndexType;
+import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,6 +85,23 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     private static final boolean        lockEnabled            = AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean();
     private static final Parameter<?>[] STRING_PARAMETER_ARRAY = new Parameter[] {Mapping.STRING.asParameter()};
+
+    private static final Parameter<?>[] TEXT_WITH_KEYWORD_SUBFIELD_PARAMETERS = new Parameter[] {
+        Mapping.TEXT.asParameter(),
+        Parameter.of(ParameterType.customParameterName("fields"), createKeywordSubfieldsParameter())
+    };
+
+    private static Map<String, Object> createKeywordSubfieldsParameter() {
+        Map<String, Object> keywordMapping = new HashMap<>();
+        keywordMapping.put("type", "keyword");
+
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("keyword", keywordMapping);
+
+        return fields;
+    }
+
+    static final String MAPPED_NAME_SUFFIX_SEPARATOR = "__";
 
     private static final char[] RESERVED_CHARS = {'{', '}', '"', '$', Token.SEPARATOR_CHAR};
 
@@ -328,26 +347,40 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
+    public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, boolean withKeywordSubfield) {
         PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
+        Parameter<?>[]  indexParameters = resolveIndexParameters(isStringField, withKeywordSubfield);
+        Parameter<?>[]  registrationParameters = indexParameters;
 
-        if (isStringField) {
-            management.addIndexKey(janusGraphIndex, janusKey, Mapping.STRING.asParameter());
+        if (isOpenSearchIndexBackend()) {
+            // A key deleted from Atlas is only renamed in JanusGraph; it keeps its index registration, and with
+            // index.search.map-name=true its mapped field name. Pin a unique, persisted mapped name for the new key
+            // so it never collides with (or shares an OpenSearch field/mapping with) the retired key.
+            String defaultName = graph.getIndexFieldName(propertyKey, janusGraphIndex, indexParameters);
+            String uniqueName  = defaultName == null ? null : resolveUniqueMappedName(janusGraphIndex, defaultName);
 
-            LOG.debug("created a string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
-        } else {
-            management.addIndexKey(janusGraphIndex, janusKey);
+            if (uniqueName != null && !uniqueName.equals(defaultName)) {
+                LOG.info("mixed index '{}': field name '{}' is already registered by another property key; using '{}' for '{}'.",
+                        indexName, defaultName, uniqueName, propertyKey.getName());
 
-            LOG.debug("created a default type for {} with janueKey {}.", propertyKey.getName(), janusKey);
+                registrationParameters = appendParameter(indexParameters, ParameterType.MAPPED_NAME.getParameter(uniqueName));
+            }
         }
 
-        String encodedName;
-
-        if (isStringField) {
-            encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
+        if (registrationParameters.length == 0) {
+            management.addIndexKey(janusGraphIndex, janusKey);
+            LOG.debug("created a default type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         } else {
-            encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex);
+            management.addIndexKey(janusGraphIndex, janusKey, registrationParameters);
+            LOG.debug("created indexed type for {} with janueKey {} using {} parameter(s).",
+                    propertyKey.getName(), janusKey, registrationParameters.length);
+        }
+
+        String encodedName = resolveIndexFieldName(janusGraphIndex, propertyKey, janusKey, indexParameters);
+
+        if (usesKeywordSubfieldMapping(isStringField, withKeywordSubfield)) {
+            AtlasOpenSearchIndexClient.registerKeywordSubfieldField(encodedName);
         }
 
         LOG.info("property '{}' is encoded to '{}'.", propertyKey.getName(), encodedName);
@@ -356,13 +389,108 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
+    public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField, boolean withKeywordSubfield) {
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
+        PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
 
+        return resolveIndexFieldName(janusGraphIndex, propertyKey, janusKey, resolveIndexParameters(isStringField, withKeywordSubfield));
+    }
+
+    /**
+     * The persisted {@link ParameterType#MAPPED_NAME} of a key already registered in the mixed index is
+     * authoritative; the default name derived from the key name is only valid for a key that is not yet registered.
+     */
+    private String resolveIndexFieldName(JanusGraphIndex index, AtlasPropertyKey propertyKey, PropertyKey janusKey, Parameter<?>[] parameters) {
+        String persisted = isOpenSearchIndexBackend() ? findPersistedMappedName(index, janusKey) : null;
+
+        return persisted != null ? persisted : graph.getIndexFieldName(propertyKey, index, parameters);
+    }
+
+    private static String findPersistedMappedName(JanusGraphIndex index, PropertyKey key) {
+        PropertyKey[] registeredKeys = index.getFieldKeys();
+
+        if (registeredKeys == null) {
+            return null;
+        }
+
+        for (PropertyKey registered : registeredKeys) {
+            if (registered.equals(key)) {
+                for (Parameter<?> parameter : index.getParametersFor(registered)) {
+                    if (ParameterType.MAPPED_NAME.getName().equals(parameter.key())) {
+                        return String.valueOf(parameter.value());
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    private static String resolveUniqueMappedName(JanusGraphIndex index, String defaultName) {
+        Set<String>   inUse          = new HashSet<>();
+        PropertyKey[] registeredKeys = index.getFieldKeys();
+
+        if (registeredKeys != null) {
+            for (PropertyKey registered : registeredKeys) {
+                String mapped = findPersistedMappedName(index, registered);
+
+                if (mapped != null) {
+                    inUse.add(toPhysicalFieldName(mapped));
+                }
+            }
+        }
+
+        String candidate = defaultName;
+
+        for (int i = 1; inUse.contains(toPhysicalFieldName(candidate)); i++) {
+            candidate = defaultName + MAPPED_NAME_SUFFIX_SEPARATOR + i;
+        }
+
+        return candidate;
+    }
+
+    /**
+     * Collision must be detected on the physical OpenSearch field ({@code OpenSearchIndex#mapKey2Field} replaces
+     * {@code .} and space with the replacement character). Two distinct mapped strings can still alias one field.
+     */
+    static String toPhysicalFieldName(String mappedName) {
+        return mappedName.replace(' ', '\u2022').replace('.', '\u2022');
+    }
+
+    private static Parameter<?>[] appendParameter(Parameter<?>[] parameters, Parameter<?> extra) {
+        Parameter<?>[] ret = new Parameter<?>[parameters.length + 1];
+
+        System.arraycopy(parameters, 0, ret, 0, parameters.length);
+
+        ret[parameters.length] = extra;
+
+        return ret;
+    }
+
+    private static Parameter<?>[] resolveIndexParameters(boolean isStringField, boolean withKeywordSubfield) {
         if (isStringField) {
-            return graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
-        } else {
-            return graph.getIndexFieldName(propertyKey, janusGraphIndex);
+            return STRING_PARAMETER_ARRAY;
+        }
+
+        if (usesKeywordSubfieldMapping(isStringField, withKeywordSubfield)) {
+            return TEXT_WITH_KEYWORD_SUBFIELD_PARAMETERS;
+        }
+
+        return new Parameter[0];
+    }
+
+    private static boolean usesKeywordSubfieldMapping(boolean isStringField, boolean withKeywordSubfield) {
+        return withKeywordSubfield && !isStringField && isOpenSearchIndexBackend();
+    }
+
+    private static boolean isOpenSearchIndexBackend() {
+        try {
+            return ApplicationProperties.INDEX_BACKEND_OPENSEARCH.equals(
+                    ApplicationProperties.get().getString(ApplicationProperties.INDEX_BACKEND_CONF));
+        } catch (Exception e) {
+            return false;
         }
     }
 

@@ -54,16 +54,20 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final String       INDEX_MAP_NAME_CONF              = "atlas.graph.index.search.map-name";
     public static final String       SOLR_WAIT_SEARCHER_CONF          = "atlas.graph.index.search.solr.wait-searcher";
     public static final String       ELASTICSEARCH_INDEX_NAME_CONF    = "atlas.graph.index.search.elasticsearch.index-name";
+    public static final String       OPENSEARCH_INDEX_NAME_CONF       = "atlas.graph.index.search.opensearch.index-name";
+    public static final String       OPENSEARCH_MAPPING_FIELDS_LIMIT  = "atlas.graph.index.search.opensearch.create.ext.mapping.total_fields.limit";
     public static final String       INDEX_RECOVERY_CONF              = "atlas.index.recovery.enable";
     public static final String       ENABLE_FULLTEXT_SEARCH_CONF      = "atlas.search.fulltext.enable";
     public static final String       ENABLE_FREETEXT_SEARCH_CONF      = "atlas.search.freetext.enable";
     public static final String       ATLAS_RUN_MODE                   = "atlas.run.mode";
     public static final String       GRAPHBD_BACKEND_JANUS            = "janus";
     public static final String       DEFAULT_INDEX_NAME               = "janusgraph";
+    public static final int          DEFAULT_OPENSEARCH_MAPPING_LIMIT = 3000;
     public static final String       STORAGE_BACKEND_HBASE            = "hbase";
     public static final String       STORAGE_BACKEND_HBASE2           = "hbase2";
     public static final String       INDEX_BACKEND_SOLR               = "solr";
     public static final String       INDEX_BACKEND_ELASTICSEARCH      = "elasticsearch";
+    public static final String       INDEX_BACKEND_OPENSEARCH         = "opensearch";
     public static final String       LDAP_TYPE                        = "atlas.authentication.method.ldap.type";
     public static final String       LDAP                             = "LDAP";
     public static final String       AD                               = "AD";
@@ -442,6 +446,17 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             addPropertyDirect(ELASTICSEARCH_INDEX_NAME_CONF, DEFAULT_INDEX_NAME);
 
             LOG.info("Setting elasticsearch.index-name property '{}'", DEFAULT_INDEX_NAME);
+        } else if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_OPENSEARCH)) {
+            addPropertyDirect(OPENSEARCH_INDEX_NAME_CONF, DEFAULT_INDEX_NAME);
+            LOG.info("Setting opensearch.index-name property '{}'", DEFAULT_INDEX_NAME);
+
+            if (!containsKey(OPENSEARCH_MAPPING_FIELDS_LIMIT)) {
+                addPropertyDirect(OPENSEARCH_MAPPING_FIELDS_LIMIT, DEFAULT_OPENSEARCH_MAPPING_LIMIT);
+                LOG.info("Setting {} = {}", OPENSEARCH_MAPPING_FIELDS_LIMIT, DEFAULT_OPENSEARCH_MAPPING_LIMIT);
+            } else {
+                LOG.info("Using configured {} = {}", OPENSEARCH_MAPPING_FIELDS_LIMIT,
+                        getInt(OPENSEARCH_MAPPING_FIELDS_LIMIT, DEFAULT_OPENSEARCH_MAPPING_LIMIT));
+            }
         }
 
         // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 500000)
