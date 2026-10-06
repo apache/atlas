@@ -253,6 +253,30 @@
             </exclusions>
         </dependency>
 
+        <!--
+          ATLAS-5220: embedded berkeleyje backend for tests only. ATLAS-5220 made the JanusGraph
+          storage backends profile-scoped in atlas-graphdb-janus, so the berkeleyje jar is no longer
+          pulled transitively under -Pdist. Tests here open a real JanusGraph on berkeleyje (see the
+          test atlas-application.properties); add the jar explicitly so they run offline. Not shipped
+          in production (test scope).
+        -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-berkeleyje</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>

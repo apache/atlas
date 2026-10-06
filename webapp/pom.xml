@@ -537,6 +537,29 @@
             <version>3.4</version>
             <scope>test</scope>
         </dependency>
+
+        <!--
+          ATLAS-5220: embedded berkeleyje backend for tests only. The storage-berkeleyje profile is
+          not active under -Pdist, so the jar is otherwise absent on the test classpath. webapp tests
+          open JanusGraph on berkeleyje (see test atlas-application.properties); add it explicitly so
+          they run offline. Test scope keeps it out of the shipped WAR.
+        -->
+        <dependency>
+            <groupId>org.janusgraph</groupId>
+            <artifactId>janusgraph-berkeleyje</artifactId>
+            <version>${janusgraph.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- PAM -->
         <dependency>
             <groupId>org.apache.atlas</groupId>
