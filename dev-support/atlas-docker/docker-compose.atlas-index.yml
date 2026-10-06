@@ -1,0 +1,10 @@
+services:
+  solr:
+    extends:
+      file: docker-compose.atlas-common.yml
+      service: atlas-solr
+
+  opensearch:
+    extends:
+      file: docker-compose.atlas-common.yml
+      service: atlas-opensearch
