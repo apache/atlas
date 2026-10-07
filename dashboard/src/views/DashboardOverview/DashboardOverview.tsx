@@ -32,6 +32,7 @@ import LatestEntitiesList from "./LatestEntitiesList";
 import RecentActivity from "./RecentActivity";
 import KafkaTopicSummaryCard from "./KafkaTopicSummaryCard";
 import ClassificationDistributionCard from "./ClassificationDistributionCard";
+import { LATEST_ENTITIES_DISPLAY_LIMIT } from "./latestEntitiesList.utils";
 
 const DashboardOverview = () => {
 	const dispatch = useAppDispatch();
@@ -86,7 +87,7 @@ const DashboardOverview = () => {
 
 	const latestEntitiesList = useMemo(() => {
 		if (!Array.isArray(latestEntities)) return [];
-		return latestEntities.slice(0, 7) as { guid?: string; typeName?: string; attributes?: { name?: string; qualifiedName?: string; __timestamp?: number } }[];
+		return latestEntities.slice(0, LATEST_ENTITIES_DISPLAY_LIMIT) as { guid?: string; typeName?: string; attributes?: { name?: string; qualifiedName?: string; __timestamp?: number } }[];
 	}, [latestEntities]);
 
 	return (
