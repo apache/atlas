@@ -193,6 +193,12 @@
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
         </fileSet>
+        <fileSet>
+            <directory>../addons/nutch-bridge/src/bin</directory>
+            <outputDirectory>hook-bin</outputDirectory>
+            <fileMode>0755</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
 
         <!-- for migration setup -->
         <fileSet>
