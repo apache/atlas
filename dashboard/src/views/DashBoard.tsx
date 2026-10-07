@@ -21,34 +21,36 @@ import DashboardOverview from "./DashboardOverview/DashboardOverview";
 import { useAppSelector } from "@hooks/reducerHook";
 
 const DashBoard = () => {
-	const dashboardRefreshVersion = useAppSelector((state) => state.dashboardRefresh.version);
+  const dashboardRefreshVersion = useAppSelector(
+    (state) => state.dashboardRefresh.version,
+  );
 
-	return (
-		<Stack
-			width="100%"
-			maxWidth="100%"
-			alignItems="stretch"
-			justifyContent="flex-start"
-			position="relative"
-			height="100%"
-			flex="1"
-			padding={0}
-			spacing={2}
-			sx={{ boxSizing: "border-box", overflow: "hidden" }}
-		>
-			<Stack
-				direction="row"
-				width="100%"
-				justifyContent="center"
-				sx={{ mb: 2, flexShrink: 0 }}
-			>
-				<QuickSearch key={dashboardRefreshVersion} />
-			</Stack>
-			<Stack width="100%" flex={1} sx={{ minWidth: 0 }}>
-				<DashboardOverview />
-			</Stack>
-		</Stack>
-	);
+  return (
+    <Stack
+      width="100%"
+      maxWidth="100%"
+      alignItems="stretch"
+      justifyContent="flex-start"
+      position="relative"
+      height="100%"
+      flex="1"
+      padding={0}
+      spacing={0}
+      className="dashboard__stack"
+    >
+      <Stack
+        direction="row"
+        width="100%"
+        justifyContent="center"
+        className="dashboard__stack-item"
+      >
+        <QuickSearch key={dashboardRefreshVersion} />
+      </Stack>
+      <Stack width="100%" flex={1} className="dashboard__stack-inner">
+        <DashboardOverview />
+      </Stack>
+    </Stack>
+  );
 };
 
 export default DashBoard;
