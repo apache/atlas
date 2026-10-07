@@ -1,4 +1,4 @@
-<!--
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -13,21 +13,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
--->
+ */
 
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Backend: populate content with the per-request CSP nonce (same value as script/style nonce attrs). -->
-    <meta name="csp-nonce" content="" />
-    <title>Atlas</title>
-  </head>
+import createCache, { type EmotionCache } from "@emotion/cache";
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/Main.tsx"></script>
-  </body>
-</html>
+export const createEmotionCache = (cspNonce?: string): EmotionCache => {
+  const trimmedNonce = cspNonce?.trim();
+
+  return createCache({
+    key: "css",
+    ...(trimmedNonce ? { nonce: trimmedNonce } : {})
+  });
+};

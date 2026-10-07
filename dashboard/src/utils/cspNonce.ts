@@ -1,4 +1,4 @@
-<!--
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -13,21 +13,38 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
--->
+ */
 
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Backend: populate content with the per-request CSP nonce (same value as script/style nonce attrs). -->
-    <meta name="csp-nonce" content="" />
-    <title>Atlas</title>
-  </head>
+export const CSP_NONCE_META_NAME = "csp-nonce";
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/Main.tsx"></script>
-  </body>
-</html>
+declare global {
+  interface Window {
+    __CSP_NONCE__?: string;
+  }
+}
+
+const getTrimmedAttribute = (value: string | null | undefined): string | undefined => {
+  const trimmedValue = value?.trim();
+
+  return trimmedValue ? trimmedValue : undefined;
+};
+
+export const getCspNonce = (): string | undefined => {
+  const metaNonce = getTrimmedAttribute(
+    document.querySelector(`meta[name="${CSP_NONCE_META_NAME}"]`)?.getAttribute("content")
+  );
+
+  if (metaNonce) {
+    return metaNonce;
+  }
+
+  const scriptNonce = getTrimmedAttribute(
+    document.querySelector("script[nonce]")?.getAttribute("nonce")
+  );
+
+  if (scriptNonce) {
+    return scriptNonce;
+  }
+
+  return getTrimmedAttribute(window.__CSP_NONCE__);
+};
