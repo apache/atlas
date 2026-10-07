@@ -22,30 +22,33 @@ import versions from './docz-lib/config/versions';
 module.exports = {
 	title: "Apache Atlas – Data Governance and Metadata framework for Hadoop",
 	description: "Apache Atlas – Data Governance and Metadata framework for Hadoop",
+	ignore: ['**/readme.md'],
 	files: "**/*.{md,mdx}",
 	base: "/",
-	baseUrl:"./public",
+	baseUrl: "./public",
 	src: "./src",
 	public: "./src/resources",
-	dest: '/site',
+	dest: 'site',
 	menu: menu,
 	atlasVersions: versions,
 	theme: "theme/",
-	htmlContext:{
+	htmlContext: {
 		favicon: "public/images/favicon.ico"
 	},
 	modifyBundlerConfig: config => {
 		config.module.rules.push(
 			{
 				test: /\.(js)$/,
-				exclude: /node_modules/,
+				exclude: /node_modules\/(?!(axios)\/)/,
 				use: {
 					loader: "babel-loader",
 					query: {
 						presets: ["@babel/react"],
 						plugins: [
 							"@babel/plugin-proposal-class-properties",
-							"@babel/plugin-syntax-dynamic-import"
+							"@babel/plugin-syntax-dynamic-import",
+							"@babel/plugin-proposal-nullish-coalescing-operator",
+							"@babel/plugin-proposal-optional-chaining"
 						]
 					}
 				}
