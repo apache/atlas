@@ -57,6 +57,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class AsyncImportServiceTest {
@@ -72,6 +73,10 @@ public class AsyncImportServiceTest {
 
         dataAccess         = mock(DataAccess.class);
         asyncImportService = new AsyncImportService(dataAccess);
+
+        // keep retry-backed reads from sleeping through the configured graph storage delay
+        asyncImportService.retryDelayMs = 1;
+        asyncImportService.maxAttempts  = 3;
     }
 
     @Test
@@ -100,6 +105,60 @@ public class AsyncImportServiceTest {
 
         assertNull(result);
         verify(dataAccess, times(1)).load(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testFetchImportRequestWithRetrySucceedsAfterTransientFailure() throws AtlasBaseException {
+        String                  importId    = "import-transient";
+        AtlasAsyncImportRequest mockRequest = new AtlasAsyncImportRequest();
+
+        mockRequest.setImportId(importId);
+
+        doThrow(new RuntimeException("backend unavailable"))
+                .doThrow(new RuntimeException("backend unavailable"))
+                .doReturn(mockRequest)
+                .when(dataAccess).load(any(AtlasAsyncImportRequest.class));
+
+        AtlasAsyncImportRequest result = asyncImportService.fetchImportRequestByImportIdWithRetry(importId);
+
+        assertNotNull(result);
+        assertEquals(result.getImportId(), importId);
+        verify(dataAccess, times(3)).load(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testFetchImportRequestWithRetryGivesUpAfterMaxAttempts() throws AtlasBaseException {
+        when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenThrow(new RuntimeException("backend unavailable"));
+
+        assertNull(asyncImportService.fetchImportRequestByImportIdWithRetry("import-unreadable"));
+
+        verify(dataAccess, times(3)).load(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testFetchImportRequestWithRetryDoesNotRetryMissingRequest() throws AtlasBaseException {
+        when(dataAccess.load(any(AtlasAsyncImportRequest.class)))
+                .thenThrow(new AtlasBaseException(org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, "type", "attrs"));
+
+        assertNull(asyncImportService.fetchImportRequestByImportIdWithRetry("import-missing"));
+
+        // a request that does not exist is a definitive answer, retrying it only delays the caller
+        verify(dataAccess, times(1)).load(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testFetchImportRequestWithRetryServesCachedRequestWithoutLoading() throws AtlasBaseException {
+        AtlasAsyncImportRequest cached = new AtlasAsyncImportRequest(new AtlasImportResult());
+
+        cached.setImportId("import-cached");
+        cached.setGuid("guid-cached");
+        cached.setStatus(PROCESSING);
+
+        asyncImportService.populateCache(cached);
+
+        assertSame(asyncImportService.fetchImportRequestByImportIdWithRetry("import-cached"), cached);
+
+        verify(dataAccess, times(0)).load(any(AtlasAsyncImportRequest.class));
     }
 
     @Test
@@ -239,6 +298,130 @@ public class AsyncImportServiceTest {
         assertNotNull(result);
         assertEquals(result.getImportId(), importId);
         verify(dataAccess, times(1)).load(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testResolveAbandonedRequestResolvesIncompleteProcessingRequest() throws AtlasBaseException {
+        String importId = "import-abandoned";
+
+        AtlasAsyncImportRequest request = new AtlasAsyncImportRequest(new AtlasImportResult());
+        request.setImportId(importId);
+        request.setStatus(PROCESSING);
+        request.getImportDetails().setTotalEntitiesCount(5);
+        request.getImportDetails().setImportedEntitiesCount(2);
+
+        when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(request);
+
+        // the topic is drained, so the request must be resolved even though its counters are short
+        AtlasAsyncImportRequest resolved = asyncImportService.resolveAbandonedRequest(importId);
+
+        assertEquals(resolved.getStatus(), AtlasAsyncImportRequest.ImportStatus.PARTIAL_SUCCESS);
+        assertTrue(resolved.getCompletedTime() > 0);
+        verify(dataAccess, times(1)).saveNoLoad(request);
+    }
+
+    @Test
+    public void testResolveAbandonedRequestResolvesRequestThatImportedNothing() throws AtlasBaseException {
+        String importId = "import-abandoned-empty";
+
+        AtlasAsyncImportRequest request = new AtlasAsyncImportRequest(new AtlasImportResult());
+        request.setImportId(importId);
+        request.setStatus(PROCESSING);
+        request.getImportDetails().setTotalEntitiesCount(5);
+
+        when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(request);
+
+        AtlasAsyncImportRequest resolved = asyncImportService.resolveAbandonedRequest(importId);
+
+        assertEquals(resolved.getStatus(), AtlasAsyncImportRequest.ImportStatus.FAILED);
+        verify(dataAccess, times(1)).saveNoLoad(request);
+    }
+
+    @Test
+    public void testResolveAbandonedRequestLeavesNonProcessingRequestUntouched() throws AtlasBaseException {
+        String importId = "import-waiting";
+
+        AtlasAsyncImportRequest request = new AtlasAsyncImportRequest(new AtlasImportResult());
+        request.setImportId(importId);
+        request.setStatus(WAITING);
+
+        when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(request);
+
+        AtlasAsyncImportRequest resolved = asyncImportService.resolveAbandonedRequest(importId);
+
+        assertEquals(resolved.getStatus(), WAITING);
+        verify(dataAccess, times(0)).saveNoLoad(request);
+    }
+
+    @Test
+    public void testResolveRequestStatusKeepsInFlightProgressCached() throws AtlasBaseException {
+        String importId = "import-in-flight";
+
+        AtlasAsyncImportRequest inFlight = new AtlasAsyncImportRequest(new AtlasImportResult());
+        inFlight.setImportId(importId);
+        inFlight.setGuid("guid-in-flight");
+        inFlight.setStatus(PROCESSING);
+        inFlight.getImportDetails().setTotalEntitiesCount(5);
+        inFlight.getImportDetails().setImportedEntitiesCount(4);
+
+        asyncImportService.populateCache(inFlight);
+
+        // the persisted copy is stale: progress is not written to the graph until the import completes
+        AtlasAsyncImportRequest persisted = new AtlasAsyncImportRequest(new AtlasImportResult());
+        persisted.setImportId(importId);
+        persisted.setStatus(PROCESSING);
+        persisted.getImportDetails().setTotalEntitiesCount(5);
+
+        when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(persisted);
+
+        AtlasAsyncImportRequest resolved = asyncImportService.resolveRequestStatus(importId);
+
+        assertSame(resolved, inFlight);
+        assertEquals(resolved.getImportDetails().getImportedEntitiesCount(), 4);
+        verify(dataAccess, times(0)).load(any(AtlasAsyncImportRequest.class));
+
+        // the entry must still be cached, otherwise the running import loses its progress
+        assertSame(asyncImportService.fetchImportRequestByImportId(importId), inFlight);
+    }
+
+    @Test
+    public void testCacheDoesNotEvictInFlightRequestUnderSizePressure() throws InterruptedException {
+        AtlasAsyncImportRequest inFlight = new AtlasAsyncImportRequest(new AtlasImportResult());
+        inFlight.setImportId("import-processing");
+        inFlight.setGuid("guid-processing");
+        inFlight.setStatus(PROCESSING);
+        inFlight.getImportDetails().setImportedEntitiesCount(7);
+
+        asyncImportService.populateCache(inFlight);
+
+        // eviction targets the oldest entry, so make the in-flight request the unambiguous candidate
+        Thread.sleep(5);
+
+        for (int i = 0; i < 25; i++) {
+            AtlasAsyncImportRequest terminal = new AtlasAsyncImportRequest(new AtlasImportResult());
+            terminal.setImportId("import-done-" + i);
+            terminal.setGuid("guid-done-" + i);
+            terminal.setStatus(SUCCESSFUL);
+
+            asyncImportService.populateCache(terminal);
+        }
+
+        assertSame(asyncImportService.fetchImportRequestByImportId("import-processing"), inFlight);
+    }
+
+    @Test
+    public void testIsTerminalPinsOnlyInFlightRequests() {
+        AtlasAsyncImportRequest request = new AtlasAsyncImportRequest(new AtlasImportResult());
+
+        for (AtlasAsyncImportRequest.ImportStatus status : AtlasAsyncImportRequest.ImportStatus.values()) {
+            request.setStatus(status);
+
+            boolean inFlight = status == AtlasAsyncImportRequest.ImportStatus.STAGING
+                    || status == WAITING
+                    || status == PROCESSING;
+
+            assertEquals(AsyncImportService.isTerminal(request), !inFlight, "unexpected pinning for status " + status);
+        }
     }
 
     @AfterMethod

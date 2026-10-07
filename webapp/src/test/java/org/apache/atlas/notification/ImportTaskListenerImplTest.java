@@ -34,6 +34,7 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
@@ -97,6 +98,7 @@ public class ImportTaskListenerImplTest {
         asyncImportService = mock(AsyncImportService.class);
 
         when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(importRequest);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry("import123")).thenReturn(importRequest);
 
         notificationHookConsumer = mock(NotificationHookConsumer.class);
         importTaskListener       = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
@@ -108,6 +110,7 @@ public class ImportTaskListenerImplTest {
 
         importRequest = createImportRequestMock("import123", "topic1");
         when(asyncImportService.fetchImportRequestByImportId(any(String.class))).thenReturn(importRequest);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry(any(String.class))).thenReturn(importRequest);
 
         importTaskListener = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
     }
@@ -179,6 +182,62 @@ public class ImportTaskListenerImplTest {
         verify(requestQueue, times(1)).offer("import2", 5, TimeUnit.SECONDS);
         verify(requestQueue, times(1)).offer("import3", 5, TimeUnit.SECONDS);
         verify(asyncImportService, times(1)).fetchQueuedImportRequests();
+    }
+
+    @Test
+    public void testPopulateRequestQueueSkipsAndResolvesDrainedInProgressImport() throws Exception {
+        try {
+            when(asyncImportService.fetchQueuedImportRequests()).thenReturn(Collections.emptyList());
+            when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.singletonList("drained-import"));
+            when(notificationHookConsumer.isImportTopicFullyConsumed(anyString())).thenReturn(true);
+
+            importTaskListener.populateRequestQueue();
+
+            // enqueueing it would start a consumer on an empty topic and hold the import permit forever
+            verify(requestQueue, never()).offer(eq("drained-import"), anyLong(), any(TimeUnit.class));
+            verify(asyncImportService, times(1)).resolveAbandonedRequest("drained-import");
+        } finally {
+            restoreQueueStubs();
+        }
+    }
+
+    @Test
+    public void testPopulateRequestQueueResumesInProgressImportWithPendingMessages() throws Exception {
+        try {
+            when(asyncImportService.fetchQueuedImportRequests()).thenReturn(Collections.emptyList());
+            when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.singletonList("resumable-import"));
+            when(notificationHookConsumer.isImportTopicFullyConsumed(anyString())).thenReturn(false);
+
+            importTaskListener.populateRequestQueue();
+
+            verify(requestQueue, times(1)).offer("resumable-import", 5, TimeUnit.SECONDS);
+            verify(asyncImportService, never()).resolveAbandonedRequest("resumable-import");
+        } finally {
+            restoreQueueStubs();
+        }
+    }
+
+    @Test
+    public void testPopulateRequestQueueEnqueuesDrainedImportWhenResolutionFails() throws Exception {
+        try {
+            when(asyncImportService.fetchQueuedImportRequests()).thenReturn(Collections.emptyList());
+            when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.singletonList("unresolvable-import"));
+            when(notificationHookConsumer.isImportTopicFullyConsumed(anyString())).thenReturn(true);
+            doThrow(new AtlasBaseException("resolution failed")).when(asyncImportService).resolveAbandonedRequest("unresolvable-import");
+
+            importTaskListener.populateRequestQueue();
+
+            // a failed resolution must still keep the drained import out of the queue
+            verify(requestQueue, never()).offer(eq("unresolvable-import"), anyLong(), any(TimeUnit.class));
+        } finally {
+            restoreQueueStubs();
+        }
+    }
+
+    private void restoreQueueStubs() {
+        when(asyncImportService.fetchQueuedImportRequests()).thenReturn(Collections.emptyList());
+        when(asyncImportService.fetchInProgressImportIds()).thenReturn(Collections.emptyList());
+        when(notificationHookConsumer.isImportTopicFullyConsumed(anyString())).thenReturn(false);
     }
 
     @Test
@@ -293,6 +352,7 @@ public class ImportTaskListenerImplTest {
 
         when(request.getStatus()).thenReturn(WAITING);
         when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(request);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry("import123")).thenReturn(request);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
 
         CountDownLatch consumerStarted = new CountDownLatch(1);
@@ -317,6 +377,7 @@ public class ImportTaskListenerImplTest {
 
         when(request.getStatus()).thenReturn(WAITING);
         when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(request);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry("import123")).thenReturn(request);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123").thenReturn(null);
 
         CountDownLatch consumerClosed = new CountDownLatch(1);
@@ -342,6 +403,43 @@ public class ImportTaskListenerImplTest {
         verify(notificationHookConsumer, times(1)).closeImportConsumer("import123", "ATLAS_IMPORT_import123");
     }
 
+    @Test
+    public void testStartImportConsumer_FailureStillCompletesWhenSaveImportThrowsRuntime() throws Exception {
+        AtlasAsyncImportRequest request = createImportRequestMock("import123", "topic1");
+
+        when(request.getStatus()).thenReturn(WAITING);
+        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(request);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry("import123")).thenReturn(request);
+        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123").thenReturn(null);
+
+        CountDownLatch consumerClosed = new CountDownLatch(1);
+
+        doThrow(new RuntimeException("Consumer failed")).when(notificationHookConsumer)
+                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
+
+        doAnswer(invocation -> {
+            when(request.getStatus()).thenReturn(invocation.getArgument(0));
+            return null;
+        }).when(request).setStatus(any());
+
+        doNothing()
+                .doThrow(new RuntimeException("Graph commit failure"))
+                .when(asyncImportService).saveImport("import123");
+
+        doAnswer(invocation -> {
+            consumerClosed.countDown();
+            return null;
+        }).when(notificationHookConsumer).closeImportConsumer(anyString(), anyString());
+
+        setExecutorService(importTaskListener, synchronousExecutor());
+
+        importTaskListener.onReceiveImportRequest(request);
+
+        assertTrue(consumerClosed.await(5, TimeUnit.SECONDS), "closeImportConsumer was not invoked");
+
+        verify(notificationHookConsumer, times(1)).closeImportConsumer("import123", "ATLAS_IMPORT_import123");
+    }
+
     @Test(dataProvider = "importQueueScenarios")
     public void testGetImportIdFromQueue(String[] pollResults, AtlasAsyncImportRequest[] fetchResults, String expectedImportId, int expectedPollCount) throws InterruptedException {
         //configure mock queue behaviour
@@ -351,7 +449,7 @@ public class ImportTaskListenerImplTest {
 
         // Configure fetch service behavior
         for (AtlasAsyncImportRequest fetchResult : fetchResults) {
-            when(asyncImportService.fetchImportRequestByImportId(fetchResult.getImportId())).thenReturn(fetchResult);
+            when(asyncImportService.fetchImportRequestByImportIdWithRetry(fetchResult.getImportId())).thenReturn(fetchResult);
         }
 
         // Execute the method
@@ -468,7 +566,7 @@ public class ImportTaskListenerImplTest {
 
         when(asyncImportSemaphore.tryAcquire()).thenReturn(true);
         when(requestQueue.poll(anyLong(), any())).thenReturn(VALID_IMPORT_ID);
-        when(asyncImportService.fetchImportRequestByImportId(VALID_IMPORT_ID)).thenReturn(validRequest);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry(VALID_IMPORT_ID)).thenReturn(validRequest);
 
         sut.startAsyncImportIfAvailable(null);
 
@@ -491,7 +589,7 @@ public class ImportTaskListenerImplTest {
         invalidRequest.setStatus(ABORTED);
 
         when(requestQueue.poll(anyLong(), any())).thenReturn(INVALID_IMPORT_ID).thenReturn(null);
-        when(asyncImportService.fetchImportRequestByImportId(INVALID_IMPORT_ID)).thenReturn(invalidRequest);
+        when(asyncImportService.fetchImportRequestByImportIdWithRetry(INVALID_IMPORT_ID)).thenReturn(invalidRequest);
 
         when(asyncImportSemaphore.tryAcquire()).thenReturn(true);
 

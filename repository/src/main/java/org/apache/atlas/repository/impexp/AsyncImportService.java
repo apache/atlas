@@ -18,7 +18,10 @@
 
 package org.apache.atlas.repository.impexp;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -26,10 +29,14 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
+import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -42,21 +49,45 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
+import static org.apache.atlas.model.impexp.AtlasImportResult.OperationStatus.FAIL;
+import static org.apache.atlas.model.impexp.AtlasImportResult.OperationStatus.PARTIAL_SUCCESS;
+import static org.apache.atlas.model.impexp.AtlasImportResult.OperationStatus.SUCCESS;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
 import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
 
 @Service
 public class AsyncImportService {
-    private static final Logger LOG = LoggerFactory.getLogger(AsyncImportService.class);
+    private static final Logger LOG                                              = LoggerFactory.getLogger(AsyncImportService.class);
+    private static final int    DEFAULT_MAX_ATTEMPTS                             = 3;
+    private static final long   DEFAULT_RETRY_DELAY_MS                           = 1000;
+    private static final String EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION = "PermanentLockingException";
 
     private final DataAccess                                          dataAccess;
     private final ImportCacheManager<String, AtlasAsyncImportRequest> importCache;
 
+    /** Graph storage retry settings, shared with the rest of the repository layer. */
+    @VisibleForTesting
+    int maxAttempts;
+
+    @VisibleForTesting
+    long retryDelayMs;
+
     @Inject
     public AsyncImportService(DataAccess dataAccess) {
         this.dataAccess  = dataAccess;
-        this.importCache = new ImportCacheManager<>();
+        this.importCache = new ImportCacheManager<>(AsyncImportService::isTerminal);
+        this.maxAttempts  = DEFAULT_MAX_ATTEMPTS;
+        this.retryDelayMs = DEFAULT_RETRY_DELAY_MS;
+
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            this.maxAttempts  = configuration.getInt(GraphHelper.RETRY_COUNT, DEFAULT_MAX_ATTEMPTS);
+            this.retryDelayMs = configuration.getLong(GraphHelper.RETRY_DELAY, DEFAULT_RETRY_DELAY_MS);
+        } catch (AtlasException e) {
+            LOG.error("Could not load configuration, using defaults for {} and {}", GraphHelper.RETRY_COUNT, GraphHelper.RETRY_DELAY, e);
+        }
     }
 
     public void populateCache(AtlasAsyncImportRequest importRequest) {
@@ -67,28 +98,80 @@ public class AsyncImportService {
 
     public AtlasAsyncImportRequest fetchImportRequestByImportId(String importId) {
         try {
-            AtlasAsyncImportRequest cachedRequest = importCache.get(importId);
-
-            if (cachedRequest != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache hit for importId: {}", importId);
-                }
-                return cachedRequest;
-            }
-            AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
-
-            request.setImportId(importId);
-
-            request = dataAccess.load(request);
-
-            populateCache(request);
-
-            return request;
+            return loadImportRequest(importId);
         } catch (Exception e) {
             LOG.error("Error fetching request with importId: {}", importId, e);
 
             return null;
         }
+    }
+
+    /**
+     * Reads a request, retrying transient failures before giving up. Callers that have already
+     * removed the importId from the request queue use this, because a null from a one-shot read is
+     * indistinguishable from "no such request" and would silently drop a queued import.
+     * <p>
+     * A request that genuinely does not exist is reported immediately: retrying a definitive answer
+     * only delays the caller.
+     */
+    public AtlasAsyncImportRequest fetchImportRequestByImportIdWithRetry(String importId) {
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                return loadImportRequest(importId);
+            } catch (Exception e) {
+                if (isRequestNotFound(e)) {
+                    LOG.warn("No import request exists with importId: {}", importId);
+
+                    return null;
+                }
+
+                if (attempt == maxAttempts) {
+                    LOG.error("Error fetching request with importId: {}, giving up after {} attempts", importId, maxAttempts, e);
+
+                    return null;
+                }
+
+                LOG.warn("Error fetching request with importId: {} on attempt {} of {}, retrying in {} ms", importId, attempt, maxAttempts, retryDelayMs, e);
+
+                if (!sleepBeforeRetry()) {
+                    return null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private AtlasAsyncImportRequest loadImportRequest(String importId) throws AtlasBaseException {
+        AtlasAsyncImportRequest cachedRequest = importCache.get(importId);
+
+        if (cachedRequest != null) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Cache hit for importId: {}", importId);
+            }
+            return cachedRequest;
+        }
+
+        AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
+
+        request.setImportId(importId);
+
+        request = dataAccess.load(request);
+
+        populateCache(request);
+
+        return request;
+    }
+
+    private boolean isRequestNotFound(Exception e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof AtlasBaseException
+                    && ((AtlasBaseException) cause).getAtlasErrorCode() == AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public void saveImport(String importId) {
@@ -98,21 +181,39 @@ public class AsyncImportService {
                 saveImportRequest(importRequest);
                 importCache.invalidate(importId);
             }
-        } catch (AtlasBaseException e) {
+        } catch (Throwable e) {
             LOG.error("Error saving import request from cache for importId: {}", importId, e);
         }
     }
 
     public void saveImportRequest(AtlasAsyncImportRequest importRequest) throws AtlasBaseException {
-        try {
-            dataAccess.saveNoLoad(importRequest);
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                dataAccess.saveNoLoad(importRequest);
+                LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest);
+                return;
+            } catch (Throwable e) {
+                List<Throwable> throwableList = ExceptionUtils.getThrowableList(e);
 
-            LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest);
-        } catch (AtlasBaseException e) {
-            LOG.error("Failed to save import: {} with request: {}", importRequest.getImportId(), importRequest, e);
+                // only a lock conflict is worth retrying: any other failure means the backend itself is
+                // unhealthy, and retrying just delays surfacing that
+                if (!throwableList.isEmpty()
+                        && containsException(throwableList, EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION)
+                        && (attempt < maxAttempts - 1)) {
+                    LOG.error("Caught {} , Retrying the transaction, attempt count is:{}",
+                            EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION, attempt);
+                    continue;
+                }
 
-            throw e;
+                LOG.error("Failed to save import: {} with request: {}", importRequest.getImportId(), importRequest, e);
+                if (e instanceof AtlasBaseException) {
+                    throw (AtlasBaseException) e;
+                }
+
+                throw new AtlasBaseException(AtlasErrorCode.IMPORT_FAILED, e);
+            }
         }
+        throw new AtlasBaseException(AtlasErrorCode.IMPORT_FAILED, "Failed to save import request after retries");
     }
 
     public void updateImportRequest(AtlasAsyncImportRequest importRequest) {
@@ -121,6 +222,62 @@ public class AsyncImportService {
         } catch (AtlasBaseException abe) {
             LOG.error("Failed to update import: {} with request: {}", importRequest.getImportId(), importRequest, abe);
         }
+    }
+
+    public AtlasAsyncImportRequest resolveRequestStatus(String importId) throws AtlasBaseException {
+        // the cached request is the only record of progress while an import is PROCESSING: entity
+        // counters are updated in the cache and are not written to the graph until the import
+        // completes. Evicting here would reload stale counters and the import could never satisfy
+        // its completion check.
+        AtlasAsyncImportRequest importRequest = fetchImportRequestByImportId(importId);
+        if (importRequest == null
+                || importRequest.getStatus() != ImportStatus.PROCESSING
+                || !isProcessingComplete(importRequest)) {
+            return importRequest;
+        }
+
+        ImportStatus resolvedStatus = resolveToTerminalStatus(importRequest);
+
+        LOG.info("Resolved completed PROCESSING request importId={} to status={}", importId, resolvedStatus);
+
+        return importRequest;
+    }
+
+    /**
+     * Resolves a request that can no longer make progress, regardless of how far its counters got.
+     * Used when an import is found PROCESSING but its topic has already been fully consumed, which
+     * leaves nothing to deliver and no way for the normal completion path to ever run.
+     */
+    public AtlasAsyncImportRequest resolveAbandonedRequest(String importId) throws AtlasBaseException {
+        AtlasAsyncImportRequest importRequest = fetchImportRequestByImportId(importId);
+
+        if (importRequest == null || importRequest.getStatus() != ImportStatus.PROCESSING) {
+            return importRequest;
+        }
+
+        ImportStatus resolvedStatus = resolveToTerminalStatus(importRequest);
+
+        LOG.warn("Resolved abandoned PROCESSING request importId={} to status={}, its topic had no messages left to consume", importId, resolvedStatus);
+
+        return importRequest;
+    }
+
+    private ImportStatus resolveToTerminalStatus(AtlasAsyncImportRequest importRequest) throws AtlasBaseException {
+        ImportStatus resolvedStatus = resolveCompletedStatus(importRequest);
+
+        importRequest.setStatus(resolvedStatus);
+        importRequest.setCompletedTime(System.currentTimeMillis());
+
+        AtlasImportResult importResult = importRequest.getImportResult();
+        if (importResult != null) {
+            importResult.setOperationStatus(resolveOperationStatus(resolvedStatus));
+            importRequest.setImportResult(importResult);
+        }
+
+        saveImportRequest(importRequest);
+        populateCache(importRequest);
+
+        return resolvedStatus;
     }
 
     public List<String> fetchInProgressImportIds() {
@@ -223,5 +380,65 @@ public class AsyncImportService {
         } finally {
             LOG.debug("<== AsyncImportService.getImportStatusById(importId={})", importId);
         }
+    }
+
+    /**
+     * An import that has not reached a terminal state keeps progress only in the cache, so those
+     * entries must survive size and TTL pressure. Terminal requests are already durable.
+     */
+    @VisibleForTesting
+    static boolean isTerminal(AtlasAsyncImportRequest importRequest) {
+        ImportStatus status = importRequest == null ? null : importRequest.getStatus();
+
+        return status != ImportStatus.STAGING && status != ImportStatus.WAITING && status != ImportStatus.PROCESSING;
+    }
+
+    private boolean containsException(final List<Throwable> exceptions, final String exceptionName) {
+        return exceptions.stream().anyMatch(o -> o.getClass().getSimpleName().equals(exceptionName));
+    }
+
+    /** Returns false if the wait was interrupted, in which case the caller must stop retrying. */
+    private boolean sleepBeforeRetry() {
+        try {
+            Thread.sleep(retryDelayMs);
+
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            return false;
+        }
+    }
+
+    private boolean isProcessingComplete(AtlasAsyncImportRequest importRequest) {
+        AtlasAsyncImportRequest.ImportDetails details = importRequest.getImportDetails();
+
+        if (details == null || details.getTotalEntitiesCount() <= 0) {
+            return false;
+        }
+
+        int processedEntities = details.getImportedEntitiesCount() + details.getFailedEntitiesCount();
+        return processedEntities >= details.getTotalEntitiesCount();
+    }
+
+    private ImportStatus resolveCompletedStatus(AtlasAsyncImportRequest importRequest) {
+        AtlasAsyncImportRequest.ImportDetails details = importRequest.getImportDetails();
+        if (details.getTotalEntitiesCount() == details.getImportedEntitiesCount()) {
+            return ImportStatus.SUCCESSFUL;
+        } else if (details.getImportedEntitiesCount() > 0) {
+            return ImportStatus.PARTIAL_SUCCESS;
+        }
+
+        return ImportStatus.FAILED;
+    }
+
+    private AtlasImportResult.OperationStatus resolveOperationStatus(ImportStatus status) {
+        if (status == ImportStatus.SUCCESSFUL) {
+            return SUCCESS;
+        } else if (status == ImportStatus.PARTIAL_SUCCESS) {
+            return PARTIAL_SUCCESS;
+        }
+
+        return FAIL;
     }
 }

@@ -146,6 +146,21 @@ public interface NotificationInterface {
     default void closeConsumer(NotificationType notificationType, String topic) {}
 
     /**
+     * Reports whether every message on the topic has already been consumed and committed by the
+     * notification type's consumer group, meaning a consumer started now would receive nothing.
+     * <p>
+     * Implementations that cannot determine this must return {@code false}, so callers fall back to
+     * starting a consumer rather than assuming there is no work left.
+     *
+     * @param notificationType The type of notification the topic belongs to.
+     * @param topicName The name of the topic to inspect.
+     * @return true only if the topic is known to be fully consumed, or no longer exists.
+     */
+    default boolean isTopicFullyConsumed(NotificationType notificationType, String topicName) {
+        return false;
+    }
+
+    /**
      * Atlas notification types.
      */
     enum NotificationType {

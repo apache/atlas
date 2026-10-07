@@ -41,6 +41,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -198,16 +199,16 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
     @VisibleForTesting
     void startInternal() {
-        populateRequestQueue();
-
-        if (!requestQueue.isEmpty()) {
-            CompletableFuture.runAsync(this::startNextImportInQueue)
-                    .exceptionally(ex -> {
-                        LOG.error("Failed to start next import in queue", ex);
-
-                        return null;
-                    });
-        }
+        // populating the queue reads the graph, queries kafka and can resolve abandoned imports: doing that
+        // on the service startup thread holds up every service started after this one, including the audit
+        // repository that those very writes depend on
+        CompletableFuture.runAsync(() -> {
+            populateRequestQueue();
+            startNextImportInQueue();
+        }).exceptionally(ex -> {
+            LOG.error("Failed to start next import in queue", ex);
+            return null;
+        });
     }
 
     @VisibleForTesting
@@ -249,6 +250,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 exec.submit(() -> startImportConsumer(nextImport));
             } else {
                 LOG.warn("No executor available to process import task (instance is passive).");
+                releaseAsyncImportSemaphore();
             }
         } catch (Exception e) {
             LOG.error("Error while starting the next import, releasing the lock if held", e);
@@ -283,7 +285,9 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 // Reset retry count because we got a valid importId (even if it's invalid later)
                 retryCount = 0;
 
-                nextImport = asyncImportService.fetchImportRequestByImportId(importId);
+                // poll() already removed the id, so a transient read failure here would drop the
+                // import for the lifetime of this process while the graph still reports it WAITING
+                nextImport = asyncImportService.fetchImportRequestByImportIdWithRetry(importId);
 
                 if (isNotValidImportRequest(nextImport)) {
                     LOG.info("Import request {}, is not in a valid status to start import, hence skipping..", nextImport);
@@ -339,15 +343,44 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         List<String> queuedImports     = asyncImportService.fetchQueuedImportRequests();
         List<String> inProgressImports = asyncImportService.fetchInProgressImportIds();
 
+        if (queuedImports == null) {
+            queuedImports = Collections.emptyList();
+        }
+
+        if (inProgressImports == null) {
+            inProgressImports = Collections.emptyList();
+        }
+
         if (queuedImports.isEmpty() && inProgressImports.isEmpty()) {
             LOG.info("populateRequestQueue(): no queued asynchronous import requests found.");
         } else {
             LOG.info("populateRequestQueue(): loaded {} asynchronous import requests (in-progress={}, queued={})", (inProgressImports.size() + queuedImports.size()), inProgressImports.size(), queuedImports.size());
 
-            Stream.concat(inProgressImports.stream(), queuedImports.stream()).forEach(this::enqueueImportId);
+            Stream.concat(inProgressImports.stream().filter(this::isResumable), queuedImports.stream())
+                    .forEach(this::enqueueImportId);
         }
 
         LOG.info("<== populateRequestQueue()");
+    }
+
+    /**
+     * An import found PROCESSING at startup can only continue if its topic still has messages to
+     * deliver. If the topic was already drained before the previous shutdown, starting a consumer
+     * would hold the single import permit forever, since nothing would ever trigger completion.
+     */
+    @VisibleForTesting
+    boolean isResumable(String importId) {
+        if (!notificationHookConsumer.isImportTopicFullyConsumed(ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId)) {
+            return true;
+        }
+
+        try {
+            asyncImportService.resolveAbandonedRequest(importId);
+        } catch (Exception e) {
+            LOG.error("Failed to resolve abandoned import {}, skipping it to keep the import queue moving", importId, e);
+        }
+
+        return false;
     }
 
     private void startImportConsumer(AtlasAsyncImportRequest importRequest) {
@@ -367,9 +400,14 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
             LOG.error("Failed to start consumer for import: {}, marking import as failed", importRequest, e);
         } finally {
             if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.FAILED)) {
-                asyncImportService.saveImport(importRequest.getImportId());
-
-                onCompleteImportRequest(importRequest.getImportId());
+                try {
+                    asyncImportService.saveImport(importRequest.getImportId());
+                } catch (Throwable t) {
+                    // Failing to persist FAILED status must not block queue progress.
+                    LOG.error("Failed to persist FAILED state for importId={}", importRequest.getImportId(), t);
+                } finally {
+                    onCompleteImportRequest(importRequest.getImportId());
+                }
             }
 
             LOG.info("<== startImportConsumer(importId={})", importRequest.getImportId());
