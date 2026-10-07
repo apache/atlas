@@ -43,6 +43,11 @@ public class SemanticSearchServiceTest {
         }
 
         @Override
+        public boolean isAvailable() {
+            return true;
+        }
+
+        @Override
         public void updateEmbedding(String guid, String text) {
         }
 
@@ -95,7 +100,8 @@ public class SemanticSearchServiceTest {
             SemanticSearchParameters params = new SemanticSearchParameters();
             params.setQuery("test");
 
-            expectThrows(Exception.class, () -> service.semanticSearch(params));
+            AtlasBaseException e = expectThrows(AtlasBaseException.class, () -> service.semanticSearch(params));
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.SEMANTIC_SEARCH_DISABLED);
         } finally {
             ApplicationProperties.get().setProperty(enabledConf, true);
         }

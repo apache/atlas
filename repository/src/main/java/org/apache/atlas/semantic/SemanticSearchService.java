@@ -97,6 +97,9 @@ public class SemanticSearchService {
             return buildSearchResult(parameters.getQuery(), hits, minScore, topK,
                     parameters.getAttributes(), parameters.getExcludeDeletedEntities());
         } catch (SemanticSearchException e) {
+            if (e.getErrorCode() != null) {
+                throw new AtlasBaseException(e.getErrorCode(), e, e.getMessage());
+            }
             LOG.error("Semantic search failed for query={}", parameters.getQuery(), e);
             throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, e, BACKEND_ERROR_MESSAGE);
         }
@@ -131,6 +134,9 @@ public class SemanticSearchService {
 
             return buildSearchResult("similar:" + guid, hits, minScore, topK, parameters.getAttributes(), parameters.getExcludeDeletedEntities());
         } catch (SemanticSearchException e) {
+            if (e.getErrorCode() != null) {
+                throw new AtlasBaseException(e.getErrorCode(), e, e.getMessage());
+            }
             LOG.error("Similar entity search failed for guid={}", guid, e);
             throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, e, BACKEND_ERROR_MESSAGE);
         }
@@ -142,16 +148,15 @@ public class SemanticSearchService {
                                                 int topK,
                                                 Set<String> attributes,
                                                 boolean excludeDeletedEntities) throws AtlasBaseException {
-        AtlasSearchResult result = new AtlasSearchResult(queryText, AtlasQueryType.SEMANTIC);
-        result.setEntities(new ArrayList<>());
-        result.setFullTextResult(new ArrayList<>());
+        AtlasSearchResult         result  = new AtlasSearchResult(queryText, AtlasQueryType.SEMANTIC);
+        List<AtlasFullTextResult> results = new ArrayList<>();
 
         for (VectorSearchHit hit : hits) {
             if (hit.getScore() < minScore) {
                 continue;
             }
 
-            if (result.getEntities().size() >= topK) {
+            if (results.size() >= topK) {
                 break;
             }
 
@@ -160,15 +165,14 @@ public class SemanticSearchService {
                 continue;
             }
 
-            // same header instance in both lists: scrubSearchResults masks it once for entities and scores
-            result.getEntities().add(entityHeader);
-            result.getFullTextResult().add(new AtlasFullTextResult(entityHeader, hit.getScore()));
+            results.add(new AtlasFullTextResult(entityHeader, hit.getScore()));
         }
 
-        result.setApproximateCount(result.getEntities().size());
+        result.setFullTextResult(results);
+        result.setApproximateCount(results.size());
 
         LOG.debug("semantic search completed queryText='{}' returned={} hits={}",
-                queryText, result.getEntities().size(), hits.size());
+                queryText, results.size(), hits.size());
 
         return result;
     }
@@ -250,7 +254,7 @@ public class SemanticSearchService {
 
     private void ensureEnabled() throws AtlasBaseException {
         if (!AtlasConfiguration.SEMANTIC_ENABLED.getBoolean()) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Semantic search is disabled");
+            throw new AtlasBaseException(AtlasErrorCode.SEMANTIC_SEARCH_DISABLED, AtlasConfiguration.SEMANTIC_ENABLED.getPropertyName());
         }
     }
 }

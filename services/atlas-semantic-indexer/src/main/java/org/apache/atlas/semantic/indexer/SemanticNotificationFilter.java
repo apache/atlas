@@ -26,7 +26,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -55,18 +56,21 @@ public final class SemanticNotificationFilter {
             return false;
         }
 
-        return !extractGuids(notification).isEmpty();
+        return !extractGuidTypes(notification).isEmpty();
     }
 
-    public static Set<String> extractGuids(EntityNotificationV2 notification) {
+    /**
+     * Guids to re-embed, with the type name the notification carries for each (may be null).
+     */
+    public static Map<String, String> extractGuidTypes(EntityNotificationV2 notification) {
         if (notification == null) {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
 
-        Set<String> guids = new LinkedHashSet<>();
+        Map<String, String> guids = new LinkedHashMap<>();
 
         if (notification.getEntity() != null && StringUtils.isNotBlank(notification.getEntity().getGuid())) {
-            guids.add(notification.getEntity().getGuid());
+            guids.put(notification.getEntity().getGuid(), notification.getEntity().getTypeName());
         }
 
         // A term assignment (or removal) changes the assigned terms in the entity's text; other relationships are
@@ -80,9 +84,9 @@ public final class SemanticNotificationFilter {
         return guids;
     }
 
-    private static void addObjectIdGuid(Set<String> guids, AtlasObjectId objectId) {
+    private static void addObjectIdGuid(Map<String, String> guids, AtlasObjectId objectId) {
         if (objectId != null && StringUtils.isNotBlank(objectId.getGuid())) {
-            guids.add(objectId.getGuid());
+            guids.put(objectId.getGuid(), objectId.getTypeName());
         }
     }
 }

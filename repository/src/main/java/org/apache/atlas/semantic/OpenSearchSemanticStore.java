@@ -25,6 +25,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
@@ -54,7 +55,11 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
 
     private static final String GRAPH_INDEX_NAME_CONF = "atlas.graph.index.search.index-name";
 
-    private volatile SemanticOpenSearchHttpClient httpClient;
+    private static final int SEARCH_SOCKET_TIMEOUT_MS = 10_000;
+    private static final int SEARCH_MAX_ATTEMPTS      = 2;
+
+    private volatile SemanticHttpClient httpClient;
+    private volatile boolean                      searchable;
 
     @PreDestroy
     public synchronized void shutdown() {
@@ -91,15 +96,15 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     }
 
     // created lazily: this bean is instantiated even when semantic search is disabled
-    private SemanticOpenSearchHttpClient httpClient() throws SemanticSearchException {
-        SemanticOpenSearchHttpClient ret = httpClient;
+    private SemanticHttpClient httpClient() throws SemanticSearchException {
+        SemanticHttpClient ret = httpClient;
 
         if (ret == null) {
             synchronized (this) {
                 ret = httpClient;
                 if (ret == null) {
                     try {
-                        ret = new SemanticOpenSearchHttpClient(ApplicationProperties.get());
+                        ret = OpenSearchClientFactory.create(ApplicationProperties.get());
                     } catch (AtlasException e) {
                         throw new SemanticSearchException("Failed to read OpenSearch connection settings", e);
                     }
@@ -114,6 +119,17 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     @Override
     public void initialize() throws SemanticSearchException {
         new SemanticIndexSetup(httpClient()).run();
+    }
+
+    @Override
+    public boolean isAvailable() {
+        try {
+            httpClient().sendForBody(new HttpGet("/_cluster/health?wait_for_status=yellow&timeout=1s"), SEARCH_SOCKET_TIMEOUT_MS);
+            return true;
+        } catch (SemanticSearchException e) {
+            LOG.debug("OpenSearch is not available: {}", e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -293,10 +309,12 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
         body.put("query", Collections.singletonMap("term", Collections.singletonMap(guidFilterField(), guid)));
         body.put("_source", Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
 
+        ensureSearchable();
+
         HttpPost post = new HttpPost("/" + getVertexIndexName() + "/_search");
         post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
 
-        return parseStoredEmbedding(executeRequestForBody(post));
+        return parseStoredEmbedding(executeSearchForBody(post));
     }
 
     @SuppressWarnings("unchecked")
@@ -439,10 +457,12 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
         body.put("query", Collections.singletonMap(queryType, Collections.singletonMap(SEMANTIC_EMBEDDING_FIELD, vectorField)));
         body.put("_source", Collections.singletonList(Constants.GUID_PROPERTY_KEY));
 
+        ensureSearchable();
+
         HttpPost post = new HttpPost("/" + getVertexIndexName() + "/_search");
         post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
 
-        return parseSearchHits(executeRequestForBody(post));
+        return parseSearchHits(executeSearchForBody(post));
     }
 
     static Map<String, Object> buildVectorFilter(VectorSearchFilter filter) {
@@ -525,5 +545,17 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
 
     private String executeRequestForBody(HttpUriRequest request) throws SemanticSearchException {
         return SemanticRetry.run("OpenSearch " + request.getMethod(), () -> httpClient().sendForBody(request));
+    }
+
+    private void ensureSearchable() throws SemanticSearchException {
+        if (!searchable) {
+            new SemanticIndexSetup(httpClient()).checkSearchable(SEARCH_SOCKET_TIMEOUT_MS);
+            searchable = true;
+        }
+    }
+
+    private String executeSearchForBody(HttpPost request) throws SemanticSearchException {
+        return SemanticRetry.run("OpenSearch search", SEARCH_MAX_ATTEMPTS,
+                () -> httpClient().sendForBody(request, SEARCH_SOCKET_TIMEOUT_MS));
     }
 }

@@ -31,6 +31,11 @@ public interface SemanticVectorStore {
     void initialize() throws SemanticSearchException;
 
     /**
+     * Whether the backend answers right now: one quick request, no retry.
+     */
+    boolean isAvailable();
+
+    /**
      * Embeds the text and stores the vector on the entity.
      */
     void updateEmbedding(String guid, String text) throws SemanticSearchException;

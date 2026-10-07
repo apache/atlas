@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ATLAS_HOME="${ATLAS_HOME:-$(cd "$(dirname "$0")/../../.." && pwd)}"
+ATLAS_HOME="${ATLAS_HOME:-$(cd "$(dirname "$0")/.." && pwd)}"
 WEBINF="${ATLAS_HOME}/server/webapp/atlas/WEB-INF"
 
 if [ -z "${ATLAS_CONF:-}" ]; then

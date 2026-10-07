@@ -17,8 +17,11 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.AtlasErrorCode;
+
 public class SemanticSearchException extends Exception {
-    private final boolean retryable;
+    private final boolean        retryable;
+    private final AtlasErrorCode errorCode;
 
     public SemanticSearchException(String message) {
         this(message, null, false);
@@ -35,9 +38,27 @@ public class SemanticSearchException extends Exception {
     public SemanticSearchException(String message, Throwable cause, boolean retryable) {
         super(message, cause);
         this.retryable = retryable;
+        this.errorCode = null;
+    }
+
+    /**
+     * A failure reported to REST clients with this error code; the message is returned to them, so it must name
+     * no index or host.
+     */
+    public SemanticSearchException(AtlasErrorCode errorCode, String message) {
+        super(message);
+        this.retryable = false;
+        this.errorCode = errorCode;
     }
 
     public boolean isRetryable() {
         return retryable;
+    }
+
+    /**
+     * @return the error code to report to REST clients, or null for an internal failure
+     */
+    public AtlasErrorCode getErrorCode() {
+        return errorCode;
     }
 }

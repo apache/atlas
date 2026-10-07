@@ -19,8 +19,9 @@ package org.apache.atlas.semantic;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.semantic.SemanticOpenSearchHttpClient.Response;
+import org.apache.atlas.semantic.SemanticHttpClient.Response;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -44,33 +45,24 @@ import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_TEXT_FI
 /**
  * OpenSearch setup for semantic search. {@link #run()}, behind {@link OpenSearchSemanticStore#initialize()}, checks
  * the cluster and {@code index.knn} on the JanusGraph vertex index, then ensures the ingest pipeline and the
- * embedding field mapping. The configuration checks are static: they run before the graph is opened, also in the
- * Atlas webapp.
+ * embedding field mapping. {@link #validateConfiguration()} runs in the Semantic Indexer and the repair tool before
+ * they open the graph. The Atlas server only runs the read-only {@link #checkSearchable(int)} on the search path.
  */
 public final class SemanticIndexSetup {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticIndexSetup.class);
 
     private static final String GRAPH_INDEX_CREATE_KNN_CONF = "atlas.graph.index.search.opensearch.create.ext.knn";
 
-    private final SemanticOpenSearchHttpClient httpClient;
+    private final SemanticHttpClient httpClient;
 
-    SemanticIndexSetup(SemanticOpenSearchHttpClient httpClient) {
+    SemanticIndexSetup(SemanticHttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
     /**
-     * Validates the configuration when atlas.semantic.enabled is true. Must run before the graph is opened:
-     * JanusGraph creates the vertex index on first open, and index.knn can't be added to it afterwards.
-     */
-    public static void validateConfigurationWhenEnabled() throws SemanticSearchException {
-        if (AtlasConfiguration.SEMANTIC_ENABLED.getBoolean()) {
-            validateConfiguration();
-        }
-    }
-
-    /**
-     * Validates the configuration regardless of atlas.semantic.enabled (which only gates the REST search):
-     * used by the Semantic Indexer and repair tool, before they open the graph.
+     * Validates the configuration regardless of atlas.semantic.enabled (which only gates the REST search). Must run
+     * before the graph is opened: JanusGraph creates the vertex index on first open, and index.knn can't be added
+     * to it afterwards.
      */
     public static void validateConfiguration() throws SemanticSearchException {
         Configuration config;
@@ -81,8 +73,8 @@ public final class SemanticIndexSetup {
             throw new SemanticSearchException("Failed to read semantic search configuration", e);
         }
 
-        if (StringUtils.isBlank(config.getString(SemanticOpenSearchHttpClient.HOSTNAME_CONF, ""))) {
-            throw new SemanticSearchException(SemanticOpenSearchHttpClient.HOSTNAME_CONF + " must be set for semantic search");
+        if (StringUtils.isBlank(config.getString(OpenSearchClientFactory.HOSTNAME_CONF, ""))) {
+            throw new SemanticSearchException(OpenSearchClientFactory.HOSTNAME_CONF + " must be set for semantic search");
         }
 
         if (!config.getBoolean(GRAPH_INDEX_CREATE_KNN_CONF, false)) {
@@ -106,13 +98,33 @@ public final class SemanticIndexSetup {
         ensureVertexIndexSemanticFields();
     }
 
+    /**
+     * Read-only, single attempt per request: checks that the vertex index has index.knn and the embedding field.
+     */
+    void checkSearchable(int socketTimeoutMs) throws SemanticSearchException {
+        String indexName = OpenSearchSemanticStore.getVertexIndexName();
+
+        String settings = httpClient.sendForBody(new HttpGet("/" + indexName + "/_settings/index.knn?include_defaults=true"), socketTimeoutMs);
+        if (!parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(settings, Map.class))) {
+            LOG.error("Semantic search unavailable: index.knn is not enabled on vertex index '{}' (see SemanticSearch.md)", indexName);
+            throw new SemanticSearchException(AtlasErrorCode.SEMANTIC_SEARCH_NOT_READY, "the OpenSearch vertex index was created without index.knn");
+        }
+
+        String mapping = httpClient.sendForBody(new HttpGet("/" + indexName + "/_mapping"), socketTimeoutMs);
+        if (parseEmbeddingDimensionFromMapping(AtlasJson.fromJson(mapping, Map.class), indexName) == null) {
+            LOG.error("Semantic search unavailable: vertex index '{}' has no '{}' field; start the Semantic Indexer or run the repair tool once",
+                    indexName, SEMANTIC_EMBEDDING_FIELD);
+            throw new SemanticSearchException(AtlasErrorCode.SEMANTIC_SEARCH_NOT_READY, "the embedding field is not set up yet");
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private void validateCluster() throws SemanticSearchException {
         Map<String, Object> root = AtlasJson.fromJson(sendWithRetry(new HttpGet("/")), Map.class);
 
         if (root == null || !(root.get("version") instanceof Map)) {
             throw new SemanticSearchException(
-                    SemanticOpenSearchHttpClient.HOSTNAME_CONF
+                    OpenSearchClientFactory.HOSTNAME_CONF
                             + " does not point to OpenSearch (missing cluster version in response)");
         }
 
@@ -120,7 +132,7 @@ public final class SemanticIndexSetup {
 
         if (!"opensearch".equalsIgnoreCase(distribution)) {
             throw new SemanticSearchException(
-                    SemanticOpenSearchHttpClient.HOSTNAME_CONF
+                    OpenSearchClientFactory.HOSTNAME_CONF
                             + " must point to an OpenSearch cluster with neural search support (got distribution="
                             + distribution + ")");
         }
@@ -184,8 +196,8 @@ public final class SemanticIndexSetup {
         if (response.statusCode == 404) {
             return false;
         }
-        if (!SemanticOpenSearchHttpClient.isSuccess(response.statusCode)) {
-            throw SemanticOpenSearchHttpClient.httpFailure(response);
+        if (!SemanticHttpClient.isSuccess(response.statusCode)) {
+            throw SemanticHttpClient.httpFailure(response);
         }
         return true;
     }

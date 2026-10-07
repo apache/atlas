@@ -80,7 +80,7 @@ const EntityDetailPage: React.FC = () => {
   const searchParams = new URLSearchParams(location.search);
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { taskTabEnabled = {}, uiTaskTabEnabled } = globalSessionData || {};
+  const { taskTabEnabled = {}, uiTaskTabEnabled, semanticSearch } = globalSessionData || {};
   const activeTab: string | undefined | null = searchParams.get("tabActive");
   const { detailPageData, loading }: any = useAppSelector(
     (state: any) => state.detailPage
@@ -161,7 +161,7 @@ const EntityDetailPage: React.FC = () => {
   let tabsName = [...allTabs];
 
   const addTab = (tabs: string) => {
-    return tabsName.splice(tabsName.includes("lineage") ? 5 : 4, 0, tabs);
+    return tabsName.splice(tabsName.indexOf("audit") + 1, 0, tabs);
   };
 
   const removeTab = (tabs: string) => {
@@ -177,6 +177,10 @@ const EntityDetailPage: React.FC = () => {
     tabsName.splice(1, 0, "lineage");
   } else {
     removeTab("lineage");
+  }
+
+  if (!semanticSearch) {
+    removeTab("similar");
   }
 
   if (!isEmpty(schemaRelationNames)) {
@@ -590,7 +594,7 @@ const EntityDetailPage: React.FC = () => {
             <LinkTab label="Properties" />-{" "}
             {isLineageRender && <LinkTab label="Lineage" />}
             <LinkTab label="Relationships" />
-            <LinkTab label="Similar" />
+            {semanticSearch && <LinkTab label="Similar" />}
             <LinkTab label="Classifications" />
             <LinkTab label="Audits" />
             {!isEmpty(schemaRelationNames) && <LinkTab label="Schema" />}

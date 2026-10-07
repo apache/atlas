@@ -60,6 +60,8 @@ public class SemanticTextBuilderTest {
         graphUtils   = mockStatic(AtlasGraphUtilsV2.class);
         graphHelper  = mockStatic(GraphHelper.class);
         builder      = new SemanticTextBuilder();
+
+        graphHelper.when(() -> GraphHelper.getActiveTermAssignmentEdges(any(), any(), anyInt())).thenCallRealMethod();
     }
 
     @AfterMethod
@@ -186,7 +188,7 @@ public class SemanticTextBuilderTest {
         AtlasVertex vertex = mock(AtlasVertex.class);
         when(vertex.getPropertyKeys()).thenReturn((Collection) new LinkedHashSet<>(Arrays.asList(
                 "hive_table.comment", "Referenceable.__u_qualifiedName", "Referenceable.qualifiedName",
-                "Asset.description", "Asset.name")));
+                "Asset.userDescription", "Asset.description", "Asset.name")));
         graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("hive_table");
         graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(vertex), any(), eq(String.class)))
                 .thenReturn(null);
@@ -197,6 +199,22 @@ public class SemanticTextBuilderTest {
         when(vertex.getProperty("Referenceable.__u_qualifiedName", Object.class)).thenReturn("db.orders@cl1");
         when(vertex.getProperty("hive_table.comment", Object.class)).thenReturn("raw");
 
-        assertEquals(builder.buildText(vertex), "hive_table orders all orders one row per order db.orders@cl1 raw");
+        assertEquals(builder.buildText(vertex), "hive_table orders all orders one row per order raw db.orders@cl1");
+    }
+
+    @Test
+    public void buildTextEmbedsAttributesOfTypesThatDoNotExtendAsset() {
+        AtlasVertex vertex = mock(AtlasVertex.class);
+        when(vertex.getPropertyKeys()).thenReturn((Collection) new LinkedHashSet<>(Arrays.asList(
+                "my_type.description", "my_type.__u_name", "my_type.name", "my_type.username", "__typeName")));
+        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("my_type");
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(vertex), any(), eq(String.class)))
+                .thenReturn(null);
+        when(vertex.getProperty("my_type.name", Object.class)).thenReturn("sensor-7");
+        when(vertex.getProperty("my_type.__u_name", Object.class)).thenReturn("sensor-7");
+        when(vertex.getProperty("my_type.username", Object.class)).thenReturn("bob");
+        when(vertex.getProperty("my_type.description", Object.class)).thenReturn("roof temperature");
+
+        assertEquals(builder.buildText(vertex), "my_type sensor-7 roof temperature");
     }
 }

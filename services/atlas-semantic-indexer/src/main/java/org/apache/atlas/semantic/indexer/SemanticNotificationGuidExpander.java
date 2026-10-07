@@ -24,21 +24,19 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.semantic.SemanticEntityEmbedder;
-import org.apache.atlas.semantic.SemanticTextBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-
 /**
- * Expands Kafka notification guids into entity guids that should receive semantic embeddings.
- * Glossary term updates are mapped to their assigned entities; glossary-only types are skipped.
+ * Expands Kafka notification guids into the guids to re-embed, using the type name from the notification: a
+ * glossary term is replaced by its assigned entities (the only graph read here), any other guid is passed on.
+ * {@link org.apache.atlas.semantic.SemanticEntityEmbedder} decides from the graph whether each one is embeddable.
  */
 public final class SemanticNotificationGuidExpander {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticNotificationGuidExpander.class);
@@ -46,49 +44,42 @@ public final class SemanticNotificationGuidExpander {
     private SemanticNotificationGuidExpander() {
     }
 
-    public static Set<String> expandForIndexing(Set<String> guids) {
-        if (guids == null || guids.isEmpty()) {
+    public static Set<String> expandForIndexing(Map<String, String> guidTypes) {
+        if (guidTypes == null || guidTypes.isEmpty()) {
             return Collections.emptySet();
         }
 
         Set<String> expanded = new LinkedHashSet<>();
-        for (String guid : guids) {
-            expandGuid(guid, expanded);
+        for (Map.Entry<String, String> entry : guidTypes.entrySet()) {
+            String guid = entry.getKey();
+            if (StringUtils.isBlank(guid)) {
+                continue;
+            }
+
+            if (GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME.equals(entry.getValue())) {
+                addAssignedEntityGuids(guid, expanded);
+            } else {
+                expanded.add(guid);
+            }
         }
         return expanded;
     }
 
-    private static void expandGuid(String guid, Set<String> expanded) {
-        if (StringUtils.isBlank(guid)) {
-            return;
-        }
-
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
-        if (vertex == null) {
-            return;
-        }
-
-        String typeName = AtlasGraphUtilsV2.getEncodedProperty(vertex, TYPE_NAME_PROPERTY_KEY, String.class);
-        if (GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME.equals(typeName)) {
-            addAssignedEntityGuids(guid, vertex, expanded);
-            return;
-        }
-
-        if (SemanticEntityEmbedder.isEmbeddableEntityType(typeName)) {
-            expanded.add(guid);
-        }
-    }
-
     // capped: a poll that takes longer than max.poll.interval.ms is redelivered, so an unbounded fan-out could loop
-    private static void addAssignedEntityGuids(String termGuid, AtlasVertex termVertex, Set<String> expanded) {
+    private static void addAssignedEntityGuids(String termGuid, Set<String> expanded) {
         int maxEntities = Math.max(0, AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getInt());
         if (maxEntities == 0) {
             LOG.debug("Glossary term {} updated: fan-out disabled ({}=0)", termGuid, AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName());
             return;
         }
 
+        AtlasVertex termVertex = AtlasGraphUtilsV2.findByGuid(termGuid);
+        if (termVertex == null) {
+            return;
+        }
+
         int count = 0;
-        for (AtlasEdge edge : SemanticTextBuilder.activeTermAssignmentEdges(termVertex, AtlasEdgeDirection.OUT, maxEntities + 1)) {
+        for (AtlasEdge edge : GraphHelper.getActiveTermAssignmentEdges(termVertex, AtlasEdgeDirection.OUT, maxEntities + 1)) {
             if (edge == null) {
                 continue;
             }

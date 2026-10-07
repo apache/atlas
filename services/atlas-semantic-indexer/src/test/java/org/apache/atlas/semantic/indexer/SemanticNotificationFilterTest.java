@@ -24,7 +24,7 @@ import org.apache.atlas.model.notification.EntityNotification.EntityNotification
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
 import org.testng.annotations.Test;
 
-import java.util.Set;
+import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -43,7 +43,7 @@ public class SemanticNotificationFilterTest {
         EntityNotificationV2 notification = new EntityNotificationV2(
                 entity("guid-2"), OperationType.ENTITY_UPDATE);
         assertTrue(SemanticNotificationFilter.shouldProcess(notification));
-        assertEquals(SemanticNotificationFilter.extractGuids(notification), Set.of("guid-2"));
+        assertEquals(SemanticNotificationFilter.extractGuidTypes(notification), Map.of("guid-2", "hive_table"));
     }
 
     @Test
@@ -66,7 +66,7 @@ public class SemanticNotificationFilterTest {
                 relationship("AtlasGlossarySemanticAssignment"), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
 
         assertTrue(SemanticNotificationFilter.shouldProcess(notification));
-        assertEquals(SemanticNotificationFilter.extractGuids(notification), Set.of("entity-guid"));
+        assertEquals(SemanticNotificationFilter.extractGuidTypes(notification), Map.of("entity-guid", "hive_table"));
     }
 
     @Test
@@ -88,8 +88,8 @@ public class SemanticNotificationFilterTest {
     private static AtlasRelationshipHeader relationship(String typeName) {
         AtlasRelationshipHeader relationship = new AtlasRelationshipHeader();
         relationship.setTypeName(typeName);
-        relationship.setEnd1(objectId("term-guid"));
-        relationship.setEnd2(objectId("entity-guid"));
+        relationship.setEnd1(objectId("term-guid", "AtlasGlossaryTerm"));
+        relationship.setEnd2(objectId("entity-guid", "hive_table"));
         return relationship;
     }
 
@@ -111,9 +111,10 @@ public class SemanticNotificationFilterTest {
         return header;
     }
 
-    private static AtlasObjectId objectId(String guid) {
+    private static AtlasObjectId objectId(String guid, String typeName) {
         AtlasObjectId objectId = new AtlasObjectId();
         objectId.setGuid(guid);
+        objectId.setTypeName(typeName);
         return objectId;
     }
 }

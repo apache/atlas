@@ -34,7 +34,10 @@ public final class SemanticRetry {
     }
 
     public static <T> T run(String operationName, Callable<T> operation) throws SemanticSearchException {
-        int  maxAttempts = AtlasConfiguration.SEMANTIC_RETRY_MAX_ATTEMPTS.getInt();
+        return run(operationName, AtlasConfiguration.SEMANTIC_RETRY_MAX_ATTEMPTS.getInt(), operation);
+    }
+
+    public static <T> T run(String operationName, int maxAttempts, Callable<T> operation) throws SemanticSearchException {
         long baseSleepMs = AtlasConfiguration.SEMANTIC_RETRY_SLEEP_MS.getLong();
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {

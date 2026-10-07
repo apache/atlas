@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.semantic;
 
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.glossary.GlossaryUtils;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -47,7 +46,6 @@ public class SemanticEntityEmbedder {
             GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME,
             GlossaryUtils.ATLAS_GLOSSARY_TYPENAME,
             GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME);
-
     private final SemanticTextBuilder textBuilder;
     private final SemanticVectorStore semanticStore;
 
@@ -111,10 +109,8 @@ public class SemanticEntityEmbedder {
                 case SKIPPED:
                     skipped++;
                     break;
-                case FAILED:
-                    failed++;
-                    break;
                 default:
+                    failed++;
                     break;
             }
         }
@@ -131,43 +127,23 @@ public class SemanticEntityEmbedder {
     }
 
     private IndexOutcome indexGuid(String guid) {
-        AtlasVertex vertex;
-
         try {
-            vertex = loadIndexableVertex(guid);
-        } catch (RuntimeException e) {
-            LOG.error("Semantic indexing failed while loading vertex for guid={}", guid, e);
-            return IndexOutcome.FAILED;
-        }
+            AtlasVertex vertex = loadIndexableVertex(guid);
+            if (vertex == null) {
+                LOG.debug("Skipping semantic update for guid={}: not indexable or not found", guid);
+                return IndexOutcome.SKIPPED;
+            }
 
-        if (vertex == null) {
-            LOG.debug("Skipping semantic update for guid={}: not indexable or not found", guid);
-            return IndexOutcome.SKIPPED;
-        }
+            String text = textBuilder.buildText(vertex);
+            if (StringUtils.isBlank(text)) {
+                LOG.debug("Skipping semantic update for guid={}: no embeddable text", guid);
+                return IndexOutcome.SKIPPED;
+            }
 
-        String text;
-
-        try {
-            text = textBuilder.buildText(vertex);
-        } catch (RuntimeException e) {
-            LOG.error("Failed to build semantic text for guid={}", guid, e);
-            return IndexOutcome.FAILED;
-        }
-
-        if (StringUtils.isBlank(text)) {
-            LOG.debug("Skipping semantic update for guid={}: no embeddable text", guid);
-            return IndexOutcome.SKIPPED;
-        }
-
-        try {
             semanticStore.updateEmbedding(guid, text);
             LOG.debug("Updated semantic embedding for guid={}", guid);
             return IndexOutcome.INDEXED;
-        } catch (SemanticSearchException e) {
-            LOG.error("Abandoning semantic indexing for guid={} (max attempts={}): {}",
-                    guid, AtlasConfiguration.SEMANTIC_RETRY_MAX_ATTEMPTS.getInt(), e.getMessage());
-            return IndexOutcome.FAILED;
-        } catch (RuntimeException e) {
+        } catch (SemanticSearchException | RuntimeException e) {
             LOG.error("Semantic indexing failed for guid={}", guid, e);
             return IndexOutcome.FAILED;
         }

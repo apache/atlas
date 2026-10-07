@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.function.BooleanSupplier;
 
 /**
  * Minimal HTTP health endpoint for the standalone semantic indexer process.
@@ -34,17 +33,15 @@ import java.util.function.BooleanSupplier;
 public final class SemanticIndexerHealthServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticIndexerHealthServer.class);
 
-    private final HttpServer        server;
-    private final BooleanSupplier     running;
-    private final long                startTimeMs = System.currentTimeMillis();
-    private final int                 port;
-    private final String              path;
+    private final HttpServer server;
+    private final long       startTimeMs = System.currentTimeMillis();
+    private final int        port;
+    private final String     path;
 
-    public SemanticIndexerHealthServer(int port, String path, BooleanSupplier running) throws IOException {
-        this.port    = port;
-        this.path    = path.startsWith("/") ? path : "/" + path;
-        this.running = running;
-        this.server  = HttpServer.create(new InetSocketAddress(port), 0);
+    public SemanticIndexerHealthServer(int port, String path) throws IOException {
+        this.port   = port;
+        this.path   = path.startsWith("/") ? path : "/" + path;
+        this.server = HttpServer.create(new InetSocketAddress(port), 0);
         this.server.createContext(this.path, this::handleHealth);
         this.server.setExecutor(null);
     }
@@ -66,17 +63,14 @@ public final class SemanticIndexerHealthServer implements AutoCloseable {
             return;
         }
 
-        boolean up   = running.getAsBoolean();
-        int     code = up ? 200 : 503;
         long uptimeSeconds = (System.currentTimeMillis() - startTimeMs) / 1000L;
         String body = String.format(
-                "{\"status\":\"%s\",\"service\":\"atlas-semantic-indexer\",\"uptimeSeconds\":%d}",
-                up ? "UP" : "DOWN",
+                "{\"status\":\"UP\",\"service\":\"atlas-semantic-indexer\",\"uptimeSeconds\":%d}",
                 uptimeSeconds);
 
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json");
-        exchange.sendResponseHeaders(code, bytes.length);
+        exchange.sendResponseHeaders(200, bytes.length);
 
         try (OutputStream out = exchange.getResponseBody()) {
             out.write(bytes);

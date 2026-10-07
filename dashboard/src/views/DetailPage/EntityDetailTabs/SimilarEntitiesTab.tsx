@@ -92,8 +92,7 @@ const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
   if (!results.length) {
     return (
       <Typography sx={{ p: 2 }} color="text.secondary">
-        No similar entities found. Ensure semantic search is enabled and entities
-        are indexed.
+        No similar entities found. Ensure entities are indexed.
       </Typography>
     );
   }

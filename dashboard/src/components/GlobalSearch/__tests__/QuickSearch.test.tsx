@@ -97,7 +97,8 @@ jest.mock('../../../utils/Utils', () => ({
 }))
 
 jest.mock('../../../utils/Enum', () => ({
-	entityStateReadOnly: { DELETED: true, ACTIVE: false }
+	entityStateReadOnly: { DELETED: true, ACTIVE: false },
+	globalSessionData: { semanticSearch: true }
 }))
 
 jest.mock('@hooks/reducerHook', () => ({
@@ -606,6 +607,16 @@ describe('QuickSearch', () => {
 					screen.getByPlaceholderText('Contains text...')
 				).toBeInTheDocument()
 			})
+		})
+
+		it('keeps Semantic scope selected on semantic search results', () => {
+			mockUseLocation.mockReturnValue({
+				pathname: '/search/searchResult',
+				search: '?searchType=semantic&query=orders'
+			})
+			render(<QuickSearch />)
+
+			expect(screen.getByPlaceholderText('Semantic search (meaning-based)...')).toBeInTheDocument()
 		})
 
 		it('renders text field with placeholder', () => {

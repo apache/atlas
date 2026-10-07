@@ -156,6 +156,13 @@
                 <include>atlas-semantic-repair-tool-${project.version}.jar</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>../tools/atlas-semantic-repair/conf</directory>
+            <outputDirectory>conf</outputDirectory>
+            <includes>
+                <include>atlas-semantic-repair-logback.xml</include>
+            </includes>
+        </fileSet>
 
         <fileSet>
             <directory>../</directory>

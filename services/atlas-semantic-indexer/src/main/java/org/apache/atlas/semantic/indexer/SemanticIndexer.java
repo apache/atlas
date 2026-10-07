@@ -27,8 +27,10 @@ import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.semantic.OpenSearchSemanticStore;
 import org.apache.atlas.semantic.SemanticEntityEmbedder;
+import org.apache.atlas.semantic.SemanticEntityEmbedder.IndexStats;
 import org.apache.atlas.semantic.SemanticIndexSetup;
 import org.apache.atlas.semantic.SemanticTextBuilder;
 import org.apache.atlas.semantic.SemanticVectorStore;
@@ -56,7 +58,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SemanticIndexer {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticIndexer.class);
 
-    private static final long SHUTDOWN_TIMEOUT_SEC = 30L;
+    private static final long SHUTDOWN_TIMEOUT_MS   = 30_000L;
+    private static final long BACKEND_RETRY_WAIT_MS = 10_000L;
+    private static final String GRAPH_PROBE_GUID    = "00000000-0000-0000-0000-000000000000";
 
     private static volatile boolean running = true;
 
@@ -68,13 +72,14 @@ public class SemanticIndexer {
         final CountDownLatch stopped = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            LOG.info("Semantic Indexer shutdown requested; finishing the current batch (up to {} ms)", SHUTDOWN_TIMEOUT_MS);
             running = false;
             NotificationConsumer<EntityNotification> consumer = consumerRef.get();
             if (consumer != null) {
                 consumer.wakeup();
             }
             try {
-                stopped.await(SHUTDOWN_TIMEOUT_SEC, TimeUnit.SECONDS);
+                stopped.await(SHUTDOWN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -100,8 +105,7 @@ public class SemanticIndexer {
             if (AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_ENABLED.getBoolean()) {
                 healthServer = new SemanticIndexerHealthServer(
                         AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PORT.getInt(),
-                        AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PATH.getString(),
-                        () -> running);
+                        AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PATH.getString());
                 healthServer.start();
             }
 
@@ -131,30 +135,28 @@ public class SemanticIndexer {
                 List<AtlasKafkaMessage<EntityNotification>> messages;
                 try {
                     messages = consumer.receive();
-                } catch (RuntimeException e) {
-                    if (!running) {
-                        LOG.info("Semantic Indexer poll interrupted during shutdown");
-                        break;
-                    }
-                    throw e;
+                } catch (WakeupException e) {
+                    LOG.info("Semantic Indexer poll interrupted during shutdown");
+                    break;
                 }
 
                 if (messages == null || messages.isEmpty()) {
                     continue;
                 }
 
-                try {
-                    processMessages(messages, embedder);
-                } catch (RuntimeException e) {
-                    // commit anyway so one bad message can't block the partition; atlas_semantic_repair.sh backfills
-                    LOG.error("Failed to process {} Kafka message(s) (first offset={}); committing and continuing",
-                            messages.size(), messages.get(0).getOffset(), e);
-                } finally {
-                    // end the thread-bound read tx so the next message never reads vertices cached before its commit
-                    AtlasGraphProvider.getGraphInstance().rollback();
+                // A failure while OpenSearch or the graph is down is retried until both answer, without committing.
+                // Any other failure (e.g. HTTP 400) is committed: atlas_semantic_repair.sh backfills it.
+                boolean retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
+                while (retry && running) {
+                    LOG.warn("OpenSearch or the graph is unavailable: retrying {} Kafka message(s) (first offset={}) in {} ms",
+                            messages.size(), messages.get(0).getOffset(), BACKEND_RETRY_WAIT_MS);
+                    Thread.sleep(BACKEND_RETRY_WAIT_MS);
+                    retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
                 }
 
-                commitOffsets(consumer, messages);
+                if (!retry) {
+                    commitOffsets(consumer, messages);
+                }
             }
 
             exitCode = 0;
@@ -192,39 +194,57 @@ public class SemanticIndexer {
         }
     }
 
-    private static void processMessages(List<AtlasKafkaMessage<EntityNotification>> messages,
-                                        SemanticEntityEmbedder embedder) {
-        Set<String> guids = new LinkedHashSet<>();
-        for (AtlasKafkaMessage<EntityNotification> kafkaMessage : messages) {
-            EntityNotification notification = kafkaMessage.getMessage();
-            if (!(notification instanceof EntityNotificationV2)) {
-                continue;
+    private static IndexStats processMessages(List<AtlasKafkaMessage<EntityNotification>> messages,
+                                              SemanticEntityEmbedder embedder) {
+        Set<String> guids          = new LinkedHashSet<>();
+        int         expandFailures = 0;
+
+        try {
+            for (AtlasKafkaMessage<EntityNotification> kafkaMessage : messages) {
+                EntityNotification notification = kafkaMessage.getMessage();
+                if (!(notification instanceof EntityNotificationV2)) {
+                    continue;
+                }
+
+                EntityNotificationV2 entityNotification = (EntityNotificationV2) notification;
+                if (!SemanticNotificationFilter.shouldProcess(entityNotification)) {
+                    continue;
+                }
+
+                // per message, so one unreadable message doesn't drop the rest of the poll
+                try {
+                    guids.addAll(SemanticNotificationGuidExpander.expandForIndexing(
+                            SemanticNotificationFilter.extractGuidTypes(entityNotification)));
+                } catch (RuntimeException e) {
+                    expandFailures++;
+                    LOG.error("Failed to expand guids of Kafka message at offset {} ({})",
+                            kafkaMessage.getOffset(), kafkaMessage.getTopicPartition(), e);
+                }
             }
 
-            EntityNotificationV2 entityNotification = (EntityNotificationV2) notification;
-            if (!SemanticNotificationFilter.shouldProcess(entityNotification)) {
-                continue;
+            IndexStats stats = new IndexStats(0, 0, expandFailures);
+            if (!guids.isEmpty()) {
+                LOG.info("Processing {} guid(s) from {} Kafka message(s)", guids.size(), messages.size());
+                stats = stats.add(embedder.embed(guids));
             }
-
-            // per message, so one unreadable message is skipped without dropping the rest of the poll
-            try {
-                guids.addAll(SemanticNotificationGuidExpander.expandForIndexing(
-                        SemanticNotificationFilter.extractGuids(entityNotification)));
-            } catch (RuntimeException e) {
-                LOG.error("Skipping Kafka message at offset {} ({}): failed to expand guids",
-                        kafkaMessage.getOffset(), kafkaMessage.getTopicPartition(), e);
-            }
+            return stats;
+        } finally {
+            // end the thread-bound read tx so the next message never reads vertices cached before its commit
+            AtlasGraphProvider.getGraphInstance().rollback();
         }
+    }
 
-        if (guids.isEmpty()) {
-            return;
-        }
-
-        LOG.info("Processing {} guid(s) from {} Kafka message(s)", guids.size(), messages.size());
-        SemanticEntityEmbedder.IndexStats stats = embedder.embed(guids);
-        if (stats.hasFailures()) {
-            LOG.warn("Completed batch with {} indexing failure(s) (skipped={}, indexed={})",
-                    stats.getFailed(), stats.getSkipped(), stats.getIndexed());
+    /**
+     * Whether the graph storage backend and the vector store both answer. Atlas has no graph health API: any read
+     * that reaches the storage backend tells whether it answers.
+     */
+    private static boolean backendsAvailable(SemanticVectorStore semanticStore) {
+        try {
+            AtlasGraphUtilsV2.findByGuid(GRAPH_PROBE_GUID);
+            AtlasGraphProvider.getGraphInstance().rollback();
+            return semanticStore.isAvailable();
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 

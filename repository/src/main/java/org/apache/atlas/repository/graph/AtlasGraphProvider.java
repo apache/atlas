@@ -24,8 +24,6 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
-import org.apache.atlas.semantic.SemanticIndexSetup;
-import org.apache.atlas.semantic.SemanticSearchException;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,8 +95,6 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
                     me = graphDb;
 
                     if (me == null) {
-                        SemanticIndexSetup.validateConfigurationWhenEnabled();
-
                         Class<?> implClass = AtlasRepositoryConfiguration.getGraphDatabaseImpl();
 
                         me = (GraphDatabase<V, E>) implClass.newInstance();
@@ -111,8 +107,6 @@ public class AtlasGraphProvider implements IAtlasGraphProvider {
             return me;
         } catch (IllegalAccessException | InstantiationException e) {
             throw new RuntimeException("Error initializing graph database", e);
-        } catch (SemanticSearchException e) {
-            throw new IllegalStateException("Invalid semantic search configuration: " + e.getMessage(), e);
         }
     }
 

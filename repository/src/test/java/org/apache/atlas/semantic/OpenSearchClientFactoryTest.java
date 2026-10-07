@@ -24,10 +24,10 @@ import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 
-public class SemanticOpenSearchHttpClientTest {
+public class OpenSearchClientFactoryTest {
     @Test
     public void parseHostsSupportsListsAndHostPort() throws Exception {
-        List<HttpHost> hosts = SemanticOpenSearchHttpClient.parseHosts(
+        List<HttpHost> hosts = OpenSearchClientFactory.parseHosts(
                 new String[] {"os1", "os2:9201, os3 "}, 9200, "https");
 
         assertEquals(hosts.size(), 3);
@@ -38,26 +38,26 @@ public class SemanticOpenSearchHttpClientTest {
 
     @Test(expectedExceptions = SemanticSearchException.class)
     public void parseHostsRejectsEmpty() throws Exception {
-        SemanticOpenSearchHttpClient.parseHosts(new String[] {" "}, 9200, "http");
+        OpenSearchClientFactory.parseHosts(new String[] {" "}, 9200, "http");
     }
 
     @Test(expectedExceptions = SemanticSearchException.class, expectedExceptionsMessageRegExp = ".*IPv6.*")
     public void parseHostsRejectsIpv6() throws Exception {
-        SemanticOpenSearchHttpClient.parseHosts(new String[] {"[::1]:9200"}, 9200, "http");
+        OpenSearchClientFactory.parseHosts(new String[] {"[::1]:9200"}, 9200, "http");
     }
 
     @Test(expectedExceptions = SemanticSearchException.class, expectedExceptionsMessageRegExp = ".*invalid port in 'os1:abc'.*")
     public void parseHostsRejectsNonNumericPort() throws Exception {
-        SemanticOpenSearchHttpClient.parseHosts(new String[] {"os1:abc"}, 9200, "http");
+        OpenSearchClientFactory.parseHosts(new String[] {"os1:abc"}, 9200, "http");
     }
 
     @Test(expectedExceptions = SemanticSearchException.class, expectedExceptionsMessageRegExp = ".*invalid port.*")
     public void parseHostsRejectsOutOfRangePort() throws Exception {
-        SemanticOpenSearchHttpClient.parseHosts(new String[] {"os1:70000"}, 9200, "http");
+        OpenSearchClientFactory.parseHosts(new String[] {"os1:70000"}, 9200, "http");
     }
 
     @Test(expectedExceptions = SemanticSearchException.class)
     public void parseHostsRejectsMissingHost() throws Exception {
-        SemanticOpenSearchHttpClient.parseHosts(new String[] {":9200"}, 9200, "http");
+        OpenSearchClientFactory.parseHosts(new String[] {":9200"}, 9200, "http");
     }
 }

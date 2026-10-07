@@ -32,19 +32,18 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -57,6 +56,8 @@ public class SemanticNotificationGuidExpanderTest {
     public void setUp() {
         graphUtils  = mockStatic(AtlasGraphUtilsV2.class);
         graphHelper = mockStatic(GraphHelper.class);
+
+        graphHelper.when(() -> GraphHelper.getActiveTermAssignmentEdges(any(), any(), anyInt())).thenCallRealMethod();
     }
 
     @AfterMethod
@@ -67,16 +68,12 @@ public class SemanticNotificationGuidExpanderTest {
 
     @Test
     public void expandForIndexingMapsGlossaryTermGuidToAssignedEntities() {
-        AtlasVertex termVertex   = mock(AtlasVertex.class);
-        AtlasVertex entityVertex = mock(AtlasVertex.class);
-        AtlasEdge   edge         = mock(AtlasEdge.class);
-        AtlasVertexQuery query   = mock(AtlasVertexQuery.class);
+        AtlasVertex      termVertex   = mock(AtlasVertex.class);
+        AtlasVertex      entityVertex = mock(AtlasVertex.class);
+        AtlasEdge        edge         = mock(AtlasEdge.class);
+        AtlasVertexQuery query        = mock(AtlasVertexQuery.class);
 
         graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("term-guid")).thenReturn(termVertex);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, TYPE_NAME_PROPERTY_KEY, String.class))
-                .thenReturn("AtlasGlossaryTerm");
-        graphHelper.when(() -> GraphHelper.isInternalType("AtlasGlossaryTerm")).thenReturn(false);
-
         when(termVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.OUT)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
@@ -85,7 +82,7 @@ public class SemanticNotificationGuidExpanderTest {
         when(edge.getInVertex()).thenReturn(entityVertex);
         graphHelper.when(() -> GraphHelper.getGuid(entityVertex)).thenReturn("entity-guid");
 
-        Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid"));
+        Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Map.of("term-guid", "AtlasGlossaryTerm"));
 
         assertEquals(expanded, Set.of("entity-guid"));
     }
@@ -107,8 +104,6 @@ public class SemanticNotificationGuidExpanderTest {
         }
 
         graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("term-guid")).thenReturn(termVertex);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, TYPE_NAME_PROPERTY_KEY, String.class))
-                .thenReturn("AtlasGlossaryTerm");
         when(termVertex.query()).thenReturn(query);
         when(query.direction(AtlasEdgeDirection.OUT)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
@@ -117,7 +112,7 @@ public class SemanticNotificationGuidExpanderTest {
 
         ApplicationProperties.get().setProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName(), 2);
         try {
-            Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid"));
+            Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Map.of("term-guid", "AtlasGlossaryTerm"));
 
             assertEquals(expanded, Set.of("entity-0", "entity-1"));
         } finally {
@@ -127,46 +122,25 @@ public class SemanticNotificationGuidExpanderTest {
 
     @Test
     public void expandForIndexingSkipsGlossaryTermFanOutWhenDisabled() throws Exception {
-        AtlasVertex termVertex = mock(AtlasVertex.class);
-
-        graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("term-guid")).thenReturn(termVertex);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(termVertex, TYPE_NAME_PROPERTY_KEY, String.class))
-                .thenReturn("AtlasGlossaryTerm");
-
         ApplicationProperties.get().setProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName(), 0);
         try {
-            assertTrue(SemanticNotificationGuidExpander.expandForIndexing(Set.of("term-guid")).isEmpty());
-            verify(termVertex, never()).query();
+            assertTrue(SemanticNotificationGuidExpander.expandForIndexing(Map.of("term-guid", "AtlasGlossaryTerm")).isEmpty());
+            graphUtils.verify(() -> AtlasGraphUtilsV2.findByGuid(any()), never());
         } finally {
             ApplicationProperties.get().clearProperty(AtlasConfiguration.SEMANTIC_INDEXER_MAX_TERM_ENTITIES.getPropertyName());
         }
     }
 
     @Test
-    public void expandForIndexingKeepsEmbeddableEntityGuid() {
-        AtlasVertex entityVertex = mock(AtlasVertex.class);
+    public void expandForIndexingPassesOtherGuidsOnWithoutReadingTheGraph() {
+        Map<String, String> guidTypes = new LinkedHashMap<>();
+        guidTypes.put("table-guid", "hive_table");
+        guidTypes.put("glossary-guid", "AtlasGlossary");
+        guidTypes.put("untyped-guid", null);
 
-        graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("entity-guid")).thenReturn(entityVertex);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(entityVertex, TYPE_NAME_PROPERTY_KEY, String.class))
-                .thenReturn("DataSet");
-        graphHelper.when(() -> GraphHelper.isInternalType("DataSet")).thenReturn(false);
+        Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(guidTypes);
 
-        Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("entity-guid"));
-
-        assertEquals(expanded, Set.of("entity-guid"));
-    }
-
-    @Test
-    public void expandForIndexingSkipsGlossaryContainerTypes() {
-        AtlasVertex glossaryVertex = mock(AtlasVertex.class);
-
-        graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid("glossary-guid")).thenReturn(glossaryVertex);
-        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(glossaryVertex, TYPE_NAME_PROPERTY_KEY, String.class))
-                .thenReturn("AtlasGlossary");
-        graphHelper.when(() -> GraphHelper.isInternalType("AtlasGlossary")).thenReturn(false);
-
-        Set<String> expanded = SemanticNotificationGuidExpander.expandForIndexing(Set.of("glossary-guid"));
-
-        assertTrue(expanded.isEmpty());
+        assertEquals(expanded, Set.of("table-guid", "glossary-guid", "untyped-guid"));
+        graphUtils.verify(() -> AtlasGraphUtilsV2.findByGuid(any()), never());
     }
 }
