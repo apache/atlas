@@ -351,6 +351,24 @@ public class AtlasSimpleAuthorizerTest {
     }
 
     @Test
+    public void testPostNotificationDeniedForNullTopic() throws AtlasAuthorizationException {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, null);
+
+        setUser(request, USER_ADMIN);
+
+        AssertJUnit.assertFalse("null topic must not bypass topic scoping", authorizer.isAccessAllowed(request));
+    }
+
+    @Test
+    public void testPostNotificationDeniedForBlankTopic() throws AtlasAuthorizationException {
+        AtlasNotificationRequest request = new AtlasNotificationRequest(AtlasPrivilege.POST_NOTIFICATION, "   ");
+
+        setUser(request, USER_ADMIN);
+
+        AssertJUnit.assertFalse("blank topic must not bypass topic scoping", authorizer.isAccessAllowed(request));
+    }
+
+    @Test
     public void testBusinessMetadata() {
         try {
             for (String userName : Arrays.asList(USER_DATA_SCIENTIST, USER_DATA_STEWARD)) {
