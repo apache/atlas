@@ -259,6 +259,12 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     public boolean isAccessAllowed(AtlasNotificationRequest request) {
         LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
 
+        if (request == null || StringUtils.isBlank(request.getTopicName())) {
+            LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): false (missing topic)", request);
+
+            return false;
+        }
+
         boolean     ret   = false;
         Set<String> roles = getRoles(request.getUser(), request.getUserGroups());
 

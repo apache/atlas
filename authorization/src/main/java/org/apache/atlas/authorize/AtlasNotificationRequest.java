@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.authorize;
 
-
 public class AtlasNotificationRequest extends AtlasAccessRequest {
     private final String topicName;
 

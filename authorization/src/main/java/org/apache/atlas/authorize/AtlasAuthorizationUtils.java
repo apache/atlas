@@ -223,7 +223,9 @@ public class AtlasAuthorizationUtils {
         boolean ret      = false;
         String  userName = getCurrentUserName();
 
-        if (StringUtils.isNotEmpty(userName)) {
+        if (request == null || StringUtils.isBlank(request.getTopicName())) {
+            ret = false;
+        } else if (StringUtils.isNotEmpty(userName)) {
             try {
                 AtlasAuthorizer authorizer = AtlasAuthorizerFactory.getAtlasAuthorizer();
 
@@ -236,8 +238,6 @@ public class AtlasAuthorizationUtils {
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
-        } else {
-            ret = true;
         }
 
         RequestContext.get().endMetricRecord(metric);
