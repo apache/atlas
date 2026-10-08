@@ -442,7 +442,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
             }
         }
 
-        return entityRetriever.mapEdgeToAtlasRelationship(relationshipEdge);
+        return entityRetriever.mapEdgeToAtlasRelationship(graphHelper.getEdgeForGUID(relationship.getGuid()));
     }
 
     private void updateTagPropagations(AtlasEdge relationshipEdge, AtlasRelationship relationship) throws AtlasBaseException {
