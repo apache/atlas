@@ -50,6 +50,11 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
+    public boolean isAccessAllowed(AtlasNotificationRequest request) {
+        return true;
+    }
+
+    @Override
     public void scrubSearchResults(AtlasSearchResultScrubRequest request) {
     }
 }
