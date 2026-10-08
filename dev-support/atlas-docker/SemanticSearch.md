@@ -50,8 +50,9 @@ Example graph around the column `customer.email` (boxes are vertices, arrows are
 Order of the text, starting at the entity vertex (the numbers match the diagram; 1 is the entity box itself):
 
 1. Type name, then a fixed list of text attributes, in this order: `name`, `displayName`, `description`,
-   `userDescription`, `qualifiedName`, then any `<type>.comment` (`hive_table.comment`, `hive_column.comment`).
-   Small embedding models only read the first ~256-512 tokens. Other attributes (`owner`, enums such as
+   `userDescription`, any `<type>.comment` (`hive_table.comment`, `hive_column.comment`), then `qualifiedName`.
+   Small embedding models only read the first ~128-512 tokens (`paraphrase-MiniLM-L3-v2`, used by the dev
+   scripts: 128), so the most meaningful text comes first. Other attributes (`owner`, enums such as
    `tableType`, SQL text, paths, numbers, maps) are not embedded. References to other entities are edges, not properties, so a column's text doesn't
    include its table.
 2. `__classificationsText`, `__labels` and `__customAttributes` (entity vertex properties). Atlas keeps the type
@@ -60,7 +61,7 @@ Order of the text, starting at the entity vertex (the numbers match the diagram;
 3. For each active `r:AtlasGlossarySemanticAssignment` edge (term to entity, read from the entity side; with
    soft delete, removed assignments keep their edge as `DELETED` and are skipped): the term's
    name, abbreviation and description. At most 100 assigned terms are read per entity (code constant
-   `MAX_GLOSSARY_TERMS` in `SemanticTextBuilder`), fewer once the text is full; which 100 is up to JanusGraph.
+   `MAX_GLOSSARY_TERM_COUNT` in `SemanticTextBuilder`), fewer once the text is full; which 100 is up to JanusGraph.
 
 Terms linked to an assigned term (synonyms, related terms, antonyms, preferred terms, replacements,
 translations, ...) are **not** followed. Their text would be one level further from the entity, so a change to
@@ -157,6 +158,17 @@ Run (non-Docker):
 
     atlas_semantic_indexer.sh
 
+Offsets are committed after each poll. If a poll has a failure, the indexer first checks OpenSearch
+(`_cluster/health`) and the graph:
+
+- Both answer: the failure is specific to the entity (e.g. HTTP 400 for the text). It is logged, the poll is
+  committed, and `atlas_semantic_repair.sh` backfills it.
+- Either is down: the poll is not committed. The indexer processes the same poll again every 10 s until it
+  succeeds or both backends answer.
+- A wait longer than `atlas.semantic.indexer.kafka.max.poll.interval.ms` makes Kafka rebalance; the poll is then
+  redelivered from the last committed offset (re-embedding is idempotent). On shutdown during a wait the poll
+  stays uncommitted and is redelivered.
+
 Health endpoint (enabled by default, no auth):
 
     GET http://localhost:8089/health
@@ -198,6 +210,14 @@ tool read the same JanusGraph index backend settings as Atlas
 Hard limits (code constants, not configurable): `topK` ≤ 100, semantic query ≤ 30,000 characters.
 REST also applies `atlas.query.param.max.length` (default 4096) to the query first.
 
+REST search requests to OpenSearch use a 10 s read timeout and at most 2 attempts; the indexer and repair use `.socket-timeout` and `atlas.semantic.retry.max.attempts`.
+A request moves to the next host only when it can't connect; a read timeout is not retried on another host.
+HTTP 429/502/503/504 and connection failures are retried.
+
+With `atlas.semantic.enabled=false`, `/v2/search/semantic` and `/v2/search/similar` return 400
+(`ATLAS-400-00-10B`), and the UI hides the "Semantic" search scope and the "Similar" entity tab
+(`/admin/session` returns `atlas.semantic.enabled`).
+
 ## Operations
 
 ### `index.knn` must be set when the vertex index is created
@@ -211,10 +231,17 @@ New installs: set this before Atlas starts for the first time:
 atlas.graph.index.search.opensearch.create.ext.knn=true
 ```
 
-Atlas (when `atlas.semantic.enabled=true`), the Semantic Indexer and the repair tool refuse to start without it.
-They check it before opening the graph, so a missing property can't create a vertex index without knn.
-The property only affects index creation; on an existing index, the knn check at indexer/repair startup still
-applies.
+The distro `atlas-application.properties` sets it by default. It requires the OpenSearch k-NN plugin: without the
+plugin, OpenSearch rejects the setting and Atlas can't create the vertex index, so remove the line in that case.
+
+The Semantic Indexer and the repair tool refuse to start without it. They check it before opening the graph, so a
+missing property can't create a vertex index without knn. The property only affects index creation; on an
+existing index, the knn check at indexer/repair startup still applies.
+
+The Atlas server doesn't check it at startup. If the vertex index has no knn (or no embedding field yet),
+`/v2/search/semantic` and `/v2/search/similar` return 503 (`ATLAS-503-00-001`, "Semantic search is not
+available: ...") and the server log names the index; nothing else is affected. The check is repeated on each
+request until it passes, so a fixed index needs no restart.
 
 **Existing Atlas with data** (vertex index created without knn): `index.knn` can't be updated, but it can
 be set when **cloning** the index. `_clone` hard-links the segment files, so it takes seconds and almost no
@@ -350,8 +377,9 @@ Content-Type: application/json
 GET /api/atlas/v2/search/similar?guid=<entity-guid>&topK=10&attributes=owner&attributes=createTime
 ```
 
-Without `topK`, both endpoints use `atlas.semantic.search.default.topK`. `attributes` adds those attributes to
-each returned entity header. `/similar` needs read access on the source entity. Backend failures return a
+Results are in `fullTextResult`, best first: each item has the entity header (`entity`) and its `score`;
+`entities` is not set. Without `topK`, both endpoints use `atlas.semantic.search.default.topK`. `attributes`
+adds those attributes to each returned entity header. `/similar` needs read access on the source entity. Backend failures return a
 generic error; the OpenSearch details are in the Atlas server log.
 
 After upgrading to a build that changes the embedding text (field order, skipped properties, glossary terms),
@@ -372,10 +400,21 @@ run `atlas_semantic_repair.sh --all` so that all embeddings are built from the s
 ```bash
 # From repo root
 mvn -pl repository,services/atlas-semantic-indexer,tools/atlas-semantic-repair,distro -am \
-  package -DskipTests -DskipEnunciate=true
+  package -Pdist -DskipTests -DskipEnunciate=true -DskipDocs=true
 
 cp distro/target/apache-atlas-*-server.tar.gz dev-support/atlas-docker/dist/
 cp services/atlas-semantic-indexer/target/apache-atlas-*-semantic-indexer.tar.gz dev-support/atlas-docker/dist/
+```
+
+Run the semantic tests (backend and dashboard):
+
+```bash
+# From repo root; -am builds the modules they depend on, so stale jars don't break the build
+mvn -pl repository,services/atlas-semantic-indexer,tools/atlas-semantic-repair -am test \
+  -DskipEnunciate=true -Dsurefire.failIfNoSpecifiedTests=false -DfailIfNoTests=false \
+  -Dtest='OpenSearch*Test,Semantic*Test'
+
+cd dashboard && npx jest src/components/GlobalSearch src/api/apiMethods
 ```
 
 ### 2. Start the stack
@@ -468,7 +507,7 @@ curl -u admin:atlasR0cks! \
 ./seed/udf-retail/test-udf-retail-semantic.sh
 ```
 
-Expect `queryType: "SEMANTIC"` and non-empty `entities` once embeddings are indexed.
+Expect `queryType: "SEMANTIC"` and a non-empty `fullTextResult` once embeddings are indexed.
 
 ### 6. Logs
 

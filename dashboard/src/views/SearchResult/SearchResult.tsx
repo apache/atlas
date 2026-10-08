@@ -164,8 +164,6 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         try {
           const body: Record<string, unknown> = {
             query,
-            topK: Number(searchParams.get("topK") || 25),
-            minScore: Number(searchParams.get("minScore") || 0),
             excludeDeletedEntities: searchParams.get("includeDE") !== "true",
             includeSubTypes: searchParams.get("excludeST") !== "true"
           };

@@ -493,7 +493,7 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     }
 
     @SuppressWarnings("unchecked")
-    private static List<VectorSearchHit> parseSearchHits(String responseJson) {
+    static List<VectorSearchHit> parseSearchHits(String responseJson) {
         Map<String, Object> response = AtlasJson.fromJson(responseJson, Map.class);
         Object              hitsObj  = response != null ? response.get("hits") : null;
 

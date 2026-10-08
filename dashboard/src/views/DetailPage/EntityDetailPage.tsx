@@ -277,9 +277,7 @@ const EntityDetailPage: React.FC = () => {
           />
         );
       case "similar":
-        return (
-          <SimilarEntitiesTab guid={guid as string} typeName={entity?.typeName} />
-        );
+        return <SimilarEntitiesTab guid={guid as string} />;
       case "classification":
         return (
           <ClassificationsTab entity={entity} loading={loading} tags={tagObj} />

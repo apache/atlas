@@ -205,12 +205,12 @@ describe('searchApiMethod', () => {
 
 	describe('getSimilarEntities', () => {
 		it('should GET similar entities with guid query param', async () => {
-			await getSimilarEntities('guid-123', { params: { topK: 5 } })
+			await getSimilarEntities('guid-123', { typeName: 'hive_table' })
 
 			expect(mockSearchApiUrl).toHaveBeenCalledWith('similar')
 			expect(mockFetchApi).toHaveBeenCalledWith(
-				'/api/search/similar?guid=guid-123&topK=5',
-				expect.objectContaining({ method: 'GET' })
+				'/api/search/similar',
+				{ method: 'GET', params: { guid: 'guid-123', typeName: 'hive_table' } }
 			)
 		})
 	})

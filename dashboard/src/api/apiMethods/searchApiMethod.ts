@@ -34,19 +34,10 @@ const getSemanticSearchResult = (params: { data: Record<string, unknown> }) => {
   });
 };
 
-const getSimilarEntities = (
-  guid: string,
-  options: { params?: Record<string, unknown> } = {}
-) => {
-  const qs = new URLSearchParams({ guid });
-  const extra = options.params || {};
-  Object.entries(extra).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      qs.set(key, String(value));
-    }
-  });
-  return fetchApi(`${searchApiUrl("similar")}?${qs.toString()}`, {
-    method: "GET"
+const getSimilarEntities = (guid: string, params: Record<string, unknown> = {}) => {
+  return fetchApi(searchApiUrl("similar"), {
+    method: "GET",
+    params: { guid, ...params }
   });
 };
 const getRelationShipResult = (params: any) => {

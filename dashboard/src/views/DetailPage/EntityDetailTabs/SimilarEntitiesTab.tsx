@@ -29,12 +29,7 @@ import DisplayImage from "@components/EntityDisplayImage";
 import { extractKeyValueFromEntity, serverError } from "@utils/Utils";
 import { entityStateReadOnly } from "@utils/Enum";
 
-interface SimilarEntitiesTabProps {
-  guid: string;
-  typeName?: string;
-}
-
-const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
+const SimilarEntitiesTab = ({ guid }: { guid: string }) => {
   const [loading, setLoading] = useState(true);
   const [results, setResults] = useState<{ entity: any; score?: number }[]>(
     []
@@ -42,22 +37,12 @@ const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
   const toastId = useRef(null);
 
   useEffect(() => {
-    if (!guid) {
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
 
     (async () => {
       try {
         setLoading(true);
-        const resp = await getSimilarEntities(guid, {
-          params: {
-            topK: 25,
-            ...(typeName ? { typeName } : {})
-          }
-        });
+        const resp = await getSimilarEntities(guid);
         if (cancelled) {
           return;
         }
@@ -79,7 +64,7 @@ const SimilarEntitiesTab = ({ guid, typeName }: SimilarEntitiesTabProps) => {
     return () => {
       cancelled = true;
     };
-  }, [guid, typeName]);
+  }, [guid]);
 
   if (loading) {
     return (

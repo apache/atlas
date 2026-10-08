@@ -23,15 +23,18 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.commons.lang3.StringUtils;
 import org.mockito.MockedStatic;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
@@ -41,6 +44,7 @@ import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TERM_ASSIGNMENT_LABEL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -119,7 +123,7 @@ public class SemanticTextBuilderTest {
         when(query.direction(AtlasEdgeDirection.IN)).thenReturn(query);
         when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
         when(query.has(STATE_PROPERTY_KEY, "ACTIVE")).thenReturn(query);
-        when(query.edges(100)).thenReturn(Collections.singletonList(edge));
+        when(query.edges(anyInt())).thenReturn(Collections.singletonList(edge));
         when(edge.getOutVertex()).thenReturn(termVertex);
 
         graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(entityVertex)).thenReturn("demo_table");
@@ -200,6 +204,53 @@ public class SemanticTextBuilderTest {
         when(vertex.getProperty("hive_table.comment", Object.class)).thenReturn("raw");
 
         assertEquals(builder.buildText(vertex), "hive_table orders all orders one row per order raw db.orders@cl1");
+    }
+
+    @Test
+    public void buildTextCapsEachAttributeValue() {
+        AtlasVertex vertex = mock(AtlasVertex.class);
+        when(vertex.getPropertyKeys()).thenReturn((Collection) Collections.singletonList("Asset.description"));
+        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(vertex)).thenReturn("t");
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(vertex), any(), eq(String.class)))
+                .thenReturn(null);
+        when(vertex.getProperty("Asset.description", Object.class)).thenReturn(StringUtils.repeat('d', 1000));
+
+        assertEquals(builder.buildText(vertex), "t " + StringUtils.repeat('d', 300));
+    }
+
+    @Test
+    public void buildTextStopsReadingTermsOnceTheTextIsFull() {
+        AtlasVertex      entityVertex = mock(AtlasVertex.class);
+        AtlasVertexQuery query        = mock(AtlasVertexQuery.class);
+        List<AtlasEdge>  edges        = new ArrayList<>();
+        List<AtlasVertex> termVertices = new ArrayList<>();
+
+        for (int i = 0; i < 100; i++) {
+            AtlasEdge   edge       = mock(AtlasEdge.class);
+            AtlasVertex termVertex = mock(AtlasVertex.class);
+            when(edge.getOutVertex()).thenReturn(termVertex);
+            edges.add(edge);
+            termVertices.add(termVertex);
+        }
+
+        when(entityVertex.getPropertyKeys()).thenReturn(Collections.emptyList());
+        when(entityVertex.query()).thenReturn(query);
+        when(query.direction(AtlasEdgeDirection.IN)).thenReturn(query);
+        when(query.label(TERM_ASSIGNMENT_LABEL)).thenReturn(query);
+        when(query.has(STATE_PROPERTY_KEY, "ACTIVE")).thenReturn(query);
+        when(query.edges(anyInt())).thenReturn(edges);
+
+        graphUtils.when(() -> AtlasGraphUtilsV2.getTypeName(entityVertex)).thenReturn("demo_table");
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(entityVertex), any(), eq(String.class)))
+                .thenReturn(null);
+        graphUtils.when(() -> AtlasGraphUtilsV2.getEncodedProperty(argThat(v -> v != entityVertex), any(), eq(String.class)))
+                .thenReturn(StringUtils.repeat('t', 200));
+
+        String text = builder.buildText(entityVertex);
+
+        assertEquals(text.length(), 8000);
+        AtlasVertex lastTerm = termVertices.get(termVertices.size() - 1);
+        graphUtils.verify(() -> AtlasGraphUtilsV2.getEncodedProperty(eq(lastTerm), any(), eq(String.class)), never());
     }
 
     @Test

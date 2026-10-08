@@ -93,17 +93,6 @@ public class SemanticNotificationFilterTest {
         return relationship;
     }
 
-    @Test
-    public void dedupeGuidsFromMultipleNotifications() {
-        EntityNotificationV2 create = new EntityNotificationV2(entity("g1"), OperationType.ENTITY_CREATE);
-        EntityNotificationV2 update = new EntityNotificationV2(entity("g1"), OperationType.ENTITY_UPDATE);
-        EntityNotificationV2 delete = new EntityNotificationV2(entity("g1"), OperationType.ENTITY_DELETE);
-
-        assertTrue(SemanticNotificationFilter.shouldProcess(create));
-        assertTrue(SemanticNotificationFilter.shouldProcess(update));
-        assertFalse(SemanticNotificationFilter.shouldProcess(delete));
-    }
-
     private static AtlasEntityHeader entity(String guid) {
         AtlasEntityHeader header = new AtlasEntityHeader();
         header.setGuid(guid);

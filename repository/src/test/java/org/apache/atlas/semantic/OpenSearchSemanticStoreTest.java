@@ -20,6 +20,7 @@ package org.apache.atlas.semantic;
 import org.apache.atlas.utils.AtlasJson;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,25 @@ public class OpenSearchSemanticStoreTest {
     }
 
     @Test
+    public void parseSearchHitsReadsGuidFromSourceAndScore() {
+        String json = "{\"hits\":{\"hits\":["
+                + "{\"_id\":\"doc-1\",\"_score\":0.91,\"_source\":{\"__guid\":\"g1\"}},"
+                + "{\"_id\":\"doc-2\",\"_source\":{\"__guid\":\"g2\"}},"
+                + "{\"_id\":\"doc-3\",\"_score\":0.5,\"_source\":{}}"
+                + "]}}";
+
+        List<VectorSearchHit> hits = OpenSearchSemanticStore.parseSearchHits(json);
+
+        assertEquals(hits, Arrays.asList(new VectorSearchHit("g1", 0.91), new VectorSearchHit("g2", 0.0)));
+    }
+
+    @Test
+    public void parseSearchHitsReturnsEmptyWithoutHits() {
+        assertTrue(OpenSearchSemanticStore.parseSearchHits("{}").isEmpty());
+        assertTrue(OpenSearchSemanticStore.parseSearchHits("{\"hits\":{\"total\":{\"value\":0}}}").isEmpty());
+    }
+
+    @Test
     public void parseEntityScanPageReturnsGuidsAndLastSortValue() {
         String json = "{\"hits\":{\"hits\":["
                 + "{\"_id\":\"a\",\"_source\":{\"__guid\":\"g1\"},\"sort\":[\"g1\"]},"
@@ -110,7 +130,7 @@ public class OpenSearchSemanticStoreTest {
                 + "]}}";
 
         OpenSearchSemanticStore.EntityScanPage page = OpenSearchSemanticStore.parseEntityScanPage(json);
-        assertEquals(page.guids, java.util.Arrays.asList("g1", "g2"));
+        assertEquals(page.guids, Arrays.asList("g1", "g2"));
         assertEquals(page.hitCount, 2);
         assertEquals(page.lastSortValue, "g2");
 

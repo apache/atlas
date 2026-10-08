@@ -155,7 +155,6 @@ export const navigateToSemanticSearch = (
 	const params = new URLSearchParams();
 	params.set("searchType", "semantic");
 	params.set("query", query.trim());
-	params.set("topK", "25");
 	if (typeName) {
 		params.set("type", typeName);
 	}

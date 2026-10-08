@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_EMBEDDING_FIELD;
-import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_INGEST_PIPELINE_NAME;
 import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_TEXT_FIELD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -109,6 +108,6 @@ public class SemanticIndexSetupTest {
         String serialized = AtlasJson.toJson(body);
         assertTrue(serialized.contains(SEMANTIC_TEXT_FIELD));
         assertTrue(serialized.contains(SEMANTIC_EMBEDDING_FIELD));
-        assertTrue(serialized.contains(SEMANTIC_INGEST_PIPELINE_NAME) || serialized.contains("model-123"));
+        assertTrue(serialized.contains("\"model_id\":\"model-123\""));
     }
 }

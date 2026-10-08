@@ -194,8 +194,8 @@ public class SemanticIndexer {
         }
     }
 
-    private static IndexStats processMessages(List<AtlasKafkaMessage<EntityNotification>> messages,
-                                              SemanticEntityEmbedder embedder) {
+    static IndexStats processMessages(List<AtlasKafkaMessage<EntityNotification>> messages,
+                                      SemanticEntityEmbedder embedder) {
         Set<String> guids          = new LinkedHashSet<>();
         int         expandFailures = 0;
 
@@ -248,8 +248,8 @@ public class SemanticIndexer {
         }
     }
 
-    private static void commitOffsets(NotificationConsumer<EntityNotification> consumer,
-                                      List<AtlasKafkaMessage<EntityNotification>> messages) {
+    static void commitOffsets(NotificationConsumer<EntityNotification> consumer,
+                              List<AtlasKafkaMessage<EntityNotification>> messages) {
         Map<TopicPartition, Long> nextOffsets = new HashMap<>();
         for (AtlasKafkaMessage<EntityNotification> kafkaMessage : messages) {
             nextOffsets.merge(kafkaMessage.getTopicPartition(), kafkaMessage.getOffset() + 1, Math::max);

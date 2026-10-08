@@ -55,10 +55,10 @@ public class SemanticRepair {
     private final AtlasGraph             graph;
     private final boolean                dryRun;
 
-    private long       matched;
-    private IndexStats stats = new IndexStats(0, 0, 0);
+    long       matched;
+    IndexStats stats = new IndexStats(0, 0, 0);
 
-    private SemanticRepair(SemanticEntityEmbedder embedder, AtlasGraph graph, boolean dryRun) {
+    SemanticRepair(SemanticEntityEmbedder embedder, AtlasGraph graph, boolean dryRun) {
         this.embedder = embedder;
         this.graph    = graph;
         this.dryRun   = dryRun;
@@ -117,7 +117,7 @@ public class SemanticRepair {
         System.exit(exitCode);
     }
 
-    private void repairPage(List<String> guids) {
+    void repairPage(List<String> guids) {
         matched += guids.size();
 
         if (!dryRun) {

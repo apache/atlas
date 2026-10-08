@@ -48,15 +48,7 @@ public final class SemanticNotificationFilter {
     }
 
     public static boolean shouldProcess(EntityNotificationV2 notification) {
-        if (notification == null || notification.getOperationType() == null) {
-            return false;
-        }
-
-        if (!INDEXED_OPERATION_TYPES.contains(notification.getOperationType())) {
-            return false;
-        }
-
-        return !extractGuidTypes(notification).isEmpty();
+        return notification != null && INDEXED_OPERATION_TYPES.contains(notification.getOperationType());
     }
 
     /**
