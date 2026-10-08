@@ -30,4 +30,25 @@ public abstract class AtlasUniqueKeyHandler {
     public abstract void removeUniqueKeysForVertexId(Object vertexId);
 
     public abstract void removeUniqueKeysForEdgeId(Object edgeId);
+
+    /**
+     * Whether {@link #findVertexIdByUniqueKey(String, Object)} can answer from this backend's
+     * uniqueness table on the graph transaction that is already open.  RDBMS can, by reading
+     * {@code janus_unique_vertex_key} on that Postgres transaction; other backends leave claim
+     * lookups on the graph query.
+     *
+     * <p>A {@code true} result is authoritative, including when the lookup returns {@code null}:
+     * no row means nobody holds the key, and the caller must not fall through to a graph scan.
+     */
+    public boolean supportsUniqueKeyLookup() {
+        return false;
+    }
+
+    /**
+     * Vertex id that currently holds {@code keyName}={@code value}, or {@code null} if none does.
+     * {@code null} is "nobody holds it" only when {@link #supportsUniqueKeyLookup()} is {@code true}.
+     */
+    public Object findVertexIdByUniqueKey(String keyName, Object value) {
+        return null;
+    }
 }

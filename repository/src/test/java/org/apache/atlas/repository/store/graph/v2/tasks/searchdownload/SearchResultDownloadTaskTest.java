@@ -60,6 +60,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -184,6 +185,45 @@ public class SearchResultDownloadTaskTest {
         atlasJsonMock.when(() -> AtlasJson.fromJson(anyString(), eq(Map.class))).thenReturn(attributeLabelMap);
 
         invokeRunMethod(params);
+    }
+
+    @Test
+    public void testRunWithBasicSearchTypeAsString() throws Exception {
+        Map<String, Object> params = createValidBasicSearchParameters();
+        params.put(SEARCH_TYPE_KEY, BASIC.name());
+
+        SearchParameters searchParams = new SearchParameters();
+        atlasJsonMock.when(() -> AtlasJson.fromJson(anyString(), eq(SearchParameters.class))).thenReturn(searchParams);
+
+        AtlasSearchResult searchResult = new AtlasSearchResult();
+        searchResult.setEntities(new ArrayList<>());
+        when(discoveryService.searchWithParameters(any(SearchParameters.class))).thenReturn(searchResult);
+
+        Map<String, String> attributeLabelMap = new HashMap<>();
+        atlasJsonMock.when(() -> AtlasJson.fromJson(anyString(), eq(Map.class))).thenReturn(attributeLabelMap);
+
+        invokeRunMethod(params);
+
+        verify(discoveryService).searchWithParameters(any(SearchParameters.class));
+    }
+
+    @Test
+    public void testRunWithDslSearchTypeAsString() throws Exception {
+        Map<String, Object> params = createValidDSLSearchParameters();
+        params.put(SEARCH_TYPE_KEY, DSL.name());
+
+        when(discoveryService.getDslQueryUsingTypeNameClassification(anyString(), anyString(), anyString())).thenReturn("processed query");
+
+        AtlasSearchResult searchResult = new AtlasSearchResult();
+        searchResult.setEntities(new ArrayList<>());
+        when(discoveryService.searchUsingDslQuery(anyString(), anyInt(), anyInt())).thenReturn(searchResult);
+
+        Map<String, String> attributeLabelMap = new HashMap<>();
+        atlasJsonMock.when(() -> AtlasJson.fromJson(anyString(), eq(Map.class))).thenReturn(attributeLabelMap);
+
+        invokeRunMethod(params);
+
+        verify(discoveryService).searchUsingDslQuery(anyString(), anyInt(), anyInt());
     }
 
     @Test

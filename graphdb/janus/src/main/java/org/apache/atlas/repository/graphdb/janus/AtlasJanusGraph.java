@@ -292,6 +292,14 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     @Override
+    public void ensureTransaction() {
+        // readWrite opens the thread-bound transaction when it is closed, and leaves an open one
+        // alone.  Opening it starts the backend transaction, which on rdbms is the Postgres
+        // transaction later commit() and rollback() finish.
+        getGraph().tx().readWrite();
+    }
+
+    @Override
     public void commit() {
         getGraph().tx().commit();
     }

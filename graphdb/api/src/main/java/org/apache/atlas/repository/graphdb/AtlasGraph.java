@@ -201,6 +201,16 @@ public interface AtlasGraph<V, E> {
     AtlasGraphManagement getManagementSystem();
 
     /**
+     * Opens this thread's graph transaction when none is open.
+     *
+     * <p>On rdbms that transaction is the Postgres transaction.  Claim lookups read
+     * {@code janus_unique_vertex_key} on it, so they see rows this transaction has written and
+     * commit or roll back with it.  A transaction that is already open is left as it is.
+     */
+    default void ensureTransaction() {
+    }
+
+    /**
      * Commits changes made to the graph in the current transaction.
      */
     void commit();

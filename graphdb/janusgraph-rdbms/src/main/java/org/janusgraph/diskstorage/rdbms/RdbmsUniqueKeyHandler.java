@@ -19,8 +19,13 @@ package org.janusgraph.diskstorage.rdbms;
 
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 
+import javax.persistence.EntityManager;
+
+import java.util.List;
+
 public class RdbmsUniqueKeyHandler {
     private static final String SQL_INSERT_UNIQUE_VERTEX_KEY                   = "INSERT INTO janus_unique_vertex_key (vertex_id, key_name, val) VALUES (?, ?, ?)";
+    private static final String SQL_SELECT_UNIQUE_VERTEX_ID                    = "SELECT vertex_id FROM janus_unique_vertex_key WHERE key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_KEY                   = "DELETE FROM janus_unique_vertex_key WHERE key_name = ? AND val = ?";
     private static final String SQL_INSERT_UNIQUE_VERTEX_TYPE_KEY              = "INSERT INTO janus_unique_vertex_type_key (vertex_id, type_name, key_name, val) VALUES (?, ?, ?, ?)";
     private static final String SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY              = "DELETE FROM janus_unique_vertex_type_key WHERE type_name = ? AND key_name = ? AND val = ?";
@@ -33,6 +38,43 @@ public class RdbmsUniqueKeyHandler {
     private static final String SQL_DELETE_UNIQUE_EDGE_TYPE_KEY            = "DELETE FROM janus_unique_edge_type_key WHERE type_name = ? AND key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_EDGE_KEY_BY_EDGE_ID      = "DELETE FROM janus_unique_edge_key WHERE edge_id = ?";
     private static final String SQL_DELETE_UNIQUE_EDGE_TYPE_KEY_BY_EDGE_ID = "DELETE FROM janus_unique_edge_type_key WHERE edge_id = ?";
+
+    /**
+     * True when this thread's graph transaction is open, so the lookup can run on that same
+     * Postgres connection.  A second connection would not see claim rows this transaction has
+     * written and not yet committed.
+     */
+    public boolean supportsUniqueKeyLookup() {
+        return RdbmsTransaction.getActiveTransaction() != null;
+    }
+
+    /**
+     * Vertex id for {@code keyName}={@code value} in {@code janus_unique_vertex_key}, or {@code null}
+     * when no row holds it.  The read uses the open graph transaction.
+     */
+    public Object findVertexIdByUniqueKey(String keyName, Object value) {
+        RdbmsTransaction trx = RdbmsTransaction.getActiveTransaction();
+
+        if (trx == null) {
+            return null;
+        }
+
+        return queryVertexId(trx.getEntityManager(), keyName, value);
+    }
+
+    private Object queryVertexId(EntityManager em, String keyName, Object value) {
+        List<?> rows = em.createNativeQuery(SQL_SELECT_UNIQUE_VERTEX_ID)
+                .setParameter(1, keyName)
+                .setParameter(2, getStringValue(value))
+                .setMaxResults(1)
+                .getResultList();
+
+        if (rows == null || rows.isEmpty()) {
+            return null;
+        }
+
+        return toVertexId(rows.get(0));
+    }
 
     public void addUniqueKey(String keyName, Object value, Object elementId, boolean isVertex) {
         RdbmsTransaction trx = RdbmsTransaction.getActiveTransaction();
@@ -136,6 +178,22 @@ public class RdbmsUniqueKeyHandler {
         } else {
             throw new IllegalArgumentException("Invalid elementId type: " + elementId.getClass().getName());
         }
+    }
+
+    private Object toVertexId(Object row) {
+        if (row instanceof Number) {
+            return ((Number) row).longValue();
+        }
+
+        if (row instanceof Object[]) {
+            Object[] columns = (Object[]) row;
+
+            if (columns.length > 0 && columns[0] instanceof Number) {
+                return ((Number) columns[0]).longValue();
+            }
+        }
+
+        return row;
     }
 
     private String getStringValue(Object value) {

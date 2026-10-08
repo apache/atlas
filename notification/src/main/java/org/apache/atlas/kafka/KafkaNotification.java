@@ -32,13 +32,17 @@ import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ConfigurationConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.ListOffsetsResult.ListOffsetsResultInfo;
+import org.apache.kafka.clients.admin.OffsetSpec;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -54,6 +58,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
@@ -135,6 +140,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
         // if no value is specified for max.poll.records, set to 1
         properties.put("max.poll.records", kafkaConf.getInt("max.poll.records", 1));
 
+        applyKafkaClientRecoveryDefaults(properties);
+
         KafkaUtils.setKafkaJAASProperties(applicationProperties, properties);
 
         LOG.info("<== KafkaNotification()");
@@ -168,6 +175,31 @@ public class KafkaNotification extends AbstractNotification implements Service {
         }
 
         return ret;
+    }
+
+    /**
+     * Kafka 3.8+ defaults {@code metadata.recovery.strategy} to {@code none}, so a client that has
+     * lost every known broker (container restart, broker failover) never re-reads
+     * {@code bootstrap.servers} and stays idle until the process is restarted.
+     */
+    @VisibleForTesting
+    static final String METADATA_RECOVERY_STRATEGY_CONFIG              = "metadata.recovery.strategy";
+    @VisibleForTesting
+    static final String METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG = "metadata.recovery.rebootstrap.trigger.ms";
+
+    @VisibleForTesting
+    static void applyKafkaClientRecoveryDefaults(Properties properties) {
+        if (properties == null) {
+            return;
+        }
+
+        if (!properties.containsKey(METADATA_RECOVERY_STRATEGY_CONFIG)) {
+            properties.put(METADATA_RECOVERY_STRATEGY_CONFIG, "rebootstrap");
+        }
+
+        if (!properties.containsKey(METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG)) {
+            properties.put(METADATA_RECOVERY_REBOOTSTRAP_TRIGGER_MS_CONFIG, "10000");
+        }
     }
 
     @Override
@@ -293,7 +325,12 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 notificationConsumers.add(kafkaConsumer);
             }
 
-            consumers.add(new AtlasKafkaConsumer<>(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs));
+            String     topicName    = topics.get(i % topics.size());
+            Properties recoverProps = new Properties();
+
+            recoverProps.putAll(consumerProperties);
+
+            consumers.add(new AtlasKafkaConsumer<>(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeOutMs, recoverProps, Collections.singletonList(topicName)));
         }
 
         LOG.info("<== KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
@@ -509,19 +546,77 @@ public class KafkaNotification extends AbstractNotification implements Service {
         });
     }
 
-    // kafka-client doesn't have method to check if consumer is open, hence checking list topics and catching exception
-    private boolean isKafkaConsumerOpen(KafkaConsumer consumer) {
-        boolean ret = true;
+    @VisibleForTesting
+    AdminClient createAdminClient() {
+        return AdminClient.create(this.properties);
+    }
 
-        try {
-            consumer.listTopics();
-        } catch (IllegalStateException ex) {
-            if (ex.getMessage().equalsIgnoreCase(consumerClosedErrorMsg)) {
-                ret = false;
+    @Override
+    public boolean isTopicFullyConsumed(NotificationType notificationType, String topicName) {
+        String groupId = getConsumerProperties(notificationType).getProperty(ConsumerConfig.GROUP_ID_CONFIG);
+
+        try (AdminClient adminClient = createAdminClient()) {
+            if (!adminClient.listTopics().names().get().contains(topicName)) {
+                // a deleted topic can no longer deliver anything, so there is nothing left to consume
+                LOG.info("isTopicFullyConsumed(topic={}): topic does not exist", topicName);
+
+                return true;
             }
+
+            List<TopicPartition> partitions = adminClient.describeTopics(Collections.singleton(topicName)).allTopicNames().get()
+                    .get(topicName).partitions().stream()
+                    .map(partition -> new TopicPartition(topicName, partition.partition()))
+                    .collect(Collectors.toList());
+
+            if (partitions.isEmpty()) {
+                return true;
+            }
+
+            Map<TopicPartition, OffsetAndMetadata> committedOffsets = adminClient.listConsumerGroupOffsets(groupId).partitionsToOffsetAndMetadata().get();
+            Map<TopicPartition, OffsetSpec>        endOffsetRequest = partitions.stream().collect(Collectors.toMap(partition -> partition, partition -> OffsetSpec.latest()));
+            Map<TopicPartition, ListOffsetsResultInfo> endOffsets   = adminClient.listOffsets(endOffsetRequest).all().get();
+
+            for (TopicPartition partition : partitions) {
+                OffsetAndMetadata  committed = committedOffsets.get(partition);
+                ListOffsetsResultInfo end    = endOffsets.get(partition);
+
+                long committedOffset = committed != null ? committed.offset() : 0L;
+                long endOffset       = end != null ? end.offset() : 0L;
+
+                if (committedOffset < endOffset) {
+                    LOG.info("isTopicFullyConsumed(topic={}): partition={} has committedOffset={} behind endOffset={}", topicName, partition.partition(), committedOffset, endOffset);
+
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            LOG.warn("isTopicFullyConsumed(topic={}): interrupted, assuming messages remain", topicName, e);
+
+            return false;
+        } catch (Exception e) {
+            // an unreadable topic must not be treated as consumed, or an import would be resolved early
+            LOG.warn("isTopicFullyConsumed(topic={}): failed to read offsets, assuming messages remain", topicName, e);
+
+            return false;
+        }
+    }
+
+    // kafka-client doesn't have method to check if consumer is open; subscription() fails locally if closed
+    private boolean isKafkaConsumerOpen(KafkaConsumer consumer) {
+        if (consumer == null) {
+            return false;
         }
 
-        return ret;
+        try {
+            consumer.subscription();
+            return true;
+        } catch (IllegalStateException ex) {
+            return false;
+        }
     }
 
     private static class MessageContext {

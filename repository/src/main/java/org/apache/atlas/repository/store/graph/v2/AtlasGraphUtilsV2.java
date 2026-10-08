@@ -375,6 +375,70 @@ public class AtlasGraphUtilsV2 {
         return vertex;
     }
 
+    /**
+     * Delete-only helper: unique-index miss can be index lag, not "entity gone".
+     * Accepts a property-query hit only when it is a single ACTIVE vertex of this type
+     * (or subtype) matching the unique attributes. Multiple hits return null so we
+     * never delete a different entity.
+     */
+    public static AtlasVertex findSingleActiveByUniqueAttributes(AtlasGraph graph, AtlasEntityType entityType,
+                                                                 Map<String, Object> attrValues) {
+        AtlasVertex indexed = findByUniqueAttributes(graph, entityType, attrValues);
+
+        if (indexed != null) {
+            return indexed;
+        }
+
+        if (entityType == null || MapUtils.isEmpty(attrValues)) {
+            return null;
+        }
+
+        Map<String, AtlasAttribute> uniqueAttributes = entityType.getUniqAttributes();
+        Map<String, Object>         attrNameValues   = populateAttributesMap(uniqueAttributes, attrValues);
+
+        if (MapUtils.isEmpty(attrNameValues)) {
+            return null;
+        }
+
+        AtlasVertex ret = findSingleActiveByProperties(graph, entityType.getTypeName(), attrNameValues, false);
+
+        if (ret == null && CollectionUtils.isNotEmpty(entityType.getAllSubTypes())) {
+            ret = findSingleActiveByProperties(graph, entityType.getTypeName(), attrNameValues, true);
+        }
+
+        return ret;
+    }
+
+    private static AtlasVertex findSingleActiveByProperties(AtlasGraph graph, String typeName,
+                                                            Map<String, Object> attributeValues, boolean isSuperType) {
+        String          typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
+        AtlasGraphQuery query           = graph.query()
+                                               .has(typePropertyKey, typeName)
+                                               .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+
+        for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
+            if (entry.getKey() != null && entry.getValue() != null) {
+                query.has(entry.getKey(), entry.getValue());
+            }
+        }
+
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        if (!results.hasNext()) {
+            return null;
+        }
+
+        AtlasVertex first = results.next();
+
+        if (results.hasNext()) {
+            LOG.warn("findSingleActiveByUniqueAttributes(): type={} matched more than one ACTIVE vertex; leaving unresolved",
+                    typeName);
+            return null;
+        }
+
+        return first;
+    }
+
     public static String findFirstDeletedDuringSpooledByQualifiedName(String qualifiedName, long timestamp) {
         return findFirstDeletedDuringSpooledByQualifiedName(getGraphInstance(), qualifiedName, timestamp);
     }
@@ -533,6 +597,64 @@ public class AtlasGraphUtilsV2 {
         }
 
         return ret;
+    }
+
+    // ------------------------------------------------------------------ typedef registry version
+
+    /**
+     * Reads the shared typedef-registry version counter. The counter lives on a single graph vertex
+     * (located by the globally-unique {@link Constants#TYPEDEF_REGISTRY_VERSION_MARKER_KEY}) and is
+     * bumped once per typedef CRUD. Peers compare it against the version they last reloaded at to
+     * decide whether their in-memory registry is stale, instead of waiting for the async Kafka
+     * typedef-sync path. Returns {@code 0} when no version vertex exists yet (fresh cluster, or no
+     * typedef change since upgrade).
+     */
+    public static long getTypeDefRegistryVersion(AtlasGraph graph) {
+        AtlasVertex versionVertex = findTypeDefRegistryVersionVertex(graph);
+
+        if (versionVertex == null) {
+            return 0L;
+        }
+
+        Long version = getEncodedProperty(versionVertex, Constants.TYPEDEF_REGISTRY_VERSION_KEY, Long.class);
+
+        return version == null ? 0L : version;
+    }
+
+    /**
+     * Increments the shared typedef-registry version counter and commits, find-or-creating the
+     * singleton version vertex (mirroring {@link org.apache.atlas.tasks.GraphClaim}). Called from the
+     * post-commit typedef-change path, next to the Kafka typedef-sync signal, so the new version is
+     * visible to peers the moment the CRUD call returns. The caller must treat a failure here as
+     * non-fatal: the CRUD has already committed and the Kafka typedef-sync path remains the backstop.
+     *
+     * @return the new version value.
+     */
+    public static long bumpTypeDefRegistryVersionAndCommit(AtlasGraph graph) {
+        AtlasVertex versionVertex = findTypeDefRegistryVersionVertex(graph);
+
+        if (versionVertex == null) {
+            versionVertex = graph.addVertex();
+
+            setEncodedProperty(versionVertex, Constants.TYPEDEF_REGISTRY_VERSION_MARKER_KEY, Constants.TYPEDEF_REGISTRY_VERSION_MARKER);
+        }
+
+        Long current = getEncodedProperty(versionVertex, Constants.TYPEDEF_REGISTRY_VERSION_KEY, Long.class);
+        long next    = (current == null ? 0L : current) + 1L;
+
+        setEncodedProperty(versionVertex, Constants.TYPEDEF_REGISTRY_VERSION_KEY, next);
+
+        graph.commit();
+
+        return next;
+    }
+
+    private static AtlasVertex findTypeDefRegistryVersionVertex(AtlasGraph graph) {
+        Iterator<AtlasVertex> results = graph.query()
+                .has(Constants.TYPEDEF_REGISTRY_VERSION_MARKER_KEY, Constants.TYPEDEF_REGISTRY_VERSION_MARKER)
+                .vertices().iterator();
+
+        return results.hasNext() ? results.next() : null;
     }
 
     public static boolean typeHasInstanceVertex(String typeName) {
