@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -65,7 +66,16 @@ public class TaskExecutor {
 
     @VisibleForTesting
     void waitUntilDone() throws InterruptedException {
-        Thread.sleep(5000);
+        // The executor is single-threaded and processes submitted tasks in FIFO order,
+        // so a no-op barrier task completes only after every previously submitted task
+        // has finished running (and its statistics have been updated). Blocking on the
+        // barrier is deterministic regardless of how slow the host/JVM is, which avoids
+        // the flakiness of a fixed Thread.sleep() on slower CI runners.
+        try {
+            this.executorService.submit(() -> { }).get();
+        } catch (ExecutionException e) {
+            LOG.warn("waitUntilDone: barrier task failed", e);
+        }
     }
 
     static class TaskConsumer implements Runnable {
