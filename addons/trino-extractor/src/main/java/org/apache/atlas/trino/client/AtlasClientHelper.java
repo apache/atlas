@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.trino.client;
 
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -36,6 +35,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -250,7 +251,7 @@ public class AtlasClientHelper {
         try {
             return atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName), minExtInfo, ignoreRelationship);
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return null;
             }
 

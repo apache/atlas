@@ -18,12 +18,12 @@
 
 package org.apache.atlas;
 
-import com.sun.jersey.api.client.WebResource;
+import javax.ws.rs.client.WebTarget;
 
 /**
  * An interface to capture the closure of how a WebResource is created.
  */
 @Deprecated
 public interface ResourceCreator {
-    WebResource createResource();
+    WebTarget createResource();
 }
