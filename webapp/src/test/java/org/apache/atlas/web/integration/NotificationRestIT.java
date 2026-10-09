@@ -17,11 +17,12 @@
  */
 package org.apache.atlas.web.integration;
 
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.testng.annotations.Test;
+
+import javax.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class NotificationRestIT extends BaseResourceIT {
         } catch (AtlasServiceException e) {
             assertNotNull(e.getStatus(), "expected HTTP error when posting to removed endpoint");
 
-            assertTrue(e.getStatus().getStatusCode() != ClientResponse.Status.NO_CONTENT.getStatusCode(),
+            assertTrue(e.getStatus().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode(),
                     "notification POST must not return 204 on main webapp");
         }
     }

@@ -100,7 +100,7 @@ HIVE_CP="${HIVE_CONF}"
 # Multiple jars in HIVE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HIVE_CP_EXCLUDE_LIST="jersey-multipart"
 # exclude log4j libs from hive classpath to avoid conflict
-HIVE_CP_EXCLUDE_LIST="log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web"
+HIVE_CP_EXCLUDE_LIST="javax.ws.rs-api\|log4j-slf4j-impl\|log4j-1.2-api\|log4j-api\|log4j-core\|log4j-web\|jsr311-api\|jersey\|glassfish"
 
 for i in $(find "${HIVE_HOME}/lib/" -name  "*.jar" | grep -v "$HIVE_CP_EXCLUDE_LIST"); do
     HIVE_CP="${HIVE_CP}:$i"
@@ -119,7 +119,34 @@ else
     exit 1
 fi
 
-CP="${HIVE_CP}:${HADOOP_CP}:${ATLASCPPATH}"
+#Exclude libs from Hadoop classpath which are conflicting with Atlas.
+#Match by jar-name prefix (version-agnostic) so Jersey 1.x is dropped regardless of the exact
+#Hadoop version, e.g. jersey-core-1.19.4.jar, jersey-json-1.22.0.jar.
+HADOOP_CP_EXCLUDE_LIST=("jersey-core" "jersey-json" "jersey-server" "jersey-servlet" "jersey-client" "jsr311-api")
+
+# Construct the classpath excluding the specified JARs
+ORIGINAL_HADOOP_CLASSPATH=$(echo "$HADOOP_CP" | tr ':' '\n')
+for jar in $ORIGINAL_HADOOP_CLASSPATH
+do
+    excluded=false
+    for exclude_jar in "${HADOOP_CP_EXCLUDE_LIST[@]}"
+    do
+        if [[ "$(basename "$jar")" == "$exclude_jar"* ]]; then
+            excluded=true
+            break
+        fi
+    done
+
+    if [ "$excluded" = false ]; then
+        HADOOP_CLASSPATH_NEW="$HADOOP_CLASSPATH_NEW:$jar"
+    fi
+done
+
+# Remove leading colon
+HADOOP_CP=$(echo "$HADOOP_CLASSPATH_NEW" | sed 's/^://')
+
+# Atlas hook jars must precede Hive/Hadoop so Jersey 2 + jakarta.ws.rs-api win over partial Hive libs.
+CP="${ATLASCPPATH}:${HIVE_CP}:${HADOOP_CP}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]
@@ -162,6 +189,12 @@ do
 done
 
 JAVA_PROPERTIES="${JAVA_PROPERTIES} ${JVM_ARGS}"
+
+# JDK 17+ requires opening a few java.base packages for reflective access used by Hive/Hadoop libs
+JAVA_VERSION=$("${JAVA_BIN}" -version 2>&1 | awk -F'[".]' 'NR==1{print ($2=="1"?$3:$2)}')
+if [ -n "${JAVA_VERSION}" ] && [ "${JAVA_VERSION}" -gt 16 ]; then
+  JAVA_PROPERTIES="${JAVA_PROPERTIES} --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+fi
 
 if [ -z ${HELP_OPTION} ]; then
   echo "Log file for import is $LOGFILE"
