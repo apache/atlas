@@ -19,7 +19,6 @@
 package org.apache.atlas.examples;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasException;
@@ -51,6 +50,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.ArrayUtils;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import java.util.ArrayList;
@@ -622,7 +622,7 @@ public class QuickStartV2 {
     }
 
     private void verifyTypesCreated() throws Exception {
-        MultivaluedMap<String, String> searchParams = new MultivaluedMapImpl();
+        MultivaluedMap<String, String> searchParams = new MultivaluedHashMap<>();
 
         for (String typeName : TYPES) {
             searchParams.clear();

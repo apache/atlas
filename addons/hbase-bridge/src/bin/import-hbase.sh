@@ -106,7 +106,8 @@ HBASE_CP="${HBASE_CONF}"
 # Multiple jars in HBASE_CP_EXCLUDE_LIST can be added using "\|" separator
 # Ex: HBASE_CP_EXCLUDE_LIST="commons-configuration-1."
 # commons-configuration 1.x is in atlas-hbase-plugin-impl (Hadoop needs it; Atlas uses configuration2).
-HBASE_CP_EXCLUDE_LIST="commons-configuration-1\|jersey-client"
+# Also exclude HBase's bundled JAX-RS / Jersey 1.x jars that conflict with Atlas's Jersey 2.x.
+HBASE_CP_EXCLUDE_LIST="commons-configuration-1\|javax.ws.rs-api\|jsr311-api\|jersey\|glassfish"
 
 for i in "${HBASE_HOME}/lib/"*.jar "${HBASE_HOME}/lib/client-facing-thirdparty/"*.jar; do
     if [ "`echo $i | grep -v \"$HBASE_CP_EXCLUDE_LIST\"`" == "$i" ]; then
@@ -125,6 +126,30 @@ elif [ $(command -v hadoop) ]; then
 else
     echo "WARN: Environment variable HADOOP_CLASSPATH or HADOOP_HOME need to be set"
 fi
+
+#Exclude libs from Hadoop classpath which are conflicting with Atlas
+HADOOP_CP_EXCLUDE_LIST=("jersey-core-1.19.jar" "jersey-json-1.19.jar" "jersey-server-1.19.jar" "jersey-servlet-1.19.jar" "jersey-client-1.19.jar" "jsr311-api-1.1.1.jar")
+
+# Construct the classpath excluding the specified JARs
+ORIGINAL_HADOOP_CLASSPATH=$(echo "$HADOOP_CP" | tr ':' '\n')
+for jar in $ORIGINAL_HADOOP_CLASSPATH
+do
+    excluded=false
+    for exclude_jar in "${HADOOP_CP_EXCLUDE_LIST[@]}"
+    do
+        if [[ "$jar" == *"$exclude_jar" ]]; then
+            excluded=true
+            break
+        fi
+    done
+
+    if [ "$excluded" = false ]; then
+        HADOOP_CLASSPATH_NEW="$HADOOP_CLASSPATH_NEW:$jar"
+    fi
+done
+
+# Remove leading colon
+HADOOP_CP=$(echo "$HADOOP_CLASSPATH_NEW" | sed 's/^://')
 
 if [ ! -z "$HADOOP_CP" ]; then
   CP="${ATLASCPPATH}:${HBASE_CP}:${HADOOP_CP}"
