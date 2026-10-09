@@ -55,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
 
+import javax.ws.rs.core.Response;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,7 +69,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 
-import static com.sun.jersey.api.client.ClientResponse.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.NOT_FOUND;
 import static org.apache.atlas.hive.bridge.HiveMetaStoreBridge.HDFS_PATH;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_QUALIFIED_NAME;
 import static org.apache.atlas.hive.model.HiveDataTypes.HIVE_DB;
@@ -106,7 +107,6 @@ public class HiveITBase {
     public void setUp() throws Exception {
         //Set-up hive session
         conf = new HiveConf();
-        conf.setClassLoader(Thread.currentThread().getContextClassLoader());
         conf.set("hive.metastore.event.listeners", "");
 
         // 'driver' using this configuration will be used for tests in HiveHookIT
@@ -118,23 +118,33 @@ public class HiveITBase {
 
         SessionState.setCurrentSessionState(ss);
 
-        Configuration configuration = ApplicationProperties.get();
+        // SessionState.start swaps TCCL; align it with the Atlas client class loader for Jersey init.
+        ClassLoader hiveTccl    = Thread.currentThread().getContextClassLoader();
+        ClassLoader atlasLoader = AtlasClientV2.class.getClassLoader();
 
-        String[] atlasEndPoint = configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT);
+        Thread.currentThread().setContextClassLoader(atlasLoader);
 
-        if (atlasEndPoint == null || atlasEndPoint.length == 0) {
-            atlasEndPoint = new String[] { DGI_URL };
+        try {
+            Configuration configuration = ApplicationProperties.get();
+
+            String[] atlasEndPoint = configuration.getStringArray(HiveMetaStoreBridge.ATLAS_ENDPOINT);
+
+            if (atlasEndPoint == null || atlasEndPoint.length == 0) {
+                atlasEndPoint = new String[] { DGI_URL };
+            }
+
+            if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
+                atlasClientV2 = new AtlasClientV2(atlasEndPoint, new String[]{"admin", "admin"});
+                atlasClient   = new AtlasClient(atlasEndPoint, new String[]{"admin", "admin"});
+            } else {
+                atlasClientV2 = new AtlasClientV2(atlasEndPoint);
+                atlasClient   = new AtlasClient(atlasEndPoint);
+            }
+
+            hiveMetaStoreBridge = new HiveMetaStoreBridge(configuration, conf, atlasClientV2);
+        } finally {
+            Thread.currentThread().setContextClassLoader(hiveTccl);
         }
-
-        if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClientV2 = new AtlasClientV2(atlasEndPoint, new String[]{"admin", "admin"});
-            atlasClient   = new AtlasClient(atlasEndPoint, new String[]{"admin", "admin"});
-        } else {
-            atlasClientV2 = new AtlasClientV2(atlasEndPoint);
-            atlasClient   = new AtlasClient(atlasEndPoint);
-        }
-
-        hiveMetaStoreBridge = new HiveMetaStoreBridge(configuration, conf, atlasClientV2);
 
         HiveConf conf = new HiveConf();
 
@@ -382,7 +392,7 @@ public class HiveITBase {
 
             fail(String.format("Entity was not supposed to exist for typeName = %s, attributeName = %s, attributeValue = %s", typeName, property, value));
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return;
             }
         }

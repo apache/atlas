@@ -33,11 +33,15 @@
     <servlet>
         <servlet-name>jersey-servlet</servlet-name>
         <servlet-class>
-            com.sun.jersey.spi.spring.container.servlet.SpringServlet
+            org.glassfish.jersey.servlet.ServletContainer
         </servlet-class>
         <init-param>
-            <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
-            <param-value>true</param-value>
+            <param-name>jersey.config.server.provider.packages</param-name>
+            <param-value>org.apache.atlas.web.rest,org.apache.atlas.web.resources,org.apache.atlas.web.errors</param-value>
+        </init-param>
+        <init-param>
+            <param-name>jersey.config.server.provider.classnames</param-name>
+            <param-value>org.glassfish.jersey.media.multipart.MultiPartFeature,com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider</param-value>
         </init-param>
         <load-on-startup>1</load-on-startup>
     </servlet>
