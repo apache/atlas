@@ -16,9 +16,6 @@
  */
 package org.apache.atlas.security;
 
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.client.urlconnection.HttpURLConnectionFactory;
-import com.sun.jersey.client.urlconnection.URLConnectionClientHandler;
 import org.apache.atlas.AtlasException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -29,6 +26,8 @@ import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticatedURL;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticator;
 import org.apache.hadoop.security.token.delegation.web.KerberosDelegationTokenAuthenticator;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.HttpUrlConnectorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,8 +93,8 @@ public class SecureClientUtils {
         }
     }
 
-    public URLConnectionClientHandler getClientConnectionHandler(DefaultClientConfig config, org.apache.commons.configuration2.Configuration clientConfig, String doAsUser, final UserGroupInformation ugi) {
-        config.getProperties().put(URLConnectionClientHandler.PROPERTY_HTTP_URL_CONNECTION_SET_METHOD_WORKAROUND, true);
+    public HttpUrlConnectorProvider.ConnectionFactory getClientConnectionHandler(ClientConfig config, org.apache.commons.configuration2.Configuration clientConfig, String doAsUser, final UserGroupInformation ugi) {
+        config.getProperties().put(HttpUrlConnectorProvider.SET_METHOD_WORKAROUND, true);
 
         Configuration conf = new Configuration();
 
@@ -110,7 +109,7 @@ public class SecureClientUtils {
 
         final DelegationTokenAuthenticator          finalAuthenticator       = authenticator;
         final DelegationTokenAuthenticatedURL.Token token                    = new DelegationTokenAuthenticatedURL.Token();
-        HttpURLConnectionFactory                    httpURLConnectionFactory = null;
+        HttpUrlConnectorProvider.ConnectionFactory                    httpURLConnectionFactory = null;
 
         try {
             UserGroupInformation       ugiToUse  = ugi != null ? ugi : UserGroupInformation.getCurrentUser();
@@ -147,7 +146,7 @@ public class SecureClientUtils {
             LOG.warn("Error obtaining user", e);
         }
 
-        return new URLConnectionClientHandler(httpURLConnectionFactory);
+        return httpURLConnectionFactory;
     }
 
     public SSLFactory getSSLFactory(Configuration conf) throws IOException, GeneralSecurityException {
@@ -168,8 +167,8 @@ public class SecureClientUtils {
         }
     }
 
-    public URLConnectionClientHandler getUrlConnectionClientHandler() {
-        return new URLConnectionClientHandler(url -> {
+    public HttpUrlConnectorProvider.ConnectionFactory getUrlConnectionClientHandler() {
+        return (url) -> {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
             if (connection instanceof HttpsURLConnection) {
@@ -196,7 +195,7 @@ public class SecureClientUtils {
             }
 
             return connection;
-        });
+        };
     }
 
     private ConnectionConfigurator newConnConfigurator(Configuration conf) {
