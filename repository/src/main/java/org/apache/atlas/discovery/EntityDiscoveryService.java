@@ -804,8 +804,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasQuickSearchResult quickSearch(QuickSearchParameters quickSearchParameters) throws AtlasBaseException {
-        ensureTypeRegistryCurrent();
+        return withTypeCatchUpQuick(() -> quickSearchInternal(quickSearchParameters));
+    }
 
+    private AtlasQuickSearchResult quickSearchInternal(QuickSearchParameters quickSearchParameters) throws AtlasBaseException {
         String query = quickSearchParameters.getQuery();
 
         if (StringUtils.isNotEmpty(query) && !AtlasStructType.AtlasAttribute.hastokenizeChar(query)) {
@@ -1278,33 +1280,45 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return code == AtlasErrorCode.UNKNOWN_TYPENAME
                 || code == AtlasErrorCode.TYPE_NAME_NOT_FOUND
                 || code == AtlasErrorCode.TYPE_NAME_INVALID
-                || code == AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
-    }
-
-    private AtlasSearchResult withEntitiesArray(AtlasSearchResult result) {
-        if (result != null && result.getEntities() == null) {
-            result.setEntities(new ArrayList<>());
-        }
-
-        return result;
+                || code == AtlasErrorCode.CLASSIFICATION_NOT_FOUND
+                || code == AtlasErrorCode.UNKNOWN_ATTRIBUTE;
     }
 
     private AtlasSearchResult withTypeCatchUp(SearchCall call) throws AtlasBaseException {
         ensureTypeRegistryCurrent();
 
         try {
-            return withEntitiesArray(call.run());
+            return call.run();
         } catch (AtlasBaseException e) {
             if (!isUnknownTypeError(e) || !forceTypeRefresh()) {
                 throw e;
             }
 
-            return withEntitiesArray(call.run());
+            return call.run();
+        }
+    }
+
+    private AtlasQuickSearchResult withTypeCatchUpQuick(QuickSearchCall call) throws AtlasBaseException {
+        ensureTypeRegistryCurrent();
+
+        try {
+            return call.run();
+        } catch (AtlasBaseException e) {
+            if (!isUnknownTypeError(e) || !forceTypeRefresh()) {
+                throw e;
+            }
+
+            return call.run();
         }
     }
 
     @FunctionalInterface
     private interface SearchCall {
         AtlasSearchResult run() throws AtlasBaseException;
+    }
+
+    @FunctionalInterface
+    private interface QuickSearchCall {
+        AtlasQuickSearchResult run() throws AtlasBaseException;
     }
 }

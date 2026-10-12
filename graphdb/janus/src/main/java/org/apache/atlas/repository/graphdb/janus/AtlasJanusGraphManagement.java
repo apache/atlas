@@ -398,14 +398,27 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                 return true;
             }
 
-            // A composite index built over a key that already had data lands in INSTALLED/REGISTERED
-            // and is ignored by the query planner. Wait for it to converge to REGISTERED, then REINDEX
-            // (which populates existing data and transitions the index to ENABLED).
+            // A composite index built over a key that already had data lands in INSTALLED, then
+            // REGISTERED once every instance has seen it. The query planner ignores both. REINDEX
+            // is legal only from REGISTERED. Calling it while the index is still INSTALLED throws
+            // and leaves the index unused, so the status is read again after the wait.
             if (status == INSTALLED) {
                 ManagementSystem.awaitGraphIndexStatus(janusGraph, indexName).status(REGISTERED).call();
+
+                status = compositeIndexStatus(janusGraph, indexName);
             }
 
-            LOG.info("ensureCompositeIndexEnabled: index {} is {}; reindexing to make it usable", indexName, status);
+            if (status == ENABLED) {
+                return true;
+            }
+
+            if (status != REGISTERED) {
+                LOG.warn("ensureCompositeIndexEnabled: index {} is {}; leaving it unchanged until it is REGISTERED", indexName, status);
+
+                return false;
+            }
+
+            LOG.info("ensureCompositeIndexEnabled: index {} is REGISTERED; reindexing to make it usable", indexName);
 
             JanusGraphManagement mgmt = null;
 

@@ -292,6 +292,11 @@ public final class Constants {
      */
     public static final String CLAIM_SCHEDULED_PURGE = "ATLAS_SCHEDULED_PURGE";
     /**
+     * Held for one audit-aging cycle. The scheduler starts on every server; without this lease
+     * each server queues its own reduction and audits are aged more than once.
+     */
+    public static final String CLAIM_AUDIT_AGING = "ATLAS_AUDIT_AGING";
+    /**
      * Guards loading the bootstrap models, which one node does for the whole cluster.
      *
      * <p>Sharing the model files out between nodes looked like the faster way to start, but a node

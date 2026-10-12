@@ -127,8 +127,6 @@ public class AtlasSearchResult implements Serializable {
         this.classification = classification;
     }
 
-    // Always emit the key so clients (and QE) do not KeyError when the search is empty.
-    @JsonInclude(JsonInclude.Include.ALWAYS)
     public List<AtlasEntityHeader> getEntities() {
         return entities;
     }
