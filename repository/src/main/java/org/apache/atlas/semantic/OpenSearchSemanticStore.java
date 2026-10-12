@@ -428,7 +428,6 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
         List<Map<String, Object>> filter = new ArrayList<>();
         filter.add(Collections.singletonMap("exists", Collections.singletonMap("field", Constants.GUID_PROPERTY_KEY)));
         filter.add(Collections.singletonMap("exists", Collections.singletonMap("field", Constants.ENTITY_TYPE_PROPERTY_KEY)));
-        // match (not term) works whether __state is mapped as keyword (legacy) or text with a keyword subfield
         filter.add(Collections.singletonMap("term", Collections.singletonMap(STATE_KEYWORD_FIELD, AtlasEntity.Status.ACTIVE.name())));
 
         List<Map<String, Object>> mustNot = new ArrayList<>();

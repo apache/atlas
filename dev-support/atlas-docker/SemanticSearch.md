@@ -387,7 +387,7 @@ store — they are patched later by the Semantic Indexer — so **reindex wipes 
    docker exec atlas-semantic-indexer /opt/atlas-semantic-indexer/bin/atlas_semantic_repair.sh
    ```
    Or from the semantic-indexer tarball: `ATLAS_CONF=/path/to/atlas/conf bin/atlas_semantic_repair.sh`.
-3. Verify search: `dev-support/atlas-docker/seed/udf-retail/test-udf-retail-semantic.sh`
+3. Verify search with the requests in [Test REST APIs](#5-test-rest-apis).
 
 A reindex writes to OpenSearch directly from HBase; it does not go through the Atlas entity store, so it
 publishes **no** Kafka events. The Semantic Indexer therefore never sees the rebuilt entities; it only
@@ -555,12 +555,13 @@ One-liner with status code:
 curl -sS -w '\nHTTP %{http_code}\n' http://localhost:8089/health
 ```
 
-### 4. (Optional) Apply seed data
+### 4. (Optional) Load sample data
 
-UDF retail sample dataset with glossary terms, classifications, and business metadata:
+Atlas's quick start (`QuickStartV2`) creates sample databases, tables, processes, classifications and a glossary:
 
 ```bash
-./seed/udf-retail/apply-udf-retail-seed.sh
+docker exec -u atlas -e ATLAS_USERNAME=admin -e 'ATLAS_PASSWORD=atlasR0cks!' atlas \
+  bash -c 'cd /opt/atlas/bin && ./quick_start.py http://localhost:21000'
 ```
 
 Wait for Kafka indexing, or backfill immediately:
@@ -584,12 +585,6 @@ curl -u admin:atlasR0cks! -H 'Content-Type: application/json' \
 ```bash
 curl -u admin:atlasR0cks! \
   'http://localhost:21000/api/atlas/v2/search/similar?guid=<GUID>&topK=5' | jq
-```
-
-**Automated smoke tests** (requires seed data):
-
-```bash
-./seed/udf-retail/test-udf-retail-semantic.sh
 ```
 
 Expect `queryType: "SEMANTIC"` and a non-empty `fullTextResult` once embeddings are indexed.
@@ -635,5 +630,4 @@ For remote embedding models, use `init-opensearch-semantic-remote.sh` (see `conf
 | Empty semantic search results | Run repair or wait for indexer; check `curl localhost:9200/janusgraph_vertex_index/_count?q=exists:atlas_semantic_embedding` |
 | Indexer restart loop | Check `docker logs atlas-semantic-indexer`; ensure slim image has `bin/atlas_semantic_indexer.sh` |
 | Model id mismatch | Re-run `./scripts/run-atlas-semantic.sh`: it reuses the deployed model or registers a new one (e.g. after OpenSearch was reset) and recreates both containers with the new id |
-| Clear embeddings only | `./seed/udf-retail/clear-opensearch-semantic-embeddings.sh` |
 | Health endpoint unreachable | Recreate container after rebuild; confirm port `8089:8089` in `docker-compose.atlas-semantic.yml` |

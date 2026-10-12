@@ -110,8 +110,8 @@ public final class SemanticIndexSetup {
     void checkSearchable(int socketTimeoutMs) throws SemanticSearchException {
         String indexName = OpenSearchSemanticStore.getVertexIndexName();
 
-        String settings = httpClient.sendForBody(new HttpGet("/" + indexName + "/_settings/index.knn?include_defaults=true"), socketTimeoutMs);
-        if (!parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(settings, Map.class))) {
+        String settings = httpClient.sendForBody(new HttpGet("/" + indexName + "/_settings/index.knn"), socketTimeoutMs);
+        if (!parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(settings, Map.class), indexName)) {
             LOG.error("Semantic search unavailable: index.knn is not enabled on vertex index '{}' (see SemanticSearch.md)", indexName);
             throw new SemanticSearchException(AtlasErrorCode.SEMANTIC_SEARCH_NOT_READY, "the OpenSearch vertex index was created without index.knn");
         }
@@ -245,52 +245,27 @@ public final class SemanticIndexSetup {
     }
 
     private boolean isKnnEnabled(String indexName) throws SemanticSearchException {
-        // OpenSearch default (nested) settings response; include_defaults for implicit plugin defaults.
-        String response = sendWithRetry(new HttpGet("/" + indexName + "/_settings/index.knn?include_defaults=true"));
+        String response = sendWithRetry(new HttpGet("/" + indexName + "/_settings/index.knn"));
 
-        try {
-            return parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(response, Map.class));
-        } catch (Exception e) {
-            LOG.warn("Unable to read knn setting for index '{}'", indexName, e);
-        }
-
-        return false;
+        return parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(response, Map.class), indexName);
     }
 
     /**
-     * Parses the OpenSearch default (nested) Get Index Settings response for {@code index.knn=true}.
-     * Expects {@code settings.index.knn} and, when requested, {@code defaults.index.knn}.
+     * Parses {@code <index>.settings.index.knn} from the Get Index Settings response.
      */
     @SuppressWarnings("unchecked")
-    static boolean parseKnnEnabledFromSettingsResponse(Map<String, Object> root) {
-        if (root == null || root.isEmpty()) {
+    static boolean parseKnnEnabledFromSettingsResponse(Map<String, Object> root, String indexName) {
+        Object indexPayload = root != null ? root.get(indexName) : null;
+        if (!(indexPayload instanceof Map)) {
             return false;
         }
 
-        for (Object indexPayload : root.values()) {
-            if (!(indexPayload instanceof Map)) {
-                continue;
-            }
-
-            Map<String, Object> payload = (Map<String, Object>) indexPayload;
-            if (parseNestedKnnFromSettingsSection(payload.get("settings"))) {
-                return true;
-            }
-            if (parseNestedKnnFromSettingsSection(payload.get("defaults"))) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static boolean parseNestedKnnFromSettingsSection(Object settingsObj) {
-        if (!(settingsObj instanceof Map)) {
+        Object settings = ((Map<String, Object>) indexPayload).get("settings");
+        if (!(settings instanceof Map)) {
             return false;
         }
 
-        Object index = ((Map<String, Object>) settingsObj).get("index");
+        Object index = ((Map<String, Object>) settings).get("index");
         if (!(index instanceof Map)) {
             return false;
         }
@@ -374,15 +349,7 @@ public final class SemanticIndexSetup {
 
     @SuppressWarnings("unchecked")
     private static Map<String, Object> parseIndexProperties(Map<String, Object> mappingResponse, String indexName) {
-        if (mappingResponse == null || mappingResponse.isEmpty()) {
-            return null;
-        }
-
-        Object indexMappings = mappingResponse.get(indexName);
-        if (!(indexMappings instanceof Map)) {
-            indexMappings = mappingResponse.values().iterator().next();
-        }
-
+        Object indexMappings = mappingResponse != null ? mappingResponse.get(indexName) : null;
         if (!(indexMappings instanceof Map)) {
             return null;
         }

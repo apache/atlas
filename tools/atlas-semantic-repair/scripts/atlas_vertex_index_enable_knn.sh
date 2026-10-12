@@ -90,8 +90,8 @@ json() {
 }
 
 knn_enabled() {
-  os GET "/$1/_settings/index.knn?include_defaults=true" \
-    | json "any(str(v.get(s,{}).get('index',{}).get('knn','')).lower()=='true' for v in d.values() for s in ('settings','defaults'))"
+  os GET "/$1/_settings/index.knn" \
+    | json "str(d.get('$1',{}).get('settings',{}).get('index',{}).get('knn','')).lower()=='true'"
 }
 
 doc_count() {

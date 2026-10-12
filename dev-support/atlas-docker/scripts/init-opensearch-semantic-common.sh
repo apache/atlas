@@ -144,8 +144,7 @@ except Exception:
     sys.exit(0)
 if not hits:
     sys.exit(0)
-source = hits[0].get('_source', {})
-print(source.get('model_id') or hits[0].get('_id', ''))
+print(hits[0].get('_id', ''))
 " 2>/dev/null || true)
 
   if [ -z "${candidate_id}" ]; then

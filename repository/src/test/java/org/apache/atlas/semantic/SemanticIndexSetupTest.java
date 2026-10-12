@@ -97,29 +97,22 @@ public class SemanticIndexSetupTest {
                 + "}"
                 + "}";
 
-        assertTrue(SemanticIndexSetup.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class)));
-    }
-
-    @Test
-    public void parseKnnEnabledFromDefaultsSection() {
-        String json = "{"
-                + "\"janusgraph_vertex_index\": {"
-                + "  \"settings\": {},"
-                + "  \"defaults\": {"
-                + "    \"index\": {"
-                + "      \"knn\": true"
-                + "    }"
-                + "  }"
-                + "}"
-                + "}";
-
-        assertTrue(SemanticIndexSetup.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class)));
+        assertTrue(SemanticIndexSetup.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(json, Map.class), "janusgraph_vertex_index"));
     }
 
     @Test
     public void parseKnnEnabledReturnsFalseWhenMissing() {
         assertFalse(SemanticIndexSetup.parseKnnEnabledFromSettingsResponse(
-                AtlasJson.fromJson("{\"janusgraph_vertex_index\":{\"settings\":{}}}", Map.class)));
+                AtlasJson.fromJson("{\"janusgraph_vertex_index\":{\"settings\":{}}}", Map.class), "janusgraph_vertex_index"));
+    }
+
+    @Test
+    public void parseIgnoresOtherIndexes() {
+        String knnOn = "{\"other_index\":{\"settings\":{\"index\":{\"knn\":\"true\"}},"
+                + "\"mappings\":{\"properties\":{\"" + SEMANTIC_EMBEDDING_FIELD + "\":{\"type\":\"knn_vector\",\"dimension\":384}}}}}";
+
+        assertFalse(SemanticIndexSetup.parseKnnEnabledFromSettingsResponse(AtlasJson.fromJson(knnOn, Map.class), "janusgraph_vertex_index"));
+        assertNull(SemanticIndexSetup.parseEmbeddingDimensionFromMapping(AtlasJson.fromJson(knnOn, Map.class), "janusgraph_vertex_index"));
     }
 
     @Test
