@@ -18,9 +18,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
   CircularProgress,
-  List,
-  ListItem,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Typography
 } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -83,33 +86,43 @@ const SimilarEntitiesTab = ({ guid }: { guid: string }) => {
   }
 
   return (
-    <List data-cy="similar-entities-list">
-      {results.map(({ entity, score }, index) => {
-        const { name } = extractKeyValueFromEntity(entity);
-        return (
-          <ListItem
-            key={`${entity.guid}-${index}`}
-            sx={{ gap: 1, alignItems: "center" }}
-          >
-            <DisplayImage entity={entity} />
-            <Link
-              className={`nav-link text-decoration-none ${
-                entity.status && entityStateReadOnly[entity.status]
-                  ? "text-red"
-                  : "text-blue"
-              }`}
-              to={{ pathname: `/detailPage/${entity.guid}` }}
-            >
-              {name}
-            </Link>
-            <Typography variant="body2" color="text.secondary" sx={{ ml: "auto" }}>
-              {entity.typeName}
-              {score != null ? ` · score ${score.toFixed(4)}` : ""}
-            </Typography>
-          </ListItem>
-        );
-      })}
-    </List>
+    <Table size="small" data-cy="similar-entities-list">
+      <TableHead>
+        <TableRow>
+          <TableCell>Name</TableCell>
+          <TableCell>Type</TableCell>
+          <TableCell align="right">Similarity</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {results.map(({ entity, score }, index) => {
+          const { name } = extractKeyValueFromEntity(entity);
+          return (
+            <TableRow key={`${entity.guid}-${index}`}>
+              <TableCell>
+                <Stack direction="row" gap={1} alignItems="center">
+                  <DisplayImage entity={entity} />
+                  <Link
+                    className={`nav-link text-decoration-none ${
+                      entity.status && entityStateReadOnly[entity.status]
+                        ? "text-red"
+                        : "text-blue"
+                    }`}
+                    to={{ pathname: `/detailPage/${entity.guid}` }}
+                  >
+                    {name}
+                  </Link>
+                </Stack>
+              </TableCell>
+              <TableCell>{entity.typeName}</TableCell>
+              <TableCell align="right">
+                {score != null ? score.toFixed(4) : "—"}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 };
 

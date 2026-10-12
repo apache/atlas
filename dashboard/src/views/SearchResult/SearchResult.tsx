@@ -171,6 +171,9 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
           if (typeName) {
             body.typeName = typeName;
           }
+          if (!isEmpty(entityFilterParams)) {
+            body.entityFilters = searchParamsAPiQuery(entityFilterParams);
+          }
 
           const searchResp = await getSemanticSearchResult({ data: body });
           const { data = {} } = searchResp || {};

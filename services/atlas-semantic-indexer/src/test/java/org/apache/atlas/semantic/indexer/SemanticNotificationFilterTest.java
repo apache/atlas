@@ -54,10 +54,10 @@ public class SemanticNotificationFilterTest {
     }
 
     @Test
-    public void skipsNotificationWithoutGuids() {
+    public void extractsNoGuidFromNotificationWithoutGuid() {
         EntityNotificationV2 notification = new EntityNotificationV2(
                 entity(""), OperationType.ENTITY_UPDATE);
-        assertFalse(SemanticNotificationFilter.shouldProcess(notification));
+        assertTrue(SemanticNotificationFilter.extractGuidTypes(notification).isEmpty());
     }
 
     @Test
@@ -78,11 +78,11 @@ public class SemanticNotificationFilterTest {
     }
 
     @Test
-    public void skipsOtherRelationships() {
+    public void extractsNoGuidFromOtherRelationships() {
         EntityNotificationV2 notification = new EntityNotificationV2(
                 relationship("hive_table_columns"), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
 
-        assertFalse(SemanticNotificationFilter.shouldProcess(notification));
+        assertTrue(SemanticNotificationFilter.extractGuidTypes(notification).isEmpty());
     }
 
     private static AtlasRelationshipHeader relationship(String typeName) {

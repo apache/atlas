@@ -18,15 +18,27 @@
 package org.apache.atlas.semantic;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 public class VectorSearchFilter {
-    private final Set<String> typeNames;
-    private final Set<String> excludeGuids;
+    private final Set<String>         typeNames;
+    private final Set<String>         excludeGuids;
+    private final boolean             activeOnly;
+    private final Map<String, Object> entityFilterClause;
 
-    public VectorSearchFilter(Set<String> typeNames, Set<String> excludeGuids) {
-        this.typeNames    = typeNames != null ? typeNames : Collections.emptySet();
-        this.excludeGuids = excludeGuids != null ? excludeGuids : Collections.emptySet();
+    public VectorSearchFilter(Set<String> typeNames, Set<String> excludeGuids, boolean activeOnly) {
+        this(typeNames, excludeGuids, activeOnly, null);
+    }
+
+    /**
+     * @param entityFilterClause OpenSearch clause of the entityFilters (see SemanticEntityFilter#getIndexClause)
+     */
+    public VectorSearchFilter(Set<String> typeNames, Set<String> excludeGuids, boolean activeOnly, Map<String, Object> entityFilterClause) {
+        this.typeNames          = typeNames != null ? typeNames : Collections.emptySet();
+        this.excludeGuids       = excludeGuids != null ? excludeGuids : Collections.emptySet();
+        this.activeOnly         = activeOnly;
+        this.entityFilterClause = entityFilterClause;
     }
 
     public Set<String> getTypeNames() {
@@ -35,5 +47,13 @@ public class VectorSearchFilter {
 
     public Set<String> getExcludeGuids() {
         return excludeGuids;
+    }
+
+    public boolean isActiveOnly() {
+        return activeOnly;
+    }
+
+    public Map<String, Object> getEntityFilterClause() {
+        return entityFilterClause;
     }
 }

@@ -31,7 +31,7 @@ public interface SemanticVectorStore {
     void initialize() throws SemanticSearchException;
 
     /**
-     * Whether the backend answers right now: one quick request, no retry.
+     * Whether the backend answers and the embedding model is deployed right now: quick requests, no retry.
      */
     boolean isAvailable();
 
@@ -56,7 +56,7 @@ public interface SemanticVectorStore {
     List<?> getStoredEmbedding(String guid) throws SemanticSearchException;
 
     /**
-     * Pages through the guids of active, embeddable entities in guid order, passing each page to {@code onPage}.
+     * Pages through the guids of active, embeddable entities, passing each page to {@code onPage}.
      * With {@code missingEmbeddingOnly}, only entities without a stored embedding. The store can lag behind Atlas:
      * callers must still check that each entity exists, is active and is embeddable.
      */

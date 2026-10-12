@@ -60,9 +60,9 @@ public final class SemanticIndexSetup {
     }
 
     /**
-     * Validates the configuration regardless of atlas.semantic.enabled (which only gates the REST search). Must run
-     * before the graph is opened: JanusGraph creates the vertex index on first open, and index.knn can't be added
-     * to it afterwards.
+     * Fails when semantic search is disabled, so the indexer and the repair tool never embed entities nobody can
+     * search. Must run before the graph is opened: JanusGraph creates the vertex index on first open, and index.knn
+     * can't be added to it afterwards.
      */
     public static void validateConfiguration() throws SemanticSearchException {
         Configuration config;
@@ -71,6 +71,11 @@ public final class SemanticIndexSetup {
             config = ApplicationProperties.get();
         } catch (AtlasException e) {
             throw new SemanticSearchException("Failed to read semantic search configuration", e);
+        }
+
+        if (!AtlasConfiguration.SEMANTIC_ENABLED.getBoolean()) {
+            throw new SemanticSearchException(AtlasConfiguration.SEMANTIC_ENABLED.getPropertyName()
+                    + " is false: set it to true to index entities for semantic search");
         }
 
         if (StringUtils.isBlank(config.getString(OpenSearchClientFactory.HOSTNAME_CONF, ""))) {
@@ -94,6 +99,7 @@ public final class SemanticIndexSetup {
 
     void run() throws SemanticSearchException {
         validateCluster();
+        validateModelDimension();
         ensureIngestPipeline();
         ensureVertexIndexSemanticFields();
     }
@@ -146,6 +152,32 @@ public final class SemanticIndexSetup {
         return version.get("distribution").toString();
     }
 
+    private void validateModelDimension() throws SemanticSearchException {
+        String  modelId        = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
+        int     configured     = AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt();
+        Integer modelDimension = parseModelEmbeddingDimension(sendWithRetry(new HttpGet("/_plugins/_ml/models/" + modelId)));
+
+        if (modelDimension == null) {
+            // e.g. remote (connector) models
+            LOG.warn("Embedding model {} doesn't report model_config.embedding_dimension; {}={} is not checked against it",
+                    modelId, AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName(), configured);
+            return;
+        }
+
+        if (modelDimension != configured) {
+            throw new SemanticSearchException("Embedding model " + modelId + " produces " + modelDimension + "-dimension vectors but "
+                    + AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName() + " is " + configured);
+        }
+    }
+
+    static Integer parseModelEmbeddingDimension(String modelJson) {
+        Map<?, ?> model       = AtlasJson.fromJson(modelJson, Map.class);
+        Object    modelConfig = model != null ? model.get("model_config") : null;
+        Object    dimension   = modelConfig instanceof Map ? ((Map<?, ?>) modelConfig).get("embedding_dimension") : null;
+
+        return dimension instanceof Number ? ((Number) dimension).intValue() : null;
+    }
+
     private void ensureIngestPipeline() throws SemanticSearchException {
         String modelId = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
 
@@ -184,7 +216,8 @@ public final class SemanticIndexSetup {
         int    dimensions = AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt();
 
         if (!indexExists(indexName)) {
-            throw new SemanticSearchException("Vertex index '" + indexName + "' does not exist in OpenSearch");
+            // Atlas creates it on its first start
+            throw new SemanticSearchException("Vertex index '" + indexName + "' does not exist in OpenSearch yet", true);
         }
 
         ensureKnnEnabled(indexName);

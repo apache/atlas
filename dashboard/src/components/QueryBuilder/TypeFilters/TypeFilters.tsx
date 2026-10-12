@@ -29,7 +29,7 @@ import { TypeCustomValueEditor } from "./TypeCustomValueEditor";
 const TypeFilters = ({ fieldsObj, typeQuery, setTypeQuery }: any) => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const typeParams = searchParams.get("type");
+  const typeParams = searchParams.get("type") || "_ALL_ENTITY_TYPES";
 
   return (
     <Accordion

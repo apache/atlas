@@ -48,6 +48,13 @@
             <artifactId>atlas-repository</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- shipped in the semantic-indexer tarball (bin/atlas_semantic_repair.sh) -->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-semantic-repair-tool</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>

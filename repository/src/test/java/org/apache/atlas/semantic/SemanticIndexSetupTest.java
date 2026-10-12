@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.semantic;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.utils.AtlasJson;
 import org.testng.annotations.Test;
 
@@ -29,8 +31,22 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 
 public class SemanticIndexSetupTest {
+    @Test
+    public void validateConfigurationFailsWhenSemanticSearchIsDisabled() throws Exception {
+        String enabledConf = AtlasConfiguration.SEMANTIC_ENABLED.getPropertyName();
+
+        ApplicationProperties.get().setProperty(enabledConf, false);
+        try {
+            SemanticSearchException e = expectThrows(SemanticSearchException.class, SemanticIndexSetup::validateConfiguration);
+            assertTrue(e.getMessage().contains(enabledConf), e.getMessage());
+        } finally {
+            ApplicationProperties.get().clearProperty(enabledConf);
+        }
+    }
+
     @Test
     public void parseEmbeddingDimensionFromMappingResponse() {
         String json = "{"
@@ -54,6 +70,13 @@ public class SemanticIndexSetupTest {
     @Test
     public void parseEmbeddingDimensionReturnsNullWhenMissing() {
         assertNull(SemanticIndexSetup.parseEmbeddingDimensionFromMapping(null, "janusgraph_vertex_index"));
+    }
+
+    @Test
+    public void parseModelEmbeddingDimensionFromModelConfig() {
+        assertEquals(SemanticIndexSetup.parseModelEmbeddingDimension(
+                "{\"model_state\":\"DEPLOYED\",\"model_config\":{\"model_type\":\"bert\",\"embedding_dimension\":384}}"), Integer.valueOf(384));
+        assertNull(SemanticIndexSetup.parseModelEmbeddingDimension("{\"model_state\":\"DEPLOYED\",\"connector_id\":\"c1\"}"));
     }
 
     @Test

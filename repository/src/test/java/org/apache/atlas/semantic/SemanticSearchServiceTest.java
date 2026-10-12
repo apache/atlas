@@ -24,10 +24,16 @@ import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
+import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
+import org.apache.atlas.model.discovery.SearchParameters.Operator;
 import org.apache.atlas.model.discovery.SemanticSearchParameters;
 import org.apache.atlas.model.discovery.SimilarEntitySearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -88,7 +94,7 @@ public class SemanticSearchServiceTest {
         retrievers    = mockConstruction(EntityGraphRetriever.class);
         semanticStore = mock(SemanticVectorStore.class);
         textBuilder   = mock(SemanticTextBuilder.class);
-        service       = new SemanticSearchService(semanticStore, null, new AtlasTypeRegistry(), textBuilder);
+        service       = new SemanticSearchService(semanticStore, null, typeRegistryWithTable(), textBuilder);
 
         entityRetriever = retrievers.constructed().get(0);
     }
@@ -140,7 +146,7 @@ public class SemanticSearchServiceTest {
         assertEquals(result.getQueryType(), AtlasQueryType.SEMANTIC);
         assertEquals(guids(result), Arrays.asList("g1", "g4"));
         assertEquals(result.getFullTextResult().get(0).getScore(), 0.9, 0.0);
-        verify(semanticStore).searchByText(eq("cars"), eq(20), any());
+        verify(semanticStore).searchByText(eq("cars"), eq(10), argThat(VectorSearchFilter::isActiveOnly));
     }
 
     @Test
@@ -155,6 +161,34 @@ public class SemanticSearchServiceTest {
         params.setExcludeDeletedEntities(false);
 
         assertEquals(guids(service.semanticSearch(params)), Collections.singletonList("g1"));
+        verify(semanticStore).searchByText(eq("cars"), eq(1), argThat(f -> !f.isActiveOnly()));
+    }
+
+    @Test
+    public void semanticSearchFiltersInTheIndexThenChecksHitsOnTheGraph() throws Exception {
+        property(entity("g1", AtlasEntity.Status.ACTIVE), "Governance.dataOwner", "finance team");
+        property(entity("g2", AtlasEntity.Status.ACTIVE), "Governance.dataOwner", "Finance Team - EMEA");
+        property(entity("g3", AtlasEntity.Status.ACTIVE), "Governance.dataOwner", "finance team");
+        when(semanticStore.searchByText(eq("cars"), anyInt(), any())).thenReturn(Arrays.asList(
+                new VectorSearchHit("g1", 0.9), new VectorSearchHit("g2", 0.8), new VectorSearchHit("g3", 0.7)));
+
+        SemanticSearchParameters params = query("cars");
+        params.setTopK(5);
+        params.setEntityFilters(filter("Governance.dataOwner", Operator.EQ, "finance team"));
+
+        assertEquals(guids(service.semanticSearch(params)), Arrays.asList("g1", "g3"));
+        verify(semanticStore).searchByText(eq("cars"), eq(10), argThat(f -> f.getEntityFilterClause().equals(
+                Collections.singletonMap("match_phrase", Collections.singletonMap("Governance•dataOwner", "finance team")))));
+    }
+
+    @Test
+    public void semanticSearchRejectsInvalidEntityFilters() throws Exception {
+        SemanticSearchParameters params = query("cars");
+        params.setTypeName("test_table");
+        params.setEntityFilters(filter("no_such_attribute", Operator.EQ, "x"));
+
+        assertEquals(expectThrows(AtlasBaseException.class, () -> service.semanticSearch(params)).getAtlasErrorCode(), AtlasErrorCode.UNKNOWN_ATTRIBUTE);
+        verify(semanticStore, never()).searchByText(anyString(), anyInt(), any());
     }
 
     @Test
@@ -222,17 +256,66 @@ public class SemanticSearchServiceTest {
         assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.BAD_REQUEST);
     }
 
+    static AtlasTypeRegistry typeRegistryWithTable() {
+        try {
+            AtlasTypeRegistry                            registry = new AtlasTypeRegistry();
+            AtlasTypeRegistry.AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+            ttr.addType(new AtlasEntityDef("test_table", "", "1.0", Arrays.asList(qualifiedName(), new AtlasAttributeDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_DATE))));
+            ttr.addType(new AtlasEntityDef("test_term", "", "1.0", Collections.singletonList(qualifiedName())));
+
+            AtlasAttributeDef domain = new AtlasAttributeDef("domain", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+            domain.setIndexType(AtlasAttributeDef.IndexType.STRING);
+            domain.setOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES, "[\"test_table\"]");
+            domain.setOption(AtlasBusinessMetadataDef.ATTR_MAX_STRING_LENGTH, "50");
+            AtlasAttributeDef dataOwner = new AtlasAttributeDef("dataOwner", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+            dataOwner.setOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES, "[\"test_table\"]");
+            dataOwner.setOption(AtlasBusinessMetadataDef.ATTR_MAX_STRING_LENGTH, "50");
+            ttr.addType(new AtlasBusinessMetadataDef("Governance", "", "1.0", Arrays.asList(domain, dataOwner)));
+            registry.releaseTypeRegistryForUpdate(ttr, true);
+            registry.getBusinessMetadataTypeByName("Governance").getAttribute("domain").setIndexFieldName("Governance•domain");
+            registry.getBusinessMetadataTypeByName("Governance").getAttribute("dataOwner").setIndexFieldName("Governance•dataOwner");
+
+            // set by GraphBackedSearchIndexer at startup
+            for (String typeName : Arrays.asList("test_table", "test_term")) {
+                registry.getEntityTypeByName(typeName).getAttribute("qualifiedName").setIndexFieldName(typeName + "•qualifiedName");
+            }
+            registry.getEntityTypeByName("test_table").getAttribute("createTime").setIndexFieldName("test_table•createTime");
+            return registry;
+        } catch (AtlasBaseException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static AtlasAttributeDef qualifiedName() {
+        AtlasAttributeDef ret = new AtlasAttributeDef("qualifiedName", AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        ret.setIndexType(AtlasAttributeDef.IndexType.STRING);
+        return ret;
+    }
+
+    static FilterCriteria filter(String attributeName, Operator operator, String value) {
+        FilterCriteria ret = new FilterCriteria();
+        ret.setAttributeName(attributeName);
+        ret.setOperator(operator);
+        ret.setAttributeValue(value);
+        return ret;
+    }
+
     private static SemanticSearchParameters query(String text) {
         SemanticSearchParameters params = new SemanticSearchParameters();
         params.setQuery(text);
         return params;
     }
 
-    private void entity(String guid, AtlasEntity.Status state) throws AtlasBaseException {
+    private AtlasVertex entity(String guid, AtlasEntity.Status state) throws AtlasBaseException {
         AtlasVertex vertex = mock(AtlasVertex.class);
         graphUtils.when(() -> AtlasGraphUtilsV2.findByGuid(guid)).thenReturn(vertex);
         graphUtils.when(() -> AtlasGraphUtilsV2.getState(vertex)).thenReturn(state);
         when(entityRetriever.toAtlasEntityHeader(eq(vertex), any())).thenReturn(header(guid, state));
+        return vertex;
+    }
+
+    private void property(AtlasVertex vertex, String name, String value) {
+        graphUtils.when(() -> AtlasGraphUtilsV2.getProperty(vertex, name, String.class)).thenReturn(value);
     }
 
     private AtlasVertex sourceEntity(String guid) throws AtlasBaseException {

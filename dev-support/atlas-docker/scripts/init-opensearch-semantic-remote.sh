@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Provision a remote OpenSearch embedding model for Atlas semantic search (dev).
-# Also checks knn and ensures the ingest pipeline and embedding mapping on the JanusGraph vertex index.
+# The ingest pipeline and the embedding mapping are created by the Semantic Indexer when it starts.
 #
 # Use one of these paths:
 #
@@ -19,7 +19,7 @@
 # CONNECTOR_JSON must be the request body for POST /_plugins/_ml/connectors/_create
 # (see OpenSearch connector blueprints). Credentials belong in that JSON or env-expanded before run.
 #
-# Optional: OPENSEARCH_URL, PIPELINE_NAME (default atlas-semantic-ingest)
+# Optional: OPENSEARCH_URL
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -29,7 +29,6 @@ source "${SCRIPT_DIR}/init-opensearch-semantic-common.sh"
 DOCKER_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 OPENSEARCH_URL="${OPENSEARCH_URL:-http://localhost:9200}"
-PIPELINE_NAME="${PIPELINE_NAME:-atlas-semantic-ingest}"
 EMBEDDING_DIMENSION="${EMBEDDING_DIMENSION:?Set EMBEDDING_DIMENSION to match your model output}"
 REMOTE_MODEL_NAME="${REMOTE_MODEL_NAME:-Atlas remote embedding model}"
 BOOTSTRAP_ARTIFACT="${BOOTSTRAP_ARTIFACT:-${DOCKER_DIR}/config/.semantic-bootstrap-last.env}"
@@ -84,7 +83,5 @@ else
   echo "==> Using existing model id: ${MODEL_ID}"
 fi
 
-bootstrap_semantic_vertex_index "${OPENSEARCH_URL}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
-
-write_bootstrap_artifact "${BOOTSTRAP_ARTIFACT}" "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}"
-print_atlas_config_guide "${MODEL_ID}" "${PIPELINE_NAME}" "${EMBEDDING_DIMENSION}" "${BOOTSTRAP_ARTIFACT}"
+write_bootstrap_artifact "${BOOTSTRAP_ARTIFACT}" "${MODEL_ID}" "${EMBEDDING_DIMENSION}"
+print_atlas_config_guide "${MODEL_ID}" "${EMBEDDING_DIMENSION}"

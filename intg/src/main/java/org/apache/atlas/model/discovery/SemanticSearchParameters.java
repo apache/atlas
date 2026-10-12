@@ -20,6 +20,7 @@ package org.apache.atlas.model.discovery;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 
 import java.io.Serializable;
 import java.util.Objects;
@@ -41,6 +42,7 @@ public class SemanticSearchParameters implements Serializable {
     private int            topK;
     private double         minScore;
     private Set<String>    attributes;
+    private FilterCriteria entityFilters;
 
     public SemanticSearchParameters() {
     }
@@ -101,6 +103,14 @@ public class SemanticSearchParameters implements Serializable {
         this.attributes = attributes;
     }
 
+    public FilterCriteria getEntityFilters() {
+        return entityFilters;
+    }
+
+    public void setEntityFilters(FilterCriteria entityFilters) {
+        this.entityFilters = entityFilters;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -116,12 +126,13 @@ public class SemanticSearchParameters implements Serializable {
                 Double.compare(that.minScore, minScore) == 0 &&
                 Objects.equals(query, that.query) &&
                 Objects.equals(typeName, that.typeName) &&
-                Objects.equals(attributes, that.attributes);
+                Objects.equals(attributes, that.attributes) &&
+                Objects.equals(entityFilters, that.entityFilters);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, typeName, excludeDeletedEntities, includeSubTypes, topK, minScore, attributes);
+        return Objects.hash(query, typeName, excludeDeletedEntities, includeSubTypes, topK, minScore, attributes, entityFilters);
     }
 
     @Override
@@ -134,6 +145,7 @@ public class SemanticSearchParameters implements Serializable {
                 ", topK=" + topK +
                 ", minScore=" + minScore +
                 ", attributes=" + attributes +
+                ", entityFilters=" + entityFilters +
                 '}';
     }
 }

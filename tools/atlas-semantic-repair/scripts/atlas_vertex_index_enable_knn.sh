@@ -24,6 +24,7 @@
 # original name (OpenSearch has no rename). ${INDEX}_knn is kept as a backup.
 #
 # Atlas and the Semantic Indexer must be stopped. Without --confirm, only the checks run.
+# Needs curl and python3 (not in the semantic-indexer Docker image: run it from a host that reaches OpenSearch).
 #
 # Environment:
 #   OPENSEARCH_URL       default http://localhost:9200
@@ -75,8 +76,13 @@ os() {
 
 index_exists() {
   local code
-  code=$(curl -s -o /dev/null -w '%{http_code}' -I "${AUTH[@]+"${AUTH[@]}"}" ${CURL_OPTS:-} "${OPENSEARCH_URL}/$1")
-  [ "${code}" = "200" ]
+  code=$(curl -s -o /dev/null -w '%{http_code}' -I "${AUTH[@]+"${AUTH[@]}"}" ${CURL_OPTS:-} "${OPENSEARCH_URL}/$1") || true
+  case "${code}" in
+    200) return 0 ;;
+    404) return 1 ;;
+    000) echo "ERROR: cannot reach OpenSearch at ${OPENSEARCH_URL} (set OPENSEARCH_URL)" >&2; exit 1 ;;
+    *)   echo "ERROR: HEAD /$1 returned HTTP ${code}" >&2; exit 1 ;;
+  esac
 }
 
 json() {

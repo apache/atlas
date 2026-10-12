@@ -68,6 +68,7 @@ const Filters = ({
   const initialQuery: RuleGroupType = { combinator: "and", rules: [] };
   const searchParams: any = new URLSearchParams(location.search);
   const typeParams = searchParams.get("type");
+  const isSemanticSearch = searchParams.get("searchType") === "semantic";
   const tagParams = searchParams.get("tag");
   const relationshipParams = searchParams.get("relationshipName");
   const entityFilterParams = searchParams.get("entityFilters");
@@ -267,6 +268,72 @@ const Filters = ({
         formatDate: true
       });
     }
+
+    if (isSemanticSearch) {
+      // semantic search filters inside the OpenSearch query, so only attributes with a usable index field are listed:
+      // single-valued strings, numbers, dates and the system attributes below
+      const filterable = (attrDef: any) =>
+        attrDef?.cardinality !== "LIST" &&
+        attrDef?.cardinality !== "SET" &&
+        ["string", "date", "byte", "short", "int", "long", "float", "double"].includes(attrDef.typeName);
+      const toOptions = (names: string[]) => names.map((name) => ({ name, label: name }));
+      const semanticFilter = (attrDef: any, group: string, isSystemAttr?: boolean) => {
+        const obj = getObjDef(allDataObj, attrDef, rules_widgets, isGroupView, group, isSystemAttr);
+        if (attrDef.typeName === "string") {
+          obj.operators = toOptions(["=", "!=", "begins_with", "in"]);
+        } else {
+          // dates and numbers keep their range operators and calendar; is_null / not_null aren't supported
+          obj.operators = obj.operators.filter((o: any) => o.name !== "is_null" && o.name !== "not_null");
+        }
+        return obj;
+      };
+
+      // as in basic search: type attributes only with a type, then system attributes and business metadata
+      if (!isEmpty(type)) {
+        for (const attrDef of Object.values(attrEntityTypeObj || {}) as any[]) {
+          if (filterable(attrDef)) {
+            filters.push(semanticFilter(attrDef, type + " Attribute"));
+          }
+        }
+      }
+
+      // null keeps the date operators; the select and autocomplete editors pick a single value, so no "in" there
+      const systemOperators: Record<string, string[] | null> = {
+        __guid: ["=", "!=", "begins_with", "in"],
+        __typeName: ["=", "!="],
+        __state: ["=", "!="],
+        __timestamp: null,
+        __modificationTimestamp: null,
+        __classificationNames: ["=", "!="],
+        __propagatedClassificationNames: ["=", "!="],
+        __labels: ["=", "!=", "in"]
+      };
+      for (const sysAttr of Object.values(allEntityTypeAtrr?.attributeDefs || {}) as any[]) {
+        const names = systemOperators[sysAttr.name];
+        if (names !== undefined) {
+          const obj = semanticFilter(sysAttr, "System Attribute", true);
+          if (names) {
+            obj.operators = toOptions(names);
+          }
+          filters.push(obj);
+        }
+      }
+
+      const businessAttributeDefs: Record<string, any[]> = !isEmpty(type)
+        ? entityTypeObj?.businessAttributeDefs || {}
+        : Object.fromEntries(businessMetadataDefs.map((bm: any) => [bm.name, bm.attributeDefs || []]));
+      for (const [bmName, attrDefs] of Object.entries(businessAttributeDefs)) {
+        for (const attrDef of customSortBy(attrDefs, ["name"]).filter(filterable)) {
+          const obj = semanticFilter(attrDef, "Business Attributes: " + bmName);
+          obj.id = bmName + "." + obj.id;
+          obj.name = obj.id;
+          obj.data = { entityType: "businessMetadata" };
+          filters.push(obj);
+        }
+      }
+      return filters.map((o) => toFullOption(o));
+    }
+
     for (const attrObj in attrEntityTypeObj) {
       let returnObj: any = getObjDef(
         allDataObj,
@@ -740,7 +807,7 @@ const Filters = ({
               </Stack>
             )}
             <Stack gap="1rem">
-              {!isEmpty(typeParams) && (
+              {(!isEmpty(typeParams) || isSemanticSearch) && (
                 <TypeFilters
                   allDataObj={allDataObj}
                   fieldsObj={fieldsObj}

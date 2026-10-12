@@ -32,6 +32,7 @@ import org.apache.atlas.semantic.OpenSearchSemanticStore;
 import org.apache.atlas.semantic.SemanticEntityEmbedder;
 import org.apache.atlas.semantic.SemanticEntityEmbedder.IndexStats;
 import org.apache.atlas.semantic.SemanticIndexSetup;
+import org.apache.atlas.semantic.SemanticSearchException;
 import org.apache.atlas.semantic.SemanticTextBuilder;
 import org.apache.atlas.semantic.SemanticVectorStore;
 import org.apache.atlas.utils.SSLUtil;
@@ -49,7 +50,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Standalone Kafka consumer that enriches entity metadata and writes semantic embeddings
@@ -60,23 +60,24 @@ public class SemanticIndexer {
 
     private static final long SHUTDOWN_TIMEOUT_MS   = 30_000L;
     private static final long BACKEND_RETRY_WAIT_MS = 10_000L;
+    private static final int  BACKEND_WAIT_MAX_ATTEMPTS = 30;
     private static final String GRAPH_PROBE_GUID    = "00000000-0000-0000-0000-000000000000";
 
-    private static volatile boolean running = true;
+    private static volatile boolean                                  running = true;
+    private static volatile NotificationConsumer<EntityNotification> consumer;
 
     public static void main(String[] args) {
         int exitCode = 1;
         SemanticIndexerHealthServer healthServer = null;
         KafkaNotification kafkaNotification = null;
-        final AtomicReference<NotificationConsumer<EntityNotification>> consumerRef = new AtomicReference<>();
         final CountDownLatch stopped = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             LOG.info("Semantic Indexer shutdown requested; finishing the current batch (up to {} ms)", SHUTDOWN_TIMEOUT_MS);
             running = false;
-            NotificationConsumer<EntityNotification> consumer = consumerRef.get();
-            if (consumer != null) {
-                consumer.wakeup();
+            NotificationConsumer<EntityNotification> current = consumer;
+            if (current != null) {
+                current.wakeup();
             }
             try {
                 stopped.await(SHUTDOWN_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -102,28 +103,28 @@ public class SemanticIndexer {
             config.setProperty("atlas.kafka.max.poll.records",
                     AtlasConfiguration.SEMANTIC_INDEXER_KAFKA_MAX_POLL_RECORDS.getInt());
 
+            SemanticVectorStore semanticStore = new OpenSearchSemanticStore();
+            if (!waitForBackends(semanticStore)) {
+                exitCode = 0;
+                return;
+            }
+
+            SemanticEntityEmbedder embedder = new SemanticEntityEmbedder(new SemanticTextBuilder(), semanticStore);
+
+            kafkaNotification = new KafkaNotification(config);
+            consumer = kafkaNotification.<EntityNotification>createConsumers(NotificationType.ENTITIES, 1, false).get(0);
+
+            Set<String> subscription = consumer.subscription();
+            if (subscription == null || subscription.isEmpty()) {
+                throw new IllegalStateException("Kafka consumer could not be created or subscribed; check atlas.kafka.bootstrap.servers");
+            }
+
+            // only once the backends are ready and the consumer is subscribed: /health then means "consuming"
             if (AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_ENABLED.getBoolean()) {
                 healthServer = new SemanticIndexerHealthServer(
                         AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PORT.getInt(),
                         AtlasConfiguration.SEMANTIC_INDEXER_HEALTH_PATH.getString());
                 healthServer.start();
-            }
-
-            AtlasJanusGraphDatabase.getGraphInstance();
-            SemanticVectorStore semanticStore = new OpenSearchSemanticStore();
-            semanticStore.initialize();
-
-            SemanticEntityEmbedder embedder = new SemanticEntityEmbedder(new SemanticTextBuilder(), semanticStore);
-
-            kafkaNotification = new KafkaNotification(config);
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            NotificationConsumer consumer =
-                    kafkaNotification.createConsumers(NotificationType.ENTITIES, 1, false).get(0);
-            consumerRef.set(consumer);
-
-            Set<String> subscription = consumer.subscription();
-            if (subscription == null || subscription.isEmpty()) {
-                throw new IllegalStateException("Kafka consumer could not be created or subscribed; check atlas.kafka.bootstrap.servers");
             }
 
             LOG.info("Semantic Indexer started (groupId={}, pollTimeoutMs={}, maxPollRecords={})",
@@ -148,10 +149,12 @@ public class SemanticIndexer {
                 // Any other failure (e.g. HTTP 400) is committed: atlas_semantic_repair.sh backfills it.
                 boolean retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
                 while (retry && running) {
-                    LOG.warn("OpenSearch or the graph is unavailable: retrying {} Kafka message(s) (first offset={}) in {} ms",
+                    LOG.warn("OpenSearch, the embedding model or the graph is unavailable: retrying {} Kafka message(s) (first offset={}) in {} ms",
                             messages.size(), messages.get(0).getOffset(), BACKEND_RETRY_WAIT_MS);
                     Thread.sleep(BACKEND_RETRY_WAIT_MS);
-                    retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
+                    if (backendsAvailable(semanticStore)) {
+                        retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
+                    }
                 }
 
                 if (!retry) {
@@ -163,7 +166,6 @@ public class SemanticIndexer {
         } catch (Exception e) {
             LOG.error("Semantic Indexer failed", e);
         } finally {
-            NotificationConsumer<EntityNotification> consumer = consumerRef.get();
             if (consumer != null) {
                 try {
                     consumer.close();
@@ -232,6 +234,32 @@ public class SemanticIndexer {
             // end the thread-bound read tx so the next message never reads vertices cached before its commit
             AtlasGraphProvider.getGraphInstance().rollback();
         }
+    }
+
+    /**
+     * Opens the graph and sets up the vector store, waiting while a backend is down or Atlas hasn't created the
+     * vertex index yet. Returns false when shutdown is requested while waiting; a configuration error is thrown.
+     */
+    private static boolean waitForBackends(SemanticVectorStore semanticStore) throws InterruptedException, SemanticSearchException {
+        for (int attempt = 1; running; attempt++) {
+            try {
+                AtlasJanusGraphDatabase.getGraphInstance();
+                semanticStore.initialize();
+                return true;
+            } catch (SemanticSearchException e) {
+                if (!e.isRetryable() || attempt == BACKEND_WAIT_MAX_ATTEMPTS) {
+                    throw e;
+                }
+                LOG.warn("OpenSearch is not ready (attempt {}/{}), retrying in {} ms: {}", attempt, BACKEND_WAIT_MAX_ATTEMPTS, BACKEND_RETRY_WAIT_MS, e.getMessage());
+            } catch (RuntimeException e) {
+                if (attempt == BACKEND_WAIT_MAX_ATTEMPTS) {
+                    throw e;
+                }
+                LOG.warn("The graph is not available (attempt {}/{}), retrying in {} ms: {}", attempt, BACKEND_WAIT_MAX_ATTEMPTS, BACKEND_RETRY_WAIT_MS, e.getMessage());
+            }
+            Thread.sleep(BACKEND_RETRY_WAIT_MS);
+        }
+        return false;
     }
 
     /**

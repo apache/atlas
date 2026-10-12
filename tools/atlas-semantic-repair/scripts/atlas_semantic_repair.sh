@@ -16,38 +16,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ATLAS_HOME="${ATLAS_HOME:-$(cd "$(dirname "$0")/.." && pwd)}"
-WEBINF="${ATLAS_HOME}/server/webapp/atlas/WEB-INF"
+set -euo pipefail
 
-if [ -z "${ATLAS_CONF:-}" ]; then
-  if [ -f "${ATLAS_HOME}/conf/runtime/atlas-application.properties" ]; then
-    ATLAS_CONF="${ATLAS_HOME}/conf/runtime"
-  else
-    ATLAS_CONF="${ATLAS_HOME}/conf"
-  fi
-fi
-
-CLASSPATH="${ATLAS_CONF}:${WEBINF}/classes:${WEBINF}/lib/*"
-if [ -d "${ATLAS_HOME}/lib" ]; then
-  CLASSPATH="${CLASSPATH}:${ATLAS_HOME}/lib/*"
-fi
+# Runs from the semantic-indexer tarball: bin/, conf/ (logback), lib/ (repair and indexer jars, all dependencies).
+# ATLAS_CONF is the directory with atlas-application.properties (default: conf/ of the tarball).
+INDEXER_HOME="${ATLAS_SEMANTIC_INDEXER_HOME:-$(cd "$(dirname "$0")/.." && pwd)}"
+ATLAS_CONF="${ATLAS_CONF:-${INDEXER_HOME}/conf}"
+LOGBACK_FILE="${ATLAS_SEMANTIC_REPAIR_LOGBACK:-${INDEXER_HOME}/conf/atlas-semantic-repair-logback.xml}"
+ATLAS_SEMANTIC_REPAIR_HEAP="${ATLAS_SEMANTIC_REPAIR_HEAP:--Xms512m -Xmx1g}"
+ATLAS_SEMANTIC_REPAIR_OPTS="${ATLAS_SEMANTIC_REPAIR_OPTS:-}"
 
 JVM_OPENS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED"
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-LOGBACK_FILE="${ATLAS_SEMANTIC_REPAIR_LOGBACK:-${ATLAS_HOME}/conf/atlas-semantic-repair-logback.xml}"
-if [ ! -f "${LOGBACK_FILE}" ] && [ -f "${SCRIPT_DIR}/../conf/atlas-semantic-repair-logback.xml" ]; then
-  LOGBACK_FILE="${SCRIPT_DIR}/../conf/atlas-semantic-repair-logback.xml"
-fi
-if [ ! -f "${LOGBACK_FILE}" ] && [ -f "${ATLAS_HOME}/conf/atlas-semantic-indexer-logback.xml" ]; then
-  LOGBACK_FILE="${ATLAS_HOME}/conf/atlas-semantic-indexer-logback.xml"
-fi
-LOGBACK_OPT=""
-if [ -f "${LOGBACK_FILE}" ]; then
-  LOGBACK_OPT="-Dlogback.configurationFile=${LOGBACK_FILE}"
-fi
-
-exec java ${JVM_OPENS} ${LOGBACK_OPT} -Datlas.home="${ATLAS_HOME}" \
+exec java ${ATLAS_SEMANTIC_REPAIR_HEAP} ${ATLAS_SEMANTIC_REPAIR_OPTS} ${JVM_OPENS} \
+  -Dlogback.configurationFile="${LOGBACK_FILE}" \
+  -Datlas.home="${INDEXER_HOME}" \
   -Datlas.conf="${ATLAS_CONF}" \
-  -cp "${CLASSPATH}" \
+  -cp "${ATLAS_CONF}:${INDEXER_HOME}/conf:${INDEXER_HOME}/lib/*" \
   org.apache.atlas.tools.SemanticRepair "$@"

@@ -52,12 +52,12 @@ public class SemanticSearchService {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticSearchService.class);
 
     private static final int MAX_TOP_K               = 100;
+    // entity filters are checked on the graph after the k-NN query, which drops some hits: fetch extra candidates
+    private static final int ENTITY_FILTER_CANDIDATE_FACTOR = 2;
     // hard ceiling on text sent to the ML model, regardless of atlas.query.param.max.length
     private static final int MAX_QUERY_LENGTH        = 30_000;
     // OpenSearch error bodies name indexes and internals: they go to the server log, not to API clients
     private static final String BACKEND_ERROR_MESSAGE   = "(semantic search backend error, see Atlas server log)";
-    private static final int SEARCH_OVERFETCH_FACTOR = 2;
-    private static final int SEARCH_OVERFETCH_MAX    = MAX_TOP_K * SEARCH_OVERFETCH_FACTOR;
 
     private final SemanticVectorStore   semanticStore;
     private final EntityGraphRetriever  entityRetriever;
@@ -87,21 +87,22 @@ public class SemanticSearchService {
         double minScore = parameters.getMinScore() > 0 ? parameters.getMinScore() : AtlasConfiguration.SEMANTIC_SEARCH_MIN_SCORE.getDouble();
 
         try {
-            Set<String> typeNames = resolveTypeNames(parameters.getTypeName(), parameters.getIncludeSubTypes());
-            VectorSearchFilter filter = new VectorSearchFilter(typeNames, Collections.emptySet());
-            int fetchSize = overfetchSize(topK);
+            Set<String>          typeNames    = resolveTypeNames(parameters.getTypeName(), parameters.getIncludeSubTypes());
+            boolean              activeOnly   = parameters.getExcludeDeletedEntities();
+            SemanticEntityFilter entityFilter = parameters.getEntityFilters() == null ? null
+                    : SemanticEntityFilter.resolve(typeRegistry, parameters.getTypeName(), parameters.getEntityFilters());
+            VectorSearchFilter   filter       = entityFilter == null
+                    ? new VectorSearchFilter(typeNames, Collections.emptySet(), activeOnly)
+                    : new VectorSearchFilter(typeNames, Collections.emptySet(), activeOnly, entityFilter.getIndexClause());
+            int                  candidates   = entityFilter == null ? topK : topK * ENTITY_FILTER_CANDIDATE_FACTOR;
+
             LOG.debug("semanticSearch query='{}' topK={} minScore={} typeName={}",
                     parameters.getQuery(), topK, minScore, parameters.getTypeName());
-            List<VectorSearchHit> hits = semanticStore.searchByText(parameters.getQuery(), fetchSize, filter);
+            List<VectorSearchHit> hits = semanticStore.searchByText(parameters.getQuery(), candidates, filter);
 
-            return buildSearchResult(parameters.getQuery(), hits, minScore, topK,
-                    parameters.getAttributes(), parameters.getExcludeDeletedEntities());
+            return buildSearchResult(parameters.getQuery(), hits, minScore, topK, parameters.getAttributes(), activeOnly, entityFilter);
         } catch (SemanticSearchException e) {
-            if (e.getErrorCode() != null) {
-                throw new AtlasBaseException(e.getErrorCode(), e, e.getMessage());
-            }
-            LOG.error("Semantic search failed for query={}", parameters.getQuery(), e);
-            throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, e, BACKEND_ERROR_MESSAGE);
+            throw searchFailure("Semantic search for query=" + parameters.getQuery(), e);
         }
     }
 
@@ -126,20 +127,25 @@ public class SemanticSearchService {
             }
 
             Set<String> typeNames = resolveTypeNames(parameters.getTypeName(), parameters.getIncludeSubTypes());
-            VectorSearchFilter filter = new VectorSearchFilter(typeNames, Collections.singleton(guid));
-            int fetchSize = overfetchSize(topK);
+            VectorSearchFilter filter = new VectorSearchFilter(typeNames, Collections.singleton(guid), parameters.getExcludeDeletedEntities());
 
-            List<VectorSearchHit> hits = similarSearchHits(guid, vertex, fetchSize, filter);
+            List<VectorSearchHit> hits = similarSearchHits(guid, vertex, topK, filter);
             LOG.debug("similarEntities guid={} topK={} minScore={} typeName={}", guid, topK, minScore, parameters.getTypeName());
 
-            return buildSearchResult("similar:" + guid, hits, minScore, topK, parameters.getAttributes(), parameters.getExcludeDeletedEntities());
+            return buildSearchResult("similar:" + guid, hits, minScore, topK, parameters.getAttributes(), parameters.getExcludeDeletedEntities(), null);
         } catch (SemanticSearchException e) {
-            if (e.getErrorCode() != null) {
-                throw new AtlasBaseException(e.getErrorCode(), e, e.getMessage());
-            }
-            LOG.error("Similar entity search failed for guid={}", guid, e);
-            throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, e, BACKEND_ERROR_MESSAGE);
+            throw searchFailure("Similar entity search for guid=" + guid, e);
         }
+    }
+
+    private AtlasBaseException searchFailure(String search, SemanticSearchException e) {
+        if (e.getErrorCode() != null) {
+            return new AtlasBaseException(e.getErrorCode(), e, e.getMessage());
+        }
+
+        LOG.error("{} failed", search, e);
+
+        return new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, e, BACKEND_ERROR_MESSAGE);
     }
 
     private AtlasSearchResult buildSearchResult(String queryText,
@@ -147,7 +153,8 @@ public class SemanticSearchService {
                                                 double minScore,
                                                 int topK,
                                                 Set<String> attributes,
-                                                boolean excludeDeletedEntities) throws AtlasBaseException {
+                                                boolean excludeDeletedEntities,
+                                                SemanticEntityFilter entityFilter) throws AtlasBaseException {
         AtlasSearchResult         result  = new AtlasSearchResult(queryText, AtlasQueryType.SEMANTIC);
         List<AtlasFullTextResult> results = new ArrayList<>();
 
@@ -160,7 +167,7 @@ public class SemanticSearchService {
                 break;
             }
 
-            AtlasEntityHeader entityHeader = loadHeaderFromGraph(hit, attributes, excludeDeletedEntities);
+            AtlasEntityHeader entityHeader = loadHeaderFromGraph(hit, attributes, excludeDeletedEntities, entityFilter);
             if (entityHeader == null) {
                 continue;
             }
@@ -179,13 +186,18 @@ public class SemanticSearchService {
 
     private AtlasEntityHeader loadHeaderFromGraph(VectorSearchHit hit,
                                                   Set<String> attributes,
-                                                  boolean excludeDeletedEntities) throws AtlasBaseException {
+                                                  boolean excludeDeletedEntities,
+                                                  SemanticEntityFilter entityFilter) throws AtlasBaseException {
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(hit.getGuid());
         if (vertex == null) {
             return null;
         }
 
         if (excludeDeletedEntities && AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
+            return null;
+        }
+
+        if (entityFilter != null && !entityFilter.matches(vertex)) {
             return null;
         }
 
@@ -199,12 +211,12 @@ public class SemanticSearchService {
 
     private List<VectorSearchHit> similarSearchHits(String guid,
                                                     AtlasVertex vertex,
-                                                    int fetchSize,
+                                                    int topK,
                                                     VectorSearchFilter filter) throws AtlasBaseException, SemanticSearchException {
         List<?> storedEmbedding = semanticStore.getStoredEmbedding(guid);
         if (storedEmbedding != null && !storedEmbedding.isEmpty()) {
             LOG.debug("Similar search for guid={} using stored embedding", guid);
-            return semanticStore.searchByVector(storedEmbedding, fetchSize, filter);
+            return semanticStore.searchByVector(storedEmbedding, topK, filter);
         }
 
         String sourceText = textBuilder.buildText(vertex);
@@ -214,7 +226,7 @@ public class SemanticSearchService {
         }
 
         LOG.debug("Similar search for guid={} falling back to neural query (no stored embedding)", guid);
-        return semanticStore.searchByText(sourceText, fetchSize, filter);
+        return semanticStore.searchByText(sourceText, topK, filter);
     }
 
     private int resolveTopK(int topK) throws AtlasBaseException {
@@ -233,10 +245,6 @@ public class SemanticSearchService {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
                     "query length (" + query.length() + ") exceeds maximum allowed (" + MAX_QUERY_LENGTH + ")");
         }
-    }
-
-    private static int overfetchSize(int minimumHits) {
-        return Math.min(Math.max(minimumHits * SEARCH_OVERFETCH_FACTOR, minimumHits), SEARCH_OVERFETCH_MAX);
     }
 
     private Set<String> resolveTypeNames(String typeName, boolean includeSubTypes) throws AtlasBaseException {

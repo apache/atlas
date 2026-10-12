@@ -28,6 +28,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
@@ -37,12 +38,10 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 @Component
@@ -52,11 +51,16 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     static final String SEMANTIC_TEXT_FIELD           = "atlas_semantic_text";
     static final String SEMANTIC_EMBEDDING_FIELD      = "atlas_semantic_embedding";
     static final String SEMANTIC_INGEST_PIPELINE_NAME = "atlas-semantic-ingest";
-
     private static final String GRAPH_INDEX_NAME_CONF = "atlas.graph.index.search.index-name";
 
     private static final int SEARCH_SOCKET_TIMEOUT_MS = 10_000;
     private static final int SEARCH_MAX_ATTEMPTS      = 2;
+    // Make sure to allow JanusGraph finish its work(write to the index) before retrying the update embedding
+    private static final int UPDATE_EMBEDDING_MAX_ATTEMPTS = 6;
+    private static final String SCAN_KEEP_ALIVE       = "10m"; // max time between two pages of scanEntities (point in time)
+    // JanusGraph maps __typeName and __state as text; exact filters use their keyword subfield
+    static final String TYPE_NAME_KEYWORD_FIELD = Constants.ENTITY_TYPE_PROPERTY_KEY + ".keyword";
+    static final String STATE_KEYWORD_FIELD     = Constants.STATE_PROPERTY_KEY + ".keyword";
 
     private volatile SemanticHttpClient httpClient;
     private volatile boolean                      searchable;
@@ -125,11 +129,26 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     public boolean isAvailable() {
         try {
             httpClient().sendForBody(new HttpGet("/_cluster/health?wait_for_status=yellow&timeout=1s"), SEARCH_SOCKET_TIMEOUT_MS);
+
+            String modelId = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
+            String model   = httpClient().sendForBody(new HttpGet("/_plugins/_ml/models/" + modelId), SEARCH_SOCKET_TIMEOUT_MS);
+            if (!isModelDeployed(model)) {
+                LOG.debug("Embedding model {} is not deployed", modelId);
+                return false;
+            }
             return true;
         } catch (SemanticSearchException e) {
             LOG.debug("OpenSearch is not available: {}", e.getMessage());
             return false;
         }
+    }
+
+    // PARTIALLY_DEPLOYED: running on some of its nodes, which still serve inference
+    static boolean isModelDeployed(String modelJson) {
+        Map<String, Object> model = AtlasJson.fromJson(modelJson, Map.class);
+        Object              state = model != null ? model.get("model_state") : null;
+
+        return "DEPLOYED".equals(state) || "PARTIALLY_DEPLOYED".equals(state);
     }
 
     /**
@@ -146,9 +165,9 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
         // Embed once: only the update is retried, so a retry never repeats the ML inference.
         String body = AtlasJson.toJson(buildUpdateEmbeddingByQueryBody(guid, computeEmbedding(semanticText)));
 
-        // _update_by_query is a search: a vertex doc written by JanusGraph is not visible until the next index
-        // refresh (1s by default), so "not found" is retryable.
-        SemanticRetry.run("OpenSearch update embedding (guid=" + guid + ")",
+        // Right after a create, _update_by_query (a search) doesn't see the vertex doc until the next index refresh
+        // (1 s by default), then can conflict with JanusGraph's follow-up writes to it: more attempts than other calls.
+        SemanticRetry.run("OpenSearch update embedding (guid=" + guid + ")", UPDATE_EMBEDDING_MAX_ATTEMPTS,
                 () -> {
                     executeUpdateEmbeddingByGuid(guid, body);
                     return null;
@@ -195,7 +214,7 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
         script.put("params", params);
 
         Map<String, Object> body = new HashMap<>();
-        body.put("query", Collections.singletonMap("term", Collections.singletonMap(guidFilterField(), guid)));
+        body.put("query", guidClause(guid));
         body.put("script", script);
         return body;
     }
@@ -254,6 +273,13 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
             throw new SemanticSearchException("Pipeline simulate returned invalid document payload");
         }
 
+        // a failed processor is reported in the document, with HTTP 200
+        Object error = ((Map<String, Object>) firstDoc).get("error");
+        if (error != null) {
+            Object reason = error instanceof Map ? ((Map<?, ?>) error).get("reason") : error;
+            throw new SemanticSearchException("Embedding failed in pipeline " + SEMANTIC_INGEST_PIPELINE_NAME + ": " + reason);
+        }
+
         Object docObj = ((Map<String, Object>) firstDoc).get("doc");
         if (!(docObj instanceof Map)) {
             throw new SemanticSearchException("Pipeline simulate returned no doc for semantic embedding");
@@ -306,7 +332,7 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
 
         Map<String, Object> body = new HashMap<>();
         body.put("size", 1);
-        body.put("query", Collections.singletonMap("term", Collections.singletonMap(guidFilterField(), guid)));
+        body.put("query", guidClause(guid));
         body.put("_source", Collections.singletonList(SEMANTIC_EMBEDDING_FIELD));
 
         ensureSearchable();
@@ -337,45 +363,77 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     }
 
     /**
-     * Pages with {@code search_after} on the guid: documents embedded while scanning with
-     * {@code missingEmbeddingOnly} simply drop out, which the guid cursor tolerates.
+     * Pages with {@code search_after} on {@code _shard_doc} in a point in time: the index is read as it was when the
+     * scan started, sorting costs nothing, and each page request carries its own cursor, so it is safely retried
+     * (a scroll can't be: a retry after a lost response returns the next page). Entities embedded meanwhile are
+     * still returned; re-embedding them is idempotent. Needs OpenSearch 2.4+.
      */
     @Override
     public void scanEntities(boolean missingEmbeddingOnly, int pageSize, Consumer<List<String>> onPage)
             throws SemanticSearchException {
-        String indexName   = getVertexIndexName();
-        Object searchAfter = null;
+        HttpPost open = new HttpPost("/" + getVertexIndexName() + "/_search/point_in_time?keep_alive=" + SCAN_KEEP_ALIVE);
+        String   pitId = parsePitId(executeRequestForBody(open));
 
-        while (true) {
-            HttpPost post = new HttpPost("/" + indexName + "/_search");
-            post.setEntity(new StringEntity(AtlasJson.toJson(buildEntityScanBody(missingEmbeddingOnly, pageSize, searchAfter)),
-                    ContentType.APPLICATION_JSON));
+        try {
+            List<?> searchAfter = null;
 
-            EntityScanPage page = parseEntityScanPage(executeRequestForBody(post));
-            if (!page.guids.isEmpty()) {
-                onPage.accept(page.guids);
+            while (true) {
+                HttpPost post = new HttpPost("/_search"); // a point-in-time search names no index
+                post.setEntity(new StringEntity(AtlasJson.toJson(buildEntityScanBody(missingEmbeddingOnly, pageSize, pitId, searchAfter)),
+                        ContentType.APPLICATION_JSON));
+
+                EntityScanPage page = SemanticRetry.run("OpenSearch entity scan", () -> parseEntityScanPage(httpClient().sendForBody(post)));
+                if (page.hitCount == 0) {
+                    return;
+                }
+
+                if (!page.guids.isEmpty()) {
+                    onPage.accept(page.guids);
+                }
+
+                searchAfter = page.lastSort;
+                pitId       = page.pitId != null ? page.pitId : pitId;
             }
-
-            if (page.hitCount < pageSize || page.lastSortValue == null) {
-                return;
-            }
-
-            searchAfter = page.lastSortValue;
+        } finally {
+            closePointInTime(pitId);
         }
     }
 
-    static Map<String, Object> buildEntityScanBody(boolean missingEmbeddingOnly, int pageSize, Object searchAfter) {
+    private void closePointInTime(String pitId) {
+        // the point-in-time delete API takes its ids in the body, which HttpDelete doesn't support
+        HttpUriRequest delete = RequestBuilder.delete("/_search/point_in_time")
+                .setEntity(new StringEntity(AtlasJson.toJson(Collections.singletonMap("pit_id", Collections.singletonList(pitId))), ContentType.APPLICATION_JSON))
+                .build();
+
+        try {
+            httpClient().sendForBody(delete);
+        } catch (SemanticSearchException e) {
+            LOG.warn("Failed to close the OpenSearch point in time; it expires after {}: {}", SCAN_KEEP_ALIVE, e.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static String parsePitId(String responseJson) throws SemanticSearchException {
+        Map<String, Object> root  = AtlasJson.fromJson(responseJson, Map.class);
+        Object              pitId = root != null ? root.get("pit_id") : null;
+        if (!(pitId instanceof String)) {
+            throw new SemanticSearchException("OpenSearch returned no point in time id: " + responseJson);
+        }
+        return (String) pitId;
+    }
+
+    static Map<String, Object> buildEntityScanBody(boolean missingEmbeddingOnly, int pageSize, String pitId, List<?> searchAfter) {
         // entity vertices are the only ones with __guid + __typeName + __state (typedefs have no __state,
         // classification/struct vertices have no __guid)
         List<Map<String, Object>> filter = new ArrayList<>();
         filter.add(Collections.singletonMap("exists", Collections.singletonMap("field", Constants.GUID_PROPERTY_KEY)));
         filter.add(Collections.singletonMap("exists", Collections.singletonMap("field", Constants.ENTITY_TYPE_PROPERTY_KEY)));
         // match (not term) works whether __state is mapped as keyword (legacy) or text with a keyword subfield
-        filter.add(Collections.singletonMap("match", Collections.singletonMap(Constants.STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name())));
+        filter.add(Collections.singletonMap("term", Collections.singletonMap(STATE_KEYWORD_FIELD, AtlasEntity.Status.ACTIVE.name())));
 
         List<Map<String, Object>> mustNot = new ArrayList<>();
-        mustNot.add(Collections.singletonMap("prefix", Collections.singletonMap(typeNameFilterField(), Constants.INTERNAL_PROPERTY_KEY_PREFIX)));
-        mustNot.add(Collections.singletonMap("terms", Collections.singletonMap(typeNameFilterField(),
+        mustNot.add(Collections.singletonMap("prefix", Collections.singletonMap(TYPE_NAME_KEYWORD_FIELD, Constants.INTERNAL_PROPERTY_KEY_PREFIX)));
+        mustNot.add(Collections.singletonMap("terms", Collections.singletonMap(TYPE_NAME_KEYWORD_FIELD,
                 new ArrayList<>(SemanticEntityEmbedder.getNonEmbeddableEntityTypes()))));
         if (missingEmbeddingOnly) {
             mustNot.add(Collections.singletonMap("exists", Collections.singletonMap("field", SEMANTIC_EMBEDDING_FIELD)));
@@ -389,55 +447,72 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
         body.put("size", pageSize);
         body.put("query", Collections.singletonMap("bool", bool));
         body.put("_source", Collections.singletonList(Constants.GUID_PROPERTY_KEY));
-        body.put("sort", Collections.singletonList(Collections.singletonMap(guidFilterField(), "asc")));
+        body.put("track_total_hits", false);
+        body.put("sort", Collections.singletonList(Collections.singletonMap("_shard_doc", "asc")));
+
+        Map<String, Object> pit = new HashMap<>();
+        pit.put("id", pitId);
+        pit.put("keep_alive", SCAN_KEEP_ALIVE);
+        body.put("pit", pit);
+
         if (searchAfter != null) {
-            body.put("search_after", Collections.singletonList(searchAfter));
+            body.put("search_after", searchAfter);
         }
         return body;
     }
 
+    /**
+     * Fails (retryable) when a shard failed: OpenSearch still answers 200 with the other shards' hits, and the scan
+     * would silently miss the failed shard's entities.
+     */
     @SuppressWarnings("unchecked")
-    static EntityScanPage parseEntityScanPage(String responseJson) {
+    static EntityScanPage parseEntityScanPage(String responseJson) throws SemanticSearchException {
         Map<String, Object> root    = AtlasJson.fromJson(responseJson, Map.class);
+        Object              shards  = root != null ? root.get("_shards") : null;
+        Object              failed  = shards instanceof Map ? ((Map<String, Object>) shards).get("failed") : null;
         Object              hitsObj = root != null ? root.get("hits") : null;
         Object              hits    = hitsObj instanceof Map ? ((Map<String, Object>) hitsObj).get("hits") : null;
+        String              pitId   = root != null && root.get("pit_id") instanceof String ? (String) root.get("pit_id") : null;
 
-        if (!(hits instanceof List) || ((List<?>) hits).isEmpty()) {
-            return new EntityScanPage(Collections.emptyList(), 0, null);
+        if (failed instanceof Number && ((Number) failed).intValue() > 0) {
+            throw new SemanticSearchException("OpenSearch entity scan failed on " + failed + " shard(s): " + shards, true);
         }
 
-        List<String> guids     = new ArrayList<>();
-        Object       lastSort  = null;
+        if (!(hits instanceof List) || ((List<?>) hits).isEmpty()) {
+            return new EntityScanPage(Collections.emptyList(), 0, null, pitId);
+        }
 
-        for (Object hitObj : (List<?>) hits) {
-            if (!(hitObj instanceof Map)) {
-                continue;
-            }
+        List<?>      hitList = (List<?>) hits;
+        List<String> guids   = new ArrayList<>();
 
-            Map<String, Object> hit  = (Map<String, Object>) hitObj;
-            String              guid = extractGuid(hit);
+        for (Object hitObj : hitList) {
+            String guid = hitObj instanceof Map ? extractGuid((Map<String, Object>) hitObj) : null;
             if (StringUtils.isNotBlank(guid)) {
                 guids.add(guid);
             }
-
-            Object sort = hit.get("sort");
-            if (sort instanceof List && !((List<?>) sort).isEmpty()) {
-                lastSort = ((List<?>) sort).get(0);
-            }
         }
 
-        return new EntityScanPage(guids, ((List<?>) hits).size(), lastSort);
+        // the next page starts after the last hit's sort value (search_after)
+        Object lastHit  = hitList.get(hitList.size() - 1);
+        Object lastSort = lastHit instanceof Map ? ((Map<String, Object>) lastHit).get("sort") : null;
+        if (!(lastSort instanceof List)) {
+            throw new SemanticSearchException("OpenSearch entity scan returned hits without sort values");
+        }
+
+        return new EntityScanPage(guids, hitList.size(), (List<?>) lastSort, pitId);
     }
 
     static final class EntityScanPage {
         final List<String> guids;
         final int          hitCount;
-        final Object       lastSortValue;
+        final List<?>      lastSort;
+        final String       pitId;
 
-        EntityScanPage(List<String> guids, int hitCount, Object lastSortValue) {
-            this.guids         = guids;
-            this.hitCount      = hitCount;
-            this.lastSortValue = lastSortValue;
+        EntityScanPage(List<String> guids, int hitCount, List<?> lastSort, String pitId) {
+            this.guids    = guids;
+            this.hitCount = hitCount;
+            this.lastSort = lastSort;
+            this.pitId    = pitId;
         }
     }
 
@@ -466,30 +541,39 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     }
 
     static Map<String, Object> buildVectorFilter(VectorSearchFilter filter) {
-        Map<String, Object> bool = new HashMap<>();
+        Map<String, Object>       bool    = new HashMap<>();
+        List<Map<String, Object>> filters = new ArrayList<>();
 
         if (!filter.getTypeNames().isEmpty()) {
-            // JanusGraph maps __typeName as text; exact type filtering requires the keyword subfield.
-            bool.put("filter", Collections.singletonList(termsFilter(typeNameFilterField(), filter.getTypeNames())));
+            filters.add(Collections.singletonMap("terms", Collections.singletonMap(TYPE_NAME_KEYWORD_FIELD, new ArrayList<>(filter.getTypeNames()))));
+        }
+
+        if (filter.isActiveOnly()) {
+            filters.add(Collections.singletonMap("term", Collections.singletonMap(STATE_KEYWORD_FIELD, AtlasEntity.Status.ACTIVE.name())));
+        }
+
+        if (filter.getEntityFilterClause() != null) {
+            filters.add(filter.getEntityFilterClause());
+        }
+
+        if (!filters.isEmpty()) {
+            bool.put("filter", filters);
         }
 
         if (!filter.getExcludeGuids().isEmpty()) {
-            bool.put("must_not", Collections.singletonList(termsFilter(guidFilterField(), filter.getExcludeGuids())));
+            List<Map<String, Object>> excluded = new ArrayList<>();
+            for (String guid : filter.getExcludeGuids()) {
+                excluded.add(guidClause(guid));
+            }
+            bool.put("must_not", excluded);
         }
 
         return bool.isEmpty() ? null : Collections.singletonMap("bool", bool);
     }
 
-    private static String typeNameFilterField() {
-        return Constants.ENTITY_TYPE_PROPERTY_KEY + ".keyword";
-    }
-
-    private static String guidFilterField() {
-        return Constants.GUID_PROPERTY_KEY + ".keyword";
-    }
-
-    private static Map<String, Object> termsFilter(String field, Set<String> values) {
-        return Collections.singletonMap("terms", Collections.singletonMap(field, new ArrayList<>(values)));
+    // JanusGraph maps __guid as analyzed text without a keyword subfield: the phrase of all its tokens matches one guid
+    private static Map<String, Object> guidClause(String guid) {
+        return Collections.singletonMap("match_phrase", Collections.singletonMap(Constants.GUID_PROPERTY_KEY, guid));
     }
 
     @SuppressWarnings("unchecked")

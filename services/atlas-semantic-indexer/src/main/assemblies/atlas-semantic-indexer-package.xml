@@ -35,6 +35,29 @@
             <fileMode>0755</fileMode>
         </fileSet>
         <fileSet>
+            <directory>${project.basedir}/../../tools/atlas-semantic-repair/scripts</directory>
+            <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>atlas_semantic_repair.sh</include>
+                <include>atlas_vertex_index_enable_knn.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/conf</directory>
+            <outputDirectory>conf</outputDirectory>
+            <includes>
+                <include>atlas-semantic-indexer-logback.xml</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}/../../tools/atlas-semantic-repair/conf</directory>
+            <outputDirectory>conf</outputDirectory>
+            <includes>
+                <include>atlas-semantic-repair-logback.xml</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <directory>${project.build.directory}</directory>
             <outputDirectory>lib</outputDirectory>
             <includes>

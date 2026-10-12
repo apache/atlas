@@ -13,7 +13,7 @@ separate process (`services/atlas-semantic-indexer`).
 |-----------|------|
 | **Atlas server** | Read-only `POST /v2/search/semantic` and `GET /v2/search/similar`; auth/scrub via discovery |
 | **Semantic Indexer** | Kafka consumer on `ATLAS_ENTITIES`; enriches GUIDs from graph; partial-updates OpenSearch |
-| **atlas-semantic-repair** | Offline backfill of missing embeddings, or all of them with `--all` (`tools/atlas-semantic-repair`) |
+| **atlas-semantic-repair** | Offline backfill of missing embeddings, or all of them with `--all` (`tools/atlas-semantic-repair`, shipped in the semantic-indexer tarball) |
 
 ### Index fields (Atlas-owned)
 
@@ -123,8 +123,8 @@ enabling it.
   attributes changed, so the indexer can't tell this apart from a real term edit.
 - Labels added or removed through the labels API (`/v2/entity/guid/{guid}/labels`, also used by the UI)
   send no Kafka message: Atlas updates `__labels` but its V2 listener ignores label events. The embedding
-  keeps the old labels until the entity's next update or a repair run. Labels set inside an entity
-  create/update arrive with `ENTITY_UPDATE`.
+  keeps the old labels until the entity's next update or `atlas_semantic_repair.sh --all`. Labels set inside
+  an entity create/update arrive with `ENTITY_UPDATE`.
 
 #### Glossary-term fan-out
 
@@ -154,22 +154,41 @@ Standalone Kafka consumer (`org.apache.atlas.semantic.indexer`) that listens on
 `ATLAS_ENTITIES`, builds embeddable text from JanusGraph, and partial-updates the
 JanusGraph OpenSearch vertex index via the `atlas-semantic-ingest` ML pipeline.
 
-Run (non-Docker):
+The indexer and the repair tool ship together in their own tarball (`apache-atlas-<version>-semantic-indexer.tar.gz`:
+`bin/atlas_semantic_indexer.sh`, `bin/atlas_semantic_repair.sh`, `bin/atlas_vertex_index_enable_knn.sh`, `conf/`
+with both logbacks, `lib/` with all dependencies), not in the Atlas server tarball. Run them on any host that reaches
+Kafka, the graph storage backend and OpenSearch, with a copy of Atlas's `atlas-application.properties`:
 
-    atlas_semantic_indexer.sh
+    tar xzf apache-atlas-<version>-semantic-indexer.tar.gz && cd apache-atlas-<version>-semantic-indexer
+    ATLAS_CONF=/path/to/atlas/conf bin/atlas_semantic_indexer.sh   # default ATLAS_CONF: conf/ of the tarball
+    ATLAS_CONF=/path/to/atlas/conf bin/atlas_semantic_repair.sh
+
+JVM settings, like `ATLAS_SERVER_HEAP` / `ATLAS_SERVER_OPTS` for Atlas: `ATLAS_SEMANTIC_INDEXER_HEAP` (default
+`-Xms512m -Xmx1g`) and `ATLAS_SEMANTIC_INDEXER_OPTS` (extra JVM options, empty by default); for repair,
+`ATLAS_SEMANTIC_REPAIR_HEAP` and `ATLAS_SEMANTIC_REPAIR_OPTS`.
+
+At startup the indexer waits, retrying every 10 s for up to 30 attempts (5 minutes), while the graph storage backend
+(Postgres, HBase, ...) or OpenSearch is down, or the vertex index doesn't exist yet (Atlas creates it on its first
+start). It then exits with the last error, so a misconfigured graph backend (which looks the same as one that is down)
+doesn't keep it waiting forever; the service manager restarts it (`restart: unless-stopped` in Docker). Configuration
+errors stop it (repair too): no `index.knn`, an unknown `atlas.semantic.model.id`, or `atlas.semantic.embedding.dimension`
+different from the vertex index mapping or from the model's `model_config.embedding_dimension`. Models that don't
+report their dimension (e.g. remote connector models) log a WARN and are not checked; a wrong dimension then fails
+every embedding update with HTTP 400.
 
 Offsets are committed after each poll. If a poll has a failure, the indexer first checks OpenSearch
-(`_cluster/health`) and the graph:
+(`_cluster/health`), the embedding model (`model_state` `DEPLOYED` or `PARTIALLY_DEPLOYED`) and the graph:
 
-- Both answer: the failure is specific to the entity (e.g. HTTP 400 for the text). It is logged, the poll is
+- All answer: the failure is specific to the entity (e.g. HTTP 400 for the text). It is logged, the poll is
   committed, and `atlas_semantic_repair.sh` backfills it.
-- Either is down: the poll is not committed. The indexer processes the same poll again every 10 s until it
-  succeeds or both backends answer.
+- One is down: the poll is not committed. Every 10 s the indexer checks again, and processes the same poll once
+  they all answer, until it succeeds.
 - A wait longer than `atlas.semantic.indexer.kafka.max.poll.interval.ms` makes Kafka rebalance; the poll is then
   redelivered from the last committed offset (re-embedding is idempotent). On shutdown during a wait the poll
   stays uncommitted and is redelivered.
 
-Health endpoint (enabled by default, no auth):
+Health endpoint (enabled by default, no auth), started once the backends are ready and the Kafka consumer is
+subscribed; it doesn't answer while the indexer waits at startup:
 
     GET http://localhost:8089/health
 
@@ -177,12 +196,16 @@ Docker runs the indexer in a slim JRE image (`Dockerfile.atlas-semantic-indexer`
 
 ## Configuration
 
-Overlay file merged at container start: `config/atlas-semantic-docker.properties`
+In Docker, the `atlas.semantic.*` keys are in `config/atlas/postgres/opensearch/atlas-application.properties`,
+the same file mounted read-only into the `atlas` and `atlas-semantic-indexer` containers. After editing it, restart
+both containers. Semantic search is off there unless `docker-compose.atlas-semantic.yml` is used: it sets
+`ATLAS_SEMANTIC_ENABLED=true` and loads `config/.semantic-bootstrap-last.env` (model id and dimension, written by
+`init-opensearch-semantic-*.sh`, not in git) into both containers. Atlas resolves `${env:NAME:-default}` in the file:
 
 ```properties
-atlas.semantic.enabled=true
-atlas.semantic.model.id=<from init-opensearch-semantic-local.sh>
-atlas.semantic.embedding.dimension=384
+atlas.semantic.enabled=${env:ATLAS_SEMANTIC_ENABLED:-false}
+atlas.semantic.model.id=${env:ATLAS_SEMANTIC_MODEL_ID:-}
+atlas.semantic.embedding.dimension=${env:ATLAS_SEMANTIC_EMBEDDING_DIMENSION:-384}
 atlas.semantic.indexer.kafka.group.id=atlas_semantic_indexer
 atlas.semantic.indexer.kafka.poll.timeout.ms=5000
 # messages per poll (Atlas default is 1); guids are deduplicated across the messages of one poll
@@ -213,10 +236,14 @@ REST also applies `atlas.query.param.max.length` (default 4096) to the query fir
 REST search requests to OpenSearch use a 10 s read timeout and at most 2 attempts; the indexer and repair use `.socket-timeout` and `atlas.semantic.retry.max.attempts`.
 A request moves to the next host only when it can't connect; a read timeout is not retried on another host.
 HTTP 429/502/503/504 and connection failures are retried.
+Writing an embedding takes up to 6 attempts (2.5 s to 15.5 s of waits with the default 500 ms
+`atlas.semantic.retry.sleep.ms`): right after a create, the entity's document isn't searchable until the next
+OpenSearch refresh, and JanusGraph's follow-up writes to it cause version conflicts.
 
 With `atlas.semantic.enabled=false`, `/v2/search/semantic` and `/v2/search/similar` return 400
 (`ATLAS-400-00-10B`), and the UI hides the "Semantic" search scope and the "Similar" entity tab
-(`/admin/session` returns `atlas.semantic.enabled`).
+(`/admin/session` returns `atlas.semantic.enabled`). The Semantic Indexer and the repair tool exit at startup with
+an error, before connecting to OpenSearch or Kafka, so nothing is embedded while search is disabled.
 
 ## Operations
 
@@ -233,6 +260,8 @@ atlas.graph.index.search.opensearch.create.ext.knn=true
 
 The distro `atlas-application.properties` sets it by default. It requires the OpenSearch k-NN plugin: without the
 plugin, OpenSearch rejects the setting and Atlas can't create the vertex index, so remove the line in that case.
+It only applies when JanusGraph creates the vertex index (a fresh install or a rebuilt index), so existing indexes
+aren't touched.
 
 The Semantic Indexer and the repair tool refuse to start without it. They check it before opening the graph, so a
 missing property can't create a vertex index without knn. The property only affects index creation; on an
@@ -241,7 +270,8 @@ existing index, the knn check at indexer/repair startup still applies.
 The Atlas server doesn't check it at startup. If the vertex index has no knn (or no embedding field yet),
 `/v2/search/semantic` and `/v2/search/similar` return 503 (`ATLAS-503-00-001`, "Semantic search is not
 available: ...") and the server log names the index; nothing else is affected. The check is repeated on each
-request until it passes, so a fixed index needs no restart.
+request until it passes, so a fixed index needs no restart. Other OpenSearch errors (including OpenSearch down
+or the embedding model not deployed) return 500 (`DISCOVERY_QUERY_FAILED`), with the details only in the server log.
 
 **Existing Atlas with data** (vertex index created without knn): `index.knn` can't be updated, but it can
 be set when **cloning** the index. `_clone` hard-links the segment files, so it takes seconds and almost no
@@ -314,6 +344,11 @@ Repair reads candidates from the vertex index in OpenSearch (no JanusGraph scan)
 Options: `--batch-size N` (entities per OpenSearch page, default 50), `--dry-run` (count only, no OpenSearch changes). Exit code is 1 if any
 entity failed. Entities with no vertex-index document are not visible to repair: run Atlas index repair first.
 
+Repair pages through the vertex index in a point in time (OpenSearch 2.4+) with `search_after`: it sees the index as it
+was when it started, and a page request that fails (network error, failed shard) is retried without skipping or
+repeating entities. Entities created meanwhile are left to the indexer. A page must be processed within 10 minutes,
+or the point in time expires and repair fails (rerun it: the default mode only picks up what is still missing).
+
 OpenSearch only provides the list of entity guids: a vertex-index document holds the vertex's indexed
 properties but no edges, so no term assignments. Each entity's text, including its terms, is read from
 JanusGraph with the same `SemanticTextBuilder` as the indexer:
@@ -349,9 +384,9 @@ store — they are patched later by the Semantic Indexer — so **reindex wipes 
 1. Confirm Atlas and OpenSearch are healthy.
 2. Run a full semantic backfill:
    ```bash
-   docker exec -u atlas atlas /opt/atlas/bin/atlas_semantic_repair.sh
+   docker exec atlas-semantic-indexer /opt/atlas-semantic-indexer/bin/atlas_semantic_repair.sh
    ```
-   Or from the host: `atlas_semantic_repair.sh` (same classpath as Atlas).
+   Or from the semantic-indexer tarball: `ATLAS_CONF=/path/to/atlas/conf bin/atlas_semantic_repair.sh`.
 3. Verify search: `dev-support/atlas-docker/seed/udf-retail/test-udf-retail-semantic.sh`
 
 A reindex writes to OpenSearch directly from HBase; it does not go through the Atlas entity store, so it
@@ -379,8 +414,47 @@ GET /api/atlas/v2/search/similar?guid=<entity-guid>&topK=10&attributes=owner&att
 
 Results are in `fullTextResult`, best first: each item has the entity header (`entity`) and its `score`;
 `entities` is not set. Without `topK`, both endpoints use `atlas.semantic.search.default.topK`. `attributes`
-adds those attributes to each returned entity header. `/similar` needs read access on the source entity. Backend failures return a
+adds those attributes to each returned entity header. `typeName` and `excludeDeletedEntities` (default true:
+`__state` ACTIVE) are filters of the k-NN query, so OpenSearch returns up to `topK` matching entities. Entities the
+user can't read are masked by Ranger (guid `-1`, no attributes), not removed, so they still count in `topK`.
+`/similar` needs read access on the source entity. Backend failures return a
 generic error; the OpenSearch details are in the Atlas server log.
+
+**Attribute filters** (`/semantic` only): `entityFilters` takes a `FilterCriteria` as in basic search, applied
+inside the k-NN query like `typeName`. As in basic search, system attributes and business metadata
+(`<name>.<attribute>`, e.g. `Governance.domain`) can always be used; entity attributes need `typeName`.
+
+```http
+POST /api/atlas/v2/search/semantic
+Content-Type: application/json
+
+{"query":"customer revenue","typeName":"hive_table",
+ "entityFilters":{"condition":"AND","criterion":[
+   {"attributeName":"qualifiedName","operator":"startsWith","attributeValue":"sales_db."},
+   {"attributeName":"owner","operator":"in","attributeValue":"alice,bob"}]}}
+```
+
+- Conditions `AND` / `OR`, nested. Operators depend on the attribute; anything else returns 400:
+
+  | Attribute | Operators |
+  |-----------|-----------|
+  | String attribute or business metadata, `__guid`, `__typeName`, `__state` | `eq`, `neq`, `startsWith`, `in` (comma-separated) |
+  | Number (`byte` … `double`) | `eq`, `neq`, `lt`, `lte`, `gt`, `gte` |
+  | Date, `__timestamp`, `__modificationTimestamp` (epoch millis) | same as numbers, plus `timerange` (`LAST_7_DAYS`, `THIS_MONTH`, … or `start,end`) |
+  | `__classificationNames`, `__propagatedClassificationNames`, `__labels` (one name per value) | `eq`, `neq`, `in` |
+
+- `__typeName` matches the exact type, not subtypes; use `typeName` with `includeSubTypes` for that.
+- Not filterable, because they have no usable field in the vertex index: booleans, enums, `biginteger` /
+  `bigdecimal`, arrays and maps, `__createdBy`, `__modifiedBy`.
+- Values are compared exactly and case-sensitively, as in basic search. Like basic search, Atlas first filters in
+  OpenSearch, then checks every condition on each entity it loads with basic search's in-memory filter. Most strings
+  (e.g. `qualifiedName`, `description`) are analyzed text in the vertex index, so OpenSearch only matches them loosely
+  (as a phrase, or by the first word for `startsWith`); the hits that fail the exact check are dropped. A request with
+  `entityFilters` can therefore return fewer than `topK` entities; Atlas asks OpenSearch for twice `topK` candidates
+  to make up for it. Strings with `indexType: STRING` (e.g. `name`, `owner`) have a keyword field; values longer than
+  256 characters are not in it and never match.
+- Relationships are not in the vertex document: "tables of database X" works through the `qualifiedName` prefix
+  (`<db>.<table>@<cluster>` for Hive), not through the `db` relationship.
 
 After upgrading to a build that changes the embedding text (field order, skipped properties, glossary terms),
 run `atlas_semantic_repair.sh --all` so that all embeddings are built from the same text.
@@ -398,9 +472,10 @@ run `atlas_semantic_repair.sh --all` so that all embeddings are built from the s
 ### 1. Build artifacts
 
 ```bash
-# From repo root
+# From repo root. clean is required: distro packs its whole target/ folder, including old tarballs.
+# Keep Enunciate on with clean: the webapp war needs the API docs it generates (target/api/v2/apidocs).
 mvn -pl repository,services/atlas-semantic-indexer,tools/atlas-semantic-repair,distro -am \
-  package -Pdist -DskipTests -DskipEnunciate=true -DskipDocs=true
+  clean package -Pdist -DskipTests -DskipDocs=true
 
 cp distro/target/apache-atlas-*-server.tar.gz dev-support/atlas-docker/dist/
 cp services/atlas-semantic-indexer/target/apache-atlas-*-semantic-indexer.tar.gz dev-support/atlas-docker/dist/
@@ -409,7 +484,9 @@ cp services/atlas-semantic-indexer/target/apache-atlas-*-semantic-indexer.tar.gz
 Run the semantic tests (backend and dashboard):
 
 ```bash
-# From repo root; -am builds the modules they depend on, so stale jars don't break the build
+# From repo root, with JDK 17: Mockito can't mock classes on newer JDKs ("Unsupported class file major version")
+# -am also builds the modules they depend on, so stale jars from ~/.m2 don't break the build
+export JAVA_HOME=/path/to/jdk-17   # Homebrew: $(brew --prefix openjdk@17)/libexec/openjdk.jdk/Contents/Home
 mvn -pl repository,services/atlas-semantic-indexer,tools/atlas-semantic-repair -am test \
   -DskipEnunciate=true -Dsurefire.failIfNoSpecifiedTests=false -DfailIfNoTests=false \
   -Dtest='OpenSearch*Test,Semantic*Test'
@@ -430,12 +507,20 @@ Or manually:
 
 ```bash
 export ATLAS_BACKEND=postgres ATLAS_INDEX_BACKEND=opensearch COMPOSE_PROFILES=opensearch-index
+COMPOSE="docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml -f docker-compose.atlas-semantic.yml"
 
-docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml \
-  -f docker-compose.atlas-semantic.yml up -d --wait
-
-OPENSEARCH_URL=http://localhost:9200 ./scripts/init-opensearch-semantic-local.sh
+$COMPOSE up -d --wait atlas-index
+OPENSEARCH_URL=http://localhost:9200 ./scripts/init-opensearch-semantic-local.sh   # writes config/.semantic-bootstrap-last.env
+$COMPOSE up -d --wait
 ```
+
+`up` recreates `atlas` and `atlas-semantic-indexer` when the model id in `config/.semantic-bootstrap-last.env`
+changed (`restart` doesn't reload an `env_file`).
+
+After code changes, redeploy everything: rebuild and copy the tarballs (step 1), then rerun
+`./scripts/run-atlas-semantic.sh`. It rebuilds the images and `up` recreates the containers whose image or
+compose config changed (add `--force-recreate` to the manual command to recreate all). `docker compose start`
+and Docker Desktop's start button reuse the old containers with their old mounts.
 
 | Service | URL |
 |---------|-----|
@@ -481,7 +566,7 @@ UDF retail sample dataset with glossary terms, classifications, and business met
 Wait for Kafka indexing, or backfill immediately:
 
 ```bash
-docker exec -u atlas atlas /opt/atlas/bin/atlas_semantic_repair.sh
+docker exec atlas-semantic-indexer /opt/atlas-semantic-indexer/bin/atlas_semantic_repair.sh
 ```
 
 ### 5. Test REST APIs
@@ -521,16 +606,15 @@ docker logs -f atlas 2>&1 | grep --line-buffered 'org.apache.atlas.semantic'
 
 ## OpenSearch bootstrap
 
-`init-opensearch-semantic-local.sh` ensures a local MiniLM model and patches:
-
-- checks `index.knn=true` on the vertex index (fails if missing: it can't be added later, see below)
-- ingest pipeline `atlas-semantic-ingest`
-- `atlas_semantic_embedding` knn_vector mapping
+`init-opensearch-semantic-local.sh` ensures a local MiniLM model is deployed and writes its id and dimension to
+`config/.semantic-bootstrap-last.env`. It also sets `plugins.ml_commons.only_run_on_ml_node=false`: the Docker
+cluster is a single data node, on which OpenSearch otherwise refuses to deploy a model. Everything else is done by the
+Semantic Indexer (and the repair tool) when it starts: it checks `index.knn` on the vertex index, then creates the
+ingest pipeline `atlas-semantic-ingest` and the `atlas_semantic_embedding` knn_vector mapping.
 
 **Idempotent by default:** searches OpenSearch for a `DEPLOYED` model with the configured
 `MODEL_NAME`, verifies with `GET /_plugins/_ml/models/{id}`, and reuses it. If none is
 found, it registers a **new** model (OpenSearch assigns a new id each time — see below).
-The bootstrap artifact is written for Atlas config reference only.
 
 To deliberately register a **new** model:
 
@@ -550,6 +634,6 @@ For remote embedding models, use `init-opensearch-semantic-remote.sh` (see `conf
 |---------|-----|
 | Empty semantic search results | Run repair or wait for indexer; check `curl localhost:9200/janusgraph_vertex_index/_count?q=exists:atlas_semantic_embedding` |
 | Indexer restart loop | Check `docker logs atlas-semantic-indexer`; ensure slim image has `bin/atlas_semantic_indexer.sh` |
-| Model id mismatch | Re-run `./scripts/init-opensearch-semantic-local.sh` (reuse) or `--force` if OpenSearch was reset; sync `atlas-semantic-docker.properties` |
+| Model id mismatch | Re-run `./scripts/run-atlas-semantic.sh`: it reuses the deployed model or registers a new one (e.g. after OpenSearch was reset) and recreates both containers with the new id |
 | Clear embeddings only | `./seed/udf-retail/clear-opensearch-semantic-embeddings.sh` |
 | Health endpoint unreachable | Recreate container after rebuild; confirm port `8089:8089` in `docker-compose.atlas-semantic.yml` |

@@ -41,15 +41,7 @@ then
   exit 1
 fi
 
-if [ -z "${ATLAS_CONF:-}" ] && [ -f "${ATLAS_HOME}/conf/runtime/atlas-application.properties" ]; then
-  ATLAS_CONF="${ATLAS_HOME}/conf/runtime"
-fi
-
-if [ -n "${ATLAS_CONF:-}" ]; then
-  su -c "export ATLAS_CONF=${ATLAS_CONF}; cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
-else
-  su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
-fi
+su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
 ATLAS_PID=$(pgrep -f 'org.apache.atlas.Atlas' | head -1)
 if [ -z "${ATLAS_PID}" ]; then
   echo "Atlas server process not found after startup" >&2
