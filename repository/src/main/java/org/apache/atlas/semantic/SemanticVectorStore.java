@@ -31,9 +31,10 @@ public interface SemanticVectorStore {
     void initialize() throws SemanticSearchException;
 
     /**
-     * Whether the backend answers and the embedding model is deployed right now: quick requests, no retry.
+     * Whether the backend answers and the embedding model the store uses is still the deployed one with the configured
+     * name: quick requests, no retry.
      */
-    boolean isAvailable();
+    boolean isReady();
 
     /**
      * Embeds the text and stores the vector on the entity.

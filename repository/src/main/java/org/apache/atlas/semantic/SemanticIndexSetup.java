@@ -27,6 +27,7 @@ import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
@@ -34,8 +35,11 @@ import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_EMBEDDING_FIELD;
@@ -52,6 +56,7 @@ public final class SemanticIndexSetup {
     private static final Logger LOG = LoggerFactory.getLogger(SemanticIndexSetup.class);
 
     private static final String GRAPH_INDEX_CREATE_KNN_CONF = "atlas.graph.index.search.opensearch.create.ext.knn";
+    private static final int    MAX_MODELS_PER_NAME         = 100;
 
     private final SemanticHttpClient httpClient;
 
@@ -88,8 +93,8 @@ public final class SemanticIndexSetup {
                     + " (an existing index must be cloned with index.knn=true, see SemanticSearch.md)");
         }
 
-        if (StringUtils.isBlank(AtlasConfiguration.SEMANTIC_MODEL_ID.getString())) {
-            throw new SemanticSearchException(AtlasConfiguration.SEMANTIC_MODEL_ID.getPropertyName() + " must be set for semantic search");
+        if (StringUtils.isBlank(AtlasConfiguration.SEMANTIC_MODEL_NAME.getString())) {
+            throw new SemanticSearchException(AtlasConfiguration.SEMANTIC_MODEL_NAME.getPropertyName() + " must be set for semantic search");
         }
 
         if (AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt() <= 0) {
@@ -97,11 +102,25 @@ public final class SemanticIndexSetup {
         }
     }
 
-    void run() throws SemanticSearchException {
+    /**
+     * Returns the id of the embedding model, see {@link #selectModelId(String, String, int)}.
+     */
+    String run() throws SemanticSearchException {
         validateCluster();
-        validateModelDimension();
-        ensureIngestPipeline();
+
+        String modelId = selectModelId(sendWithRetry(findDeployedModelsByNameRequest()), modelName(), AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt());
+
+        ensureIngestPipeline(modelId);
         ensureVertexIndexSemanticFields();
+
+        return modelId;
+    }
+
+    /**
+     * Single attempt, for the search path and the readiness checks.
+     */
+    String resolveModelId(int socketTimeoutMs) throws SemanticSearchException {
+        return selectModelId(httpClient.sendForBody(findDeployedModelsByNameRequest(), socketTimeoutMs), modelName(), AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt());
     }
 
     /**
@@ -152,35 +171,82 @@ public final class SemanticIndexSetup {
         return version.get("distribution").toString();
     }
 
-    private void validateModelDimension() throws SemanticSearchException {
-        String  modelId        = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
-        int     configured     = AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getInt();
-        Integer modelDimension = parseModelEmbeddingDimension(sendWithRetry(new HttpGet("/_plugins/_ml/models/" + modelId)));
-
-        if (modelDimension == null) {
-            // e.g. remote (connector) models
-            LOG.warn("Embedding model {} doesn't report model_config.embedding_dimension; {}={} is not checked against it",
-                    modelId, AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName(), configured);
-            return;
-        }
-
-        if (modelDimension != configured) {
-            throw new SemanticSearchException("Embedding model " + modelId + " produces " + modelDimension + "-dimension vectors but "
-                    + AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName() + " is " + configured);
-        }
+    private static String modelName() {
+        return AtlasConfiguration.SEMANTIC_MODEL_NAME.getString().trim();
     }
 
-    static Integer parseModelEmbeddingDimension(String modelJson) {
-        Map<?, ?> model       = AtlasJson.fromJson(modelJson, Map.class);
-        Object    modelConfig = model != null ? model.get("model_config") : null;
-        Object    dimension   = modelConfig instanceof Map ? ((Map<?, ?>) modelConfig).get("embedding_dimension") : null;
+    /**
+     * Searches the ML models named atlas.semantic.model.name that serve inference, oldest first. Models that failed
+     * to deploy, or are undeployed or not yet deployed, are left out. PARTIALLY_DEPLOYED: running on some of its
+     * nodes, which still serve inference.
+     */
+    private static HttpPost findDeployedModelsByNameRequest() {
+        List<Map<String, Object>> filter = new ArrayList<>();
+        filter.add(Collections.singletonMap("term", Collections.singletonMap("name.keyword", modelName())));
+        filter.add(Collections.singletonMap("terms", Collections.singletonMap("model_state", Arrays.asList("DEPLOYED", "PARTIALLY_DEPLOYED"))));
 
-        return dimension instanceof Number ? ((Number) dimension).intValue() : null;
+        Map<String, Object> bool = new HashMap<>();
+        bool.put("filter", filter);
+        bool.put("must_not", Collections.singletonMap("exists", Collections.singletonMap("field", "chunk_number"))); // model chunks
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("query", Collections.singletonMap("bool", bool));
+        body.put("size", MAX_MODELS_PER_NAME);
+        body.put("sort", Collections.singletonList(Collections.singletonMap("created_time", "asc")));
+        body.put("_source", Arrays.asList("model_config.embedding_dimension", "created_time"));
+
+        HttpPost post = new HttpPost("/_plugins/_ml/models/_search");
+        post.setEntity(new StringEntity(AtlasJson.toJson(body), ContentType.APPLICATION_JSON));
+        return post;
     }
 
-    private void ensureIngestPipeline() throws SemanticSearchException {
-        String modelId = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
+    /**
+     * OpenSearch assigns a new model id at each registration, so the model is configured by name. Several deployed
+     * models can have the name (e.g. registered again); all must produce vectors of the configured dimension, and the
+     * oldest is used, so that the Atlas server, the indexer and the repair tool use the same one.
+     */
+    @SuppressWarnings("unchecked")
+    static String selectModelId(String searchResponse, String modelName, int dimension) throws SemanticSearchException {
+        Map<String, Object> root    = AtlasJson.fromJson(searchResponse, Map.class);
+        Object              hitsObj = root != null ? root.get("hits") : null;
+        Object              hits    = hitsObj instanceof Map ? ((Map<String, Object>) hitsObj).get("hits") : null;
 
+        if (!(hits instanceof List) || ((List<?>) hits).isEmpty()) {
+            throw new SemanticSearchException(AtlasErrorCode.SEMANTIC_SEARCH_NOT_READY, "no deployed embedding model named '" + modelName + "'");
+        }
+
+        String       modelId    = null;
+        List<String> mismatches = new ArrayList<>();
+
+        for (Object hitObj : (List<?>) hits) {
+            Map<String, Object> hit         = (Map<String, Object>) hitObj;
+            Object              source      = hit.get("_source");
+            Object              modelConfig = source instanceof Map ? ((Map<String, Object>) source).get("model_config") : null;
+            Object              modelDim    = modelConfig instanceof Map ? ((Map<String, Object>) modelConfig).get("embedding_dimension") : null;
+            String              id          = String.valueOf(hit.get("_id"));
+
+            if (modelDim instanceof Number && ((Number) modelDim).intValue() != dimension) {
+                mismatches.add(id + " (" + modelDim + ")");
+            } else if (modelDim == null) {
+                // e.g. remote (connector) models
+                LOG.warn("Embedding model {} doesn't report model_config.embedding_dimension; {}={} is not checked against it",
+                        id, AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName(), dimension);
+            }
+
+            if (modelId == null) {
+                modelId = id;
+            }
+        }
+
+        if (!mismatches.isEmpty()) {
+            throw new SemanticSearchException("Deployed embedding models named '" + modelName + "' produce vectors of another dimension than "
+                    + AtlasConfiguration.SEMANTIC_EMBEDDING_DIMENSION.getPropertyName() + "=" + dimension + ": " + String.join(", ", mismatches));
+        }
+
+        return modelId;
+    }
+
+    private void ensureIngestPipeline(String modelId) throws SemanticSearchException {
         HttpPut put = new HttpPut("/_ingest/pipeline/" + SEMANTIC_INGEST_PIPELINE_NAME);
         put.setEntity(new StringEntity(AtlasJson.toJson(buildIngestPipelineBody(modelId)), ContentType.APPLICATION_JSON));
         sendWithRetry(put);

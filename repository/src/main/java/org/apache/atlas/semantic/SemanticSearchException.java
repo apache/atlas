@@ -42,8 +42,7 @@ public class SemanticSearchException extends Exception {
     }
 
     /**
-     * A failure reported to REST clients with this error code; the message is returned to them, so it must name
-     * no index or host.
+     * A failure reported to REST clients with this error code; the message is only logged on the server.
      */
     public SemanticSearchException(AtlasErrorCode errorCode, String message) {
         super(message);

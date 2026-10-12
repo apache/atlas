@@ -130,7 +130,7 @@ public enum AtlasConfiguration {
 
     //semantic search configuration
     SEMANTIC_ENABLED("atlas.semantic.enabled", false),
-    SEMANTIC_MODEL_ID("atlas.semantic.model.id", ""),
+    SEMANTIC_MODEL_NAME("atlas.semantic.model.name", ""),
     SEMANTIC_EMBEDDING_DIMENSION("atlas.semantic.embedding.dimension", 0),
     SEMANTIC_RETRY_MAX_ATTEMPTS("atlas.semantic.retry.max.attempts", 3),
     SEMANTIC_RETRY_SLEEP_MS("atlas.semantic.retry.sleep.ms", 500),

@@ -138,14 +138,17 @@ public class SemanticSearchService {
         }
     }
 
+    // without the cause: the REST response would return its message (errorCause), which can name the index or model
     private AtlasBaseException searchFailure(String search, SemanticSearchException e) {
         if (e.getErrorCode() != null) {
-            return new AtlasBaseException(e.getErrorCode(), e, e.getMessage());
+            LOG.warn("{} failed: {}", search, e.getMessage());
+
+            return new AtlasBaseException(e.getErrorCode());
         }
 
         LOG.error("{} failed", search, e);
 
-        return new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, e, BACKEND_ERROR_MESSAGE);
+        return new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED, BACKEND_ERROR_MESSAGE);
     }
 
     private AtlasSearchResult buildSearchResult(String queryText,

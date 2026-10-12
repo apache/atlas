@@ -27,7 +27,6 @@ if [ "${ATLAS_SEMANTIC_SKIP_INIT:-false}" != "true" ]; then
   echo "==> Starting OpenSearch ..."
   docker compose "${COMPOSE_FILES[@]}" up -d --wait atlas-index
 
-  # writes config/.semantic-bootstrap-last.env, the env_file of the atlas and atlas-semantic-indexer containers
   echo "==> Bootstrapping OpenSearch ML model (local MiniLM) ..."
   INIT_ARGS=()
   if [ "${ATLAS_SEMANTIC_FORCE_INIT:-false}" = "true" ]; then
@@ -37,7 +36,6 @@ if [ "${ATLAS_SEMANTIC_SKIP_INIT:-false}" != "true" ]; then
     "${SCRIPT_DIR}/init-opensearch-semantic-local.sh" ${INIT_ARGS[@]+"${INIT_ARGS[@]}"}
 fi
 
-# recreates atlas and atlas-semantic-indexer when the model id in the env_file changed
 echo "==> Starting Postgres + OpenSearch + Atlas + Semantic Indexer ..."
 docker compose "${COMPOSE_FILES[@]}" up -d --wait
 

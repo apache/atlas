@@ -17,22 +17,60 @@
  */
 package org.apache.atlas.semantic;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
 import org.apache.atlas.utils.AtlasJson;
+import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.apache.atlas.semantic.OpenSearchSemanticStore.SEMANTIC_EMBEDDING_FIELD;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 import static org.testng.Assert.fail;
 
 public class OpenSearchSemanticStoreTest {
+    private static final VectorSearchFilter    NO_FILTER = new VectorSearchFilter(Collections.emptySet(), Collections.emptySet(), false);
+    private static final List<VectorSearchHit> HITS      = Collections.singletonList(new VectorSearchHit("g1", 0.9));
+
+    @Test
+    public void searchByTextKeepsTheModelResolvedOnTheFirstSearch() throws Exception {
+        try (FakeOpenSearch openSearch = new FakeOpenSearch("old")) {
+            assertEquals(openSearch.store.searchByText("q", 5, NO_FILTER), HITS);
+
+            openSearch.deployedModelId = "new";
+
+            SemanticSearchException e = expectThrows(SemanticSearchException.class, () -> openSearch.store.searchByText("q", 5, NO_FILTER));
+
+            assertTrue(e.getMessage().contains("search failed"), e.getMessage());
+            assertEquals(openSearch.searchedModelIds, Arrays.asList("old", "old"));
+        }
+    }
+
+    @Test
+    public void isReadyIsFalseWhenAnotherModelReplacedTheOneInUse() throws Exception {
+        try (FakeOpenSearch openSearch = new FakeOpenSearch("old")) {
+            openSearch.store.searchByText("q", 5, NO_FILTER);
+            assertTrue(openSearch.store.isReady());
+
+            openSearch.deployedModelId = "new";
+            assertFalse(openSearch.store.isReady());
+        }
+    }
+
     @Test
     public void parseStoredEmbedding() {
         String json = "{"
@@ -135,15 +173,6 @@ public class OpenSearchSemanticStoreTest {
     }
 
     @Test
-    public void isModelDeployedReadsTheModelState() {
-        assertTrue(OpenSearchSemanticStore.isModelDeployed("{\"name\":\"m\",\"model_state\":\"DEPLOYED\"}"));
-        assertTrue(OpenSearchSemanticStore.isModelDeployed("{\"model_state\":\"PARTIALLY_DEPLOYED\"}"));
-        assertFalse(OpenSearchSemanticStore.isModelDeployed("{\"model_state\":\"UNDEPLOYED\"}"));
-        assertFalse(OpenSearchSemanticStore.isModelDeployed("{\"model_state\":\"DEPLOY_FAILED\"}"));
-        assertFalse(OpenSearchSemanticStore.isModelDeployed("{}"));
-    }
-
-    @Test
     public void parseEntityScanPageReturnsGuidsLastSortAndPitId() throws Exception {
         String json = "{\"pit_id\":\"pit-2\",\"_shards\":{\"total\":3,\"failed\":0},\"hits\":{\"hits\":["
                 + "{\"_id\":\"a\",\"_source\":{\"__guid\":\"g1\"},\"sort\":[7]},"
@@ -178,6 +207,75 @@ public class OpenSearchSemanticStoreTest {
             OpenSearchSemanticStore.parsePitId("{}");
             fail("expected SemanticSearchException");
         } catch (SemanticSearchException expected) {
+        }
+    }
+
+    /**
+     * Serves the requests of the search path. A search with a model other than the deployed one fails, like
+     * OpenSearch does for an undeployed model.
+     */
+    private static final class FakeOpenSearch implements AutoCloseable {
+        final List<String>            searchedModelIds = new CopyOnWriteArrayList<>();
+        final OpenSearchSemanticStore store;
+        volatile String               deployedModelId;
+
+        private final HttpServer server;
+        private final String     indexName = OpenSearchSemanticStore.getVertexIndexName();
+
+        FakeOpenSearch(String deployedModelId) throws IOException {
+            this.deployedModelId = deployedModelId;
+            this.server          = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+
+            server.createContext("/", this::handle);
+            server.start();
+
+            HttpHost host = new HttpHost("localhost", server.getAddress().getPort());
+            store = new OpenSearchSemanticStore(new SemanticHttpClient(Collections.singletonList(host), RequestConfig.DEFAULT, Collections.emptyList(), null));
+        }
+
+        @Override
+        public void close() {
+            store.shutdown();
+            server.stop(0);
+        }
+
+        @SuppressWarnings("unchecked")
+        private void handle(HttpExchange exchange) throws IOException {
+            String path   = exchange.getRequestURI().getPath();
+            int    status = 200;
+            String response;
+
+            if (path.equals("/_cluster/health")) {
+                response = "{}";
+            } else if (path.equals("/_plugins/_ml/models/_search")) {
+                response = "{\"hits\":{\"hits\":[{\"_id\":\"" + deployedModelId + "\",\"_source\":{}}]}}";
+            } else if (path.equals("/" + indexName + "/_settings/index.knn")) {
+                response = "{\"" + indexName + "\":{\"settings\":{\"index\":{\"knn\":\"true\"}}}}";
+            } else if (path.equals("/" + indexName + "/_mapping")) {
+                response = "{\"" + indexName + "\":{\"mappings\":{\"properties\":{\"" + SEMANTIC_EMBEDDING_FIELD + "\":{\"type\":\"knn_vector\",\"dimension\":384}}}}}";
+            } else if (path.equals("/" + indexName + "/_search")) {
+                Map<String, Object> body    = AtlasJson.fromJson(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8), Map.class);
+                Map<String, Object> neural  = (Map<String, Object>) ((Map<String, Object>) body.get("query")).get("neural");
+                String              modelId = (String) ((Map<String, Object>) neural.get(SEMANTIC_EMBEDDING_FIELD)).get("model_id");
+
+                searchedModelIds.add(modelId);
+
+                if (!modelId.equals(deployedModelId)) {
+                    status   = 400;
+                    response = "{\"error\":\"search failed\"}";
+                } else {
+                    response = "{\"hits\":{\"hits\":[{\"_score\":0.9,\"_source\":{\"__guid\":\"g1\"}}]}}";
+                }
+            } else {
+                status   = 404;
+                response = "{}";
+            }
+
+            byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(status, bytes.length);
+            try (OutputStream out = exchange.getResponseBody()) {
+                out.write(bytes);
+            }
         }
     }
 }

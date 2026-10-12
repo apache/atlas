@@ -11,9 +11,6 @@ services:
   atlas:
     volumes:
       - ./config/atlas-logback.xml:/opt/atlas/conf/atlas-logback.xml:ro
-    env_file:
-      - path: ./config/.semantic-bootstrap-last.env
-        required: false
     environment:
       - ATLAS_SEMANTIC_ENABLED=true
 
@@ -36,10 +33,6 @@ services:
         condition: service_healthy
     ports:
       - "8089:8089"
-    # written by scripts/init-opensearch-semantic-*.sh: ATLAS_SEMANTIC_MODEL_ID, ATLAS_SEMANTIC_EMBEDDING_DIMENSION
-    env_file:
-      - path: ./config/.semantic-bootstrap-last.env
-        required: false
     environment:
       - ATLAS_SEMANTIC_ENABLED=true
     volumes:

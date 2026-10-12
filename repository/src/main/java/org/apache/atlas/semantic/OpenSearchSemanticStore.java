@@ -18,7 +18,6 @@
 package org.apache.atlas.semantic;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.Constants;
@@ -63,7 +62,16 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
     static final String STATE_KEYWORD_FIELD     = Constants.STATE_PROPERTY_KEY + ".keyword";
 
     private volatile SemanticHttpClient httpClient;
-    private volatile boolean                      searchable;
+    private volatile boolean            searchable;
+    // resolved from atlas.semantic.model.name at startup (indexer, repair) or on the first search (Atlas)
+    private volatile String             modelId;
+
+    public OpenSearchSemanticStore() {
+    }
+
+    OpenSearchSemanticStore(SemanticHttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
 
     @PreDestroy
     public synchronized void shutdown() {
@@ -122,18 +130,17 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
 
     @Override
     public void initialize() throws SemanticSearchException {
-        new SemanticIndexSetup(httpClient()).run();
+        modelId = new SemanticIndexSetup(httpClient()).run();
     }
 
     @Override
-    public boolean isAvailable() {
+    public boolean isReady() {
         try {
             httpClient().sendForBody(new HttpGet("/_cluster/health?wait_for_status=yellow&timeout=1s"), SEARCH_SOCKET_TIMEOUT_MS);
-
-            String modelId = AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim();
-            String model   = httpClient().sendForBody(new HttpGet("/_plugins/_ml/models/" + modelId), SEARCH_SOCKET_TIMEOUT_MS);
-            if (!isModelDeployed(model)) {
-                LOG.debug("Embedding model {} is not deployed", modelId);
+            String currentModelId = new SemanticIndexSetup(httpClient()).resolveModelId(SEARCH_SOCKET_TIMEOUT_MS);
+            // the ingest pipeline keeps the model id it was built with until initialize() runs again (restart)
+            if (modelId != null && !modelId.equals(currentModelId)) {
+                LOG.warn("Embedding model {} is no longer deployed; restart to use model {}", modelId, currentModelId);
                 return false;
             }
             return true;
@@ -141,14 +148,6 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
             LOG.debug("OpenSearch is not available: {}", e.getMessage());
             return false;
         }
-    }
-
-    // PARTIALLY_DEPLOYED: running on some of its nodes, which still serve inference
-    static boolean isModelDeployed(String modelJson) {
-        Map<String, Object> model = AtlasJson.fromJson(modelJson, Map.class);
-        Object              state = model != null ? model.get("model_state") : null;
-
-        return "DEPLOYED".equals(state) || "PARTIALLY_DEPLOYED".equals(state);
     }
 
     /**
@@ -304,9 +303,11 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
             return Collections.emptyList();
         }
 
+        ensureSearchable();
+
         Map<String, Object> neuralField = new HashMap<>();
         neuralField.put("query_text", queryText);
-        neuralField.put("model_id", AtlasConfiguration.SEMANTIC_MODEL_ID.getString().trim());
+        neuralField.put("model_id", modelId);
 
         return vectorSearch("neural", neuralField, topK, filter);
     }
@@ -632,7 +633,12 @@ public class OpenSearchSemanticStore implements SemanticVectorStore {
 
     private void ensureSearchable() throws SemanticSearchException {
         if (!searchable) {
-            new SemanticIndexSetup(httpClient()).checkSearchable(SEARCH_SOCKET_TIMEOUT_MS);
+            SemanticIndexSetup setup = new SemanticIndexSetup(httpClient());
+
+            setup.checkSearchable(SEARCH_SOCKET_TIMEOUT_MS);
+            if (modelId == null) {
+                modelId = setup.resolveModelId(SEARCH_SOCKET_TIMEOUT_MS);
+            }
             searchable = true;
         }
     }

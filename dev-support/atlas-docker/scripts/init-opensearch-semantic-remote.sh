@@ -26,12 +26,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=init-opensearch-semantic-common.sh
 source "${SCRIPT_DIR}/init-opensearch-semantic-common.sh"
 
-DOCKER_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
 OPENSEARCH_URL="${OPENSEARCH_URL:-http://localhost:9200}"
 EMBEDDING_DIMENSION="${EMBEDDING_DIMENSION:?Set EMBEDDING_DIMENSION to match your model output}"
 REMOTE_MODEL_NAME="${REMOTE_MODEL_NAME:-Atlas remote embedding model}"
-BOOTSTRAP_ARTIFACT="${BOOTSTRAP_ARTIFACT:-${DOCKER_DIR}/config/.semantic-bootstrap-last.env}"
 MODEL_ID="${MODEL_ID:-}"
 CONNECTOR_ID="${CONNECTOR_ID:-}"
 CONNECTOR_JSON="${CONNECTOR_JSON:-}"
@@ -78,10 +75,15 @@ EOF
   fi
 
   wait_for_ml_task "${OPENSEARCH_URL}" "${TASK_ID}" MODEL_ID
+  wait_for_model_deployed "${OPENSEARCH_URL}" "${MODEL_ID}"
   echo "==> Remote model deployed: ${MODEL_ID}"
 else
-  echo "==> Using existing model id: ${MODEL_ID}"
+  REMOTE_MODEL_NAME=$(curl -sf "${OPENSEARCH_URL}/_plugins/_ml/models/${MODEL_ID}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('name',''))")
+  if [ -z "${REMOTE_MODEL_NAME}" ]; then
+    echo "Model ${MODEL_ID} not found in OpenSearch"
+    exit 1
+  fi
+  echo "==> Using existing model ${MODEL_ID} (${REMOTE_MODEL_NAME})"
 fi
 
-write_bootstrap_artifact "${BOOTSTRAP_ARTIFACT}" "${MODEL_ID}" "${EMBEDDING_DIMENSION}"
-print_atlas_config_guide "${MODEL_ID}" "${EMBEDDING_DIMENSION}"
+print_atlas_config_guide "${REMOTE_MODEL_NAME}" "${EMBEDDING_DIMENSION}"

@@ -73,10 +73,30 @@ public class SemanticIndexSetupTest {
     }
 
     @Test
-    public void parseModelEmbeddingDimensionFromModelConfig() {
-        assertEquals(SemanticIndexSetup.parseModelEmbeddingDimension(
-                "{\"model_state\":\"DEPLOYED\",\"model_config\":{\"model_type\":\"bert\",\"embedding_dimension\":384}}"), Integer.valueOf(384));
-        assertNull(SemanticIndexSetup.parseModelEmbeddingDimension("{\"model_state\":\"DEPLOYED\",\"connector_id\":\"c1\"}"));
+    public void selectModelIdUsesTheOldestOfTheDeployedModels() throws Exception {
+        String response = "{\"hits\":{\"hits\":["
+                + "{\"_id\":\"old\",\"_source\":{\"model_config\":{\"embedding_dimension\":384}}},"
+                + "{\"_id\":\"new\",\"_source\":{\"model_config\":{\"embedding_dimension\":384}}},"
+                + "{\"_id\":\"remote\",\"_source\":{}}]}}";
+
+        assertEquals(SemanticIndexSetup.selectModelId(response, "m", 384), "old");
+    }
+
+    @Test
+    public void selectModelIdFailsWithoutDeployedModel() {
+        SemanticSearchException e = expectThrows(SemanticSearchException.class,
+                () -> SemanticIndexSetup.selectModelId("{\"hits\":{\"hits\":[]}}", "m", 384));
+        assertTrue(e.getMessage().contains("'m'"), e.getMessage());
+    }
+
+    @Test
+    public void selectModelIdFailsWhenAModelHasAnotherDimension() {
+        String response = "{\"hits\":{\"hits\":["
+                + "{\"_id\":\"a\",\"_source\":{\"model_config\":{\"embedding_dimension\":384}}},"
+                + "{\"_id\":\"b\",\"_source\":{\"model_config\":{\"embedding_dimension\":768}}}]}}";
+
+        SemanticSearchException e = expectThrows(SemanticSearchException.class, () -> SemanticIndexSetup.selectModelId(response, "m", 384));
+        assertTrue(e.getMessage().contains("b (768)"), e.getMessage());
     }
 
     @Test

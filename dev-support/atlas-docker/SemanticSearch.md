@@ -171,21 +171,31 @@ At startup the indexer waits, retrying every 10 s for up to 30 attempts (5 minut
 (Postgres, HBase, ...) or OpenSearch is down, or the vertex index doesn't exist yet (Atlas creates it on its first
 start). It then exits with the last error, so a misconfigured graph backend (which looks the same as one that is down)
 doesn't keep it waiting forever; the service manager restarts it (`restart: unless-stopped` in Docker). Configuration
-errors stop it (repair too): no `index.knn`, an unknown `atlas.semantic.model.id`, or `atlas.semantic.embedding.dimension`
-different from the vertex index mapping or from the model's `model_config.embedding_dimension`. Models that don't
-report their dimension (e.g. remote connector models) log a WARN and are not checked; a wrong dimension then fails
-every embedding update with HTTP 400.
+errors stop it (repair too): no `index.knn`, no deployed model named `atlas.semantic.model.name`, or
+`atlas.semantic.embedding.dimension` different from the vertex index mapping or from the `model_config.embedding_dimension`
+of a deployed model with that name. Models that don't report their dimension (e.g. remote connector models) log a WARN
+and are not checked; a wrong dimension then fails every embedding update with HTTP 400.
+
+The model is configured by name because OpenSearch assigns a new id at each registration (another environment, a
+rebuilt cluster, `--force`). Atlas, the indexer and the repair tool look the id up once when they start (Atlas on its
+first semantic search). Several deployed models can have the name, e.g. after the same model was registered again: they
+must all have the configured dimension, and the oldest is used, so that all three use the same one.
+
+Changing the model is an admin task: deploy the new model, undeploy the old one, restart Atlas and the indexer, then
+run `atlas_semantic_repair.sh --all`. Until Atlas is restarted, its semantic searches fail (500) with the undeployed
+model id. The indexer builds its ingest pipeline with the id when it starts: after the model is undeployed it exits
+within 5 minutes without committing the failed changes (see below), and its restart picks up the current model.
 
 Offsets are committed after each poll. If a poll has a failure, the indexer first checks OpenSearch
-(`_cluster/health`), the embedding model (`model_state` `DEPLOYED` or `PARTIALLY_DEPLOYED`) and the graph:
+(`_cluster/health`), the embedding model (the id it uses is still the one looked up by name, so still deployed) and
+the graph:
 
 - All answer: the failure is specific to the entity (e.g. HTTP 400 for the text). It is logged, the poll is
   committed, and `atlas_semantic_repair.sh` backfills it.
 - One is down: the poll is not committed. Every 10 s the indexer checks again, and processes the same poll once
-  they all answer, until it succeeds.
-- A wait longer than `atlas.semantic.indexer.kafka.max.poll.interval.ms` makes Kafka rebalance; the poll is then
-  redelivered from the last committed offset (re-embedding is idempotent). On shutdown during a wait the poll
-  stays uncommitted and is redelivered.
+  they all answer. After 30 attempts (5 minutes) it exits with the error, still without committing; the service
+  manager restarts it and the poll is redelivered (re-embedding is idempotent). On shutdown during a wait the poll
+  also stays uncommitted and is redelivered.
 
 Health endpoint (enabled by default, no auth), started once the backends are ready and the Kafka consumer is
 subscribed; it doesn't answer while the indexer waits at startup:
@@ -199,13 +209,12 @@ Docker runs the indexer in a slim JRE image (`Dockerfile.atlas-semantic-indexer`
 In Docker, the `atlas.semantic.*` keys are in `config/atlas/postgres/opensearch/atlas-application.properties`,
 the same file mounted read-only into the `atlas` and `atlas-semantic-indexer` containers. After editing it, restart
 both containers. Semantic search is off there unless `docker-compose.atlas-semantic.yml` is used: it sets
-`ATLAS_SEMANTIC_ENABLED=true` and loads `config/.semantic-bootstrap-last.env` (model id and dimension, written by
-`init-opensearch-semantic-*.sh`, not in git) into both containers. Atlas resolves `${env:NAME:-default}` in the file:
+`ATLAS_SEMANTIC_ENABLED=true` in both containers. Atlas resolves `${env:NAME:-default}` in the file:
 
 ```properties
 atlas.semantic.enabled=${env:ATLAS_SEMANTIC_ENABLED:-false}
-atlas.semantic.model.id=${env:ATLAS_SEMANTIC_MODEL_ID:-}
-atlas.semantic.embedding.dimension=${env:ATLAS_SEMANTIC_EMBEDDING_DIMENSION:-384}
+atlas.semantic.model.name=huggingface/sentence-transformers/paraphrase-MiniLM-L3-v2
+atlas.semantic.embedding.dimension=384
 atlas.semantic.indexer.kafka.group.id=atlas_semantic_indexer
 atlas.semantic.indexer.kafka.poll.timeout.ms=5000
 # messages per poll (Atlas default is 1); guids are deduplicated across the messages of one poll
@@ -267,11 +276,12 @@ The Semantic Indexer and the repair tool refuse to start without it. They check 
 missing property can't create a vertex index without knn. The property only affects index creation; on an
 existing index, the knn check at indexer/repair startup still applies.
 
-The Atlas server doesn't check it at startup. If the vertex index has no knn (or no embedding field yet),
-`/v2/search/semantic` and `/v2/search/similar` return 503 (`ATLAS-503-00-001`, "Semantic search is not
-available: ...") and the server log names the index; nothing else is affected. The check is repeated on each
-request until it passes, so a fixed index needs no restart. Other OpenSearch errors (including OpenSearch down
-or the embedding model not deployed) return 500 (`DISCOVERY_QUERY_FAILED`), with the details only in the server log.
+The Atlas server doesn't check it at startup. If the vertex index has no knn (or no embedding field yet), or no
+embedding model named `atlas.semantic.model.name` is deployed, `/v2/search/semantic` and `/v2/search/similar`
+return 503 (`ATLAS-503-00-001`, "Semantic search is not available (see Atlas server log)") and the server log has
+the reason as a WARN; nothing else is affected. The check is repeated on each request until it passes, so a fixed
+index needs no restart. Other OpenSearch errors (including OpenSearch down) return 500 (`DISCOVERY_QUERY_FAILED`).
+In both cases the response has no details: they are only in the server log.
 
 **Existing Atlas with data** (vertex index created without knn): `index.knn` can't be updated, but it can
 be set when **cloning** the index. `_clone` hard-links the segment files, so it takes seconds and almost no
@@ -329,7 +339,7 @@ the vertex index, start Atlas (JanusGraph recreates it with knn), run the index 
 ### Rollout
 
 1. Deploy OpenSearch ML embedding model (`init-opensearch-semantic-local.sh` or remote variant).
-2. Set model id and dimension in Atlas config.
+2. Set `atlas.semantic.model.name` and `atlas.semantic.embedding.dimension` in Atlas config (the script prints them).
 3. Start **Semantic Indexer** (`atlas_semantic_indexer.sh` or Docker `atlas-semantic-indexer` container).
 4. Run **repair** once for existing data (`atlas_semantic_repair.sh`).
 
@@ -510,12 +520,9 @@ export ATLAS_BACKEND=postgres ATLAS_INDEX_BACKEND=opensearch COMPOSE_PROFILES=op
 COMPOSE="docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml -f docker-compose.atlas-semantic.yml"
 
 $COMPOSE up -d --wait atlas-index
-OPENSEARCH_URL=http://localhost:9200 ./scripts/init-opensearch-semantic-local.sh   # writes config/.semantic-bootstrap-last.env
+OPENSEARCH_URL=http://localhost:9200 ./scripts/init-opensearch-semantic-local.sh
 $COMPOSE up -d --wait
 ```
-
-`up` recreates `atlas` and `atlas-semantic-indexer` when the model id in `config/.semantic-bootstrap-last.env`
-changed (`restart` doesn't reload an `env_file`).
 
 After code changes, redeploy everything: rebuild and copy the tarballs (step 1), then rerun
 `./scripts/run-atlas-semantic.sh`. It rebuilds the images and `up` recreates the containers whose image or
@@ -601,8 +608,8 @@ docker logs -f atlas 2>&1 | grep --line-buffered 'org.apache.atlas.semantic'
 
 ## OpenSearch bootstrap
 
-`init-opensearch-semantic-local.sh` ensures a local MiniLM model is deployed and writes its id and dimension to
-`config/.semantic-bootstrap-last.env`. It also sets `plugins.ml_commons.only_run_on_ml_node=false`: the Docker
+`init-opensearch-semantic-local.sh` ensures a local MiniLM model is deployed, under the name the Docker config sets in
+`atlas.semantic.model.name`. It also sets `plugins.ml_commons.only_run_on_ml_node=false`: the Docker
 cluster is a single data node, on which OpenSearch otherwise refuses to deploy a model. Everything else is done by the
 Semantic Indexer (and the repair tool) when it starts: it checks `index.knn` on the vertex index, then creates the
 ingest pipeline `atlas-semantic-ingest` and the `atlas_semantic_embedding` knn_vector mapping.
@@ -618,8 +625,10 @@ To deliberately register a **new** model:
 # or: ATLAS_SEMANTIC_FORCE_INIT=true ./scripts/run-atlas-semantic.sh
 ```
 
-After a new model id is created, run `atlas_semantic_repair.sh --all` to re-embed existing entities (the default
-mode only fills missing embeddings, so it would keep vectors from the old model).
+The new model has the same name, so Atlas keeps using the oldest deployed one: undeploy it
+(`POST /_plugins/_ml/models/<id>/_undeploy`), restart `atlas-semantic-indexer`, then run
+`atlas_semantic_repair.sh --all` to re-embed existing entities (the default mode only fills missing embeddings, so it
+would keep vectors from the old model).
 
 For remote embedding models, use `init-opensearch-semantic-remote.sh` (see `config/connectors/README.md`).
 
@@ -629,5 +638,5 @@ For remote embedding models, use `init-opensearch-semantic-remote.sh` (see `conf
 |---------|-----|
 | Empty semantic search results | Run repair or wait for indexer; check `curl localhost:9200/janusgraph_vertex_index/_count?q=exists:atlas_semantic_embedding` |
 | Indexer restart loop | Check `docker logs atlas-semantic-indexer`; ensure slim image has `bin/atlas_semantic_indexer.sh` |
-| Model id mismatch | Re-run `./scripts/run-atlas-semantic.sh`: it reuses the deployed model or registers a new one (e.g. after OpenSearch was reset) and recreates both containers with the new id |
+| No deployed embedding model named ... | Re-run `./scripts/run-atlas-semantic.sh` (e.g. after OpenSearch was reset): it registers the model again; then `docker restart atlas-semantic-indexer` |
 | Health endpoint unreachable | Recreate container after rebuild; confirm port `8089:8089` in `docker-compose.atlas-semantic.yml` |

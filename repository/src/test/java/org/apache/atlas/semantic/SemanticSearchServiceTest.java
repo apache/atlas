@@ -66,6 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.expectThrows;
 
 public class SemanticSearchServiceTest {
@@ -207,6 +208,8 @@ public class SemanticSearchServiceTest {
 
         AtlasBaseException e = expectThrows(AtlasBaseException.class, () -> service.semanticSearch(query("cars")));
         assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.SEMANTIC_SEARCH_NOT_READY);
+        assertFalse(e.getMessage().contains("embedding field"));
+        assertNull(e.getCause());
     }
 
     @Test
@@ -217,6 +220,7 @@ public class SemanticSearchServiceTest {
         AtlasBaseException e = expectThrows(AtlasBaseException.class, () -> service.semanticSearch(query("cars")));
         assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.DISCOVERY_QUERY_FAILED);
         assertFalse(e.getMessage().contains("janusgraph_vertex_index"));
+        assertNull(e.getCause());
     }
 
     @Test

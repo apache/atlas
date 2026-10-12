@@ -266,7 +266,7 @@ public enum AtlasErrorCode {
     ABORT_IMPORT_FAILED(500, "ATLAS-500-00-022", "Failed to abort import with id {0}"),
     IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id {0} to request queue, please try again later"),
 
-    SEMANTIC_SEARCH_NOT_READY(503, "ATLAS-503-00-001", "Semantic search is not available: {0}");
+    SEMANTIC_SEARCH_NOT_READY(503, "ATLAS-503-00-001", "Semantic search is not available (see Atlas server log)");
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasErrorCode.class);
     private final        String errorCode;

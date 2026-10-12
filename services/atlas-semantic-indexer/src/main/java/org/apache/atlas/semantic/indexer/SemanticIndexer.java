@@ -145,19 +145,7 @@ public class SemanticIndexer {
                     continue;
                 }
 
-                // A failure while OpenSearch or the graph is down is retried until both answer, without committing.
-                // Any other failure (e.g. HTTP 400) is committed: atlas_semantic_repair.sh backfills it.
-                boolean retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
-                while (retry && running) {
-                    LOG.warn("OpenSearch, the embedding model or the graph is unavailable: retrying {} Kafka message(s) (first offset={}) in {} ms",
-                            messages.size(), messages.get(0).getOffset(), BACKEND_RETRY_WAIT_MS);
-                    Thread.sleep(BACKEND_RETRY_WAIT_MS);
-                    if (backendsAvailable(semanticStore)) {
-                        retry = processMessages(messages, embedder).hasFailures() && !backendsAvailable(semanticStore);
-                    }
-                }
-
-                if (!retry) {
+                if (processRetryingWhileBackendsDown(messages, embedder, semanticStore)) {
                     commitOffsets(consumer, messages);
                 }
             }
@@ -237,6 +225,34 @@ public class SemanticIndexer {
     }
 
     /**
+     * Processes the poll, and again every BACKEND_RETRY_WAIT_MS while it has failures and a backend is not ready.
+     * Returns whether to commit: failures specific to the entities (e.g. HTTP 400) are committed, and
+     * atlas_semantic_repair.sh backfills them; false on shutdown. Throws after BACKEND_WAIT_MAX_ATTEMPTS waits.
+     */
+    private static boolean processRetryingWhileBackendsDown(List<AtlasKafkaMessage<EntityNotification>> messages,
+                                                            SemanticEntityEmbedder embedder,
+                                                            SemanticVectorStore semanticStore) throws InterruptedException {
+        boolean ready = true;
+
+        for (int attempt = 1; ; attempt++) {
+            if (ready && (!processMessages(messages, embedder).hasFailures() || backendsReady(semanticStore))) {
+                return true;
+            }
+            if (attempt > BACKEND_WAIT_MAX_ATTEMPTS) {
+                throw new IllegalStateException("OpenSearch, the embedding model or the graph is still unavailable after "
+                        + BACKEND_WAIT_MAX_ATTEMPTS + " attempts; exiting without committing the poll");
+            }
+            LOG.warn("OpenSearch, the embedding model or the graph is unavailable (attempt {}/{}): retrying {} Kafka message(s) (first offset={}) in {} ms",
+                    attempt, BACKEND_WAIT_MAX_ATTEMPTS, messages.size(), messages.get(0).getOffset(), BACKEND_RETRY_WAIT_MS);
+            Thread.sleep(BACKEND_RETRY_WAIT_MS);
+            if (!running) {
+                return false;
+            }
+            ready = backendsReady(semanticStore);
+        }
+    }
+
+    /**
      * Opens the graph and sets up the vector store, waiting while a backend is down or Atlas hasn't created the
      * vertex index yet. Returns false when shutdown is requested while waiting; a configuration error is thrown.
      */
@@ -266,11 +282,11 @@ public class SemanticIndexer {
      * Whether the graph storage backend and the vector store both answer. Atlas has no graph health API: any read
      * that reaches the storage backend tells whether it answers.
      */
-    private static boolean backendsAvailable(SemanticVectorStore semanticStore) {
+    private static boolean backendsReady(SemanticVectorStore semanticStore) {
         try {
             AtlasGraphUtilsV2.findByGuid(GRAPH_PROBE_GUID);
             AtlasGraphProvider.getGraphInstance().rollback();
-            return semanticStore.isAvailable();
+            return semanticStore.isReady();
         } catch (RuntimeException e) {
             return false;
         }
