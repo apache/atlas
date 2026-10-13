@@ -38,6 +38,8 @@ const globalSession = (sessionData: any) => {
     sessionData["atlas.tasks.ui.tab.enabled"];
   globalSessionData.relationshipSearch =
     sessionData["atlas.relationship.search.enabled"] ?? false;
+  globalSessionData.semanticSearch =
+    sessionData["atlas.semantic.enabled"] ?? false;
   globalSessionData.isLineageOnDemandEnabled =
     sessionData["atlas.lineage.on.demand.enabled"] ?? false;
   globalSessionData.lineageNodeCount =

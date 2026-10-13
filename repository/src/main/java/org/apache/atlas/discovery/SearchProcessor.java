@@ -199,7 +199,7 @@ public abstract class SearchProcessor {
     }
 
     @VisibleForTesting
-    public FilterCriteria processDateRange(FilterCriteria criteria) {
+    public static FilterCriteria processDateRange(FilterCriteria criteria) {
         String                    attrName = criteria.getAttributeName();
         SearchParameters.Operator op       = criteria.getOperator();
         String                    attrVal  = criteria.getAttributeValue();
@@ -1033,7 +1033,7 @@ public abstract class SearchProcessor {
         return null;
     }
 
-    private FilterCriteria processPipeSeperatedSystemAttribute(String attrName, SearchParameters.Operator op, String attrVal) {
+    public static FilterCriteria processPipeSeperatedSystemAttribute(String attrName, SearchParameters.Operator op, String attrVal) {
         FilterCriteria ret = new FilterCriteria();
 
         if (op != null && attrVal != null) {
@@ -1130,7 +1130,7 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    private String getCustomAttributeIndexQueryValue(String attrValue, boolean forGraphQuery) {
+    private static String getCustomAttributeIndexQueryValue(String attrValue, boolean forGraphQuery) {
         String ret = null;
 
         if (StringUtils.isNotEmpty(attrValue)) {
@@ -1152,7 +1152,7 @@ public abstract class SearchProcessor {
         return ret;
     }
 
-    private Predicate toInMemoryPredicate(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
+    public static Predicate toInMemoryPredicate(AtlasStructType type, String attrName, SearchParameters.Operator op, String attrVal) {
         Predicate                          ret       = null;
         AtlasAttribute                     attribute = type.getAttribute(attrName);
         ElementAttributePredicateGenerator predicate = OPERATOR_PREDICATE_MAP.get(op);

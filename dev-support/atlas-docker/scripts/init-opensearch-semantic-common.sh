@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+# Shared helpers for OpenSearch semantic search init scripts.
+set -euo pipefail
+
+wait_for_opensearch() {
+  local url="${1:?OpenSearch URL required}"
+  echo "==> Waiting for OpenSearch at ${url} ..."
+  for _ in $(seq 1 60); do
+    if curl -sf "${url}/_cluster/health" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 2
+  done
+  echo "OpenSearch is not reachable at ${url}"
+  exit 1
+}
+
+print_atlas_config_guide() {
+  local model_name="${1:?Model name required}"
+  local dimension="${2:?Embedding dimension required}"
+
+  cat <<EOF
+
+Set these in atlas-application.properties (of both Atlas and the Semantic Indexer):
+
+atlas.semantic.enabled=true
+atlas.semantic.model.name=${model_name}
+atlas.semantic.embedding.dimension=${dimension}
+
+The Semantic Indexer creates the ingest pipeline and the embedding mapping when it starts.
+EOF
+}
+
+wait_for_ml_task() {
+  local url="${1:?OpenSearch URL required}"
+  local task_id="${2:?Task id required}"
+  local result_var="${3:?Result variable name required}"
+
+  echo "==> Waiting for ML task ${task_id} ..."
+  # not named model_id: a local with the caller's result_var name would swallow the printf -v below
+  local task_model_id=""
+  for _ in $(seq 1 120); do
+    local task_response
+    task_response=$(curl -sf "${url}/_plugins/_ml/tasks/${task_id}" || true)
+    local state
+    state=$(echo "${task_response}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('state',''))" 2>/dev/null || echo "")
+    if [ "${state}" = "COMPLETED" ]; then
+      task_model_id=$(echo "${task_response}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('model_id',''))")
+      break
+    fi
+    if [ "${state}" = "FAILED" ]; then
+      echo "ML task failed: ${task_response}"
+      exit 1
+    fi
+    sleep 3
+  done
+
+  if [ -z "${task_model_id}" ]; then
+    echo "Timed out waiting for ML task ${task_id}"
+    exit 1
+  fi
+
+  printf -v "${result_var}" '%s' "${task_model_id}"
+}
+
+register_remote_model() {
+  local url="${1:?OpenSearch URL required}"
+  local connector_id="${2:?Connector id required}"
+  local model_name="${3:?Remote model name required}"
+
+  echo "==> Registering remote embedding model '${model_name}' ..."
+  curl -sf -X POST "${url}/_plugins/_ml/models/_register?deploy=true" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"name\": \"${model_name}\",
+      \"function_name\": \"remote\",
+      \"description\": \"Remote embedding model for Atlas semantic search\",
+      \"connector_id\": \"${connector_id}\"
+    }"
+}
+
+get_ml_model_state() {
+  local url="${1:?OpenSearch URL required}"
+  local model_id="${2:?Model id required}"
+
+  curl -sf "${url}/_plugins/_ml/models/${model_id}" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    doc = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+print(doc.get('model_state', ''))
+" 2>/dev/null || true
+}
+
+# _register?deploy=true completes its task before the deployment, which runs as a separate task and may still fail
+wait_for_model_deployed() {
+  local url="${1:?OpenSearch URL required}"
+  local model_id="${2:?Model id required}"
+
+  echo "==> Waiting for model ${model_id} to be deployed ..."
+  local state=""
+  for _ in $(seq 1 120); do
+    state=$(get_ml_model_state "${url}" "${model_id}")
+    if [ "${state}" = "DEPLOYED" ]; then
+      return 0
+    fi
+    if [ "${state}" = "DEPLOY_FAILED" ]; then
+      echo "Model ${model_id} failed to deploy; the DEPLOY_MODEL task in ${url}/_plugins/_ml/tasks/_search has the error"
+      exit 1
+    fi
+    sleep 3
+  done
+
+  echo "Timed out waiting for model ${model_id} to be deployed (state: ${state})"
+  exit 1
+}
+
+find_deployed_local_model_id() {
+  local url="${1:?OpenSearch URL required}"
+  local model_name="${2:?Model name required}"
+
+  local search_response
+  search_response=$(curl -sf -X POST "${url}/_plugins/_ml/models/_search" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"query\": {
+        \"bool\": {
+          \"filter\": [
+            { \"term\": { \"name.keyword\": \"${model_name}\" } },
+            { \"term\": { \"model_state\": \"DEPLOYED\" } }
+          ],
+          \"must_not\": [
+            { \"exists\": { \"field\": \"chunk_number\" } }
+          ]
+        }
+      },
+      \"size\": 1,
+      \"sort\": [{ \"created_time\": { \"order\": \"desc\" } }]
+    }" 2>/dev/null || true)
+
+  if [ -z "${search_response}" ]; then
+    return 0
+  fi
+
+  local candidate_id
+  candidate_id=$(echo "${search_response}" | python3 -c "
+import sys, json
+try:
+    hits = json.load(sys.stdin).get('hits', {}).get('hits', [])
+except Exception:
+    sys.exit(0)
+if not hits:
+    sys.exit(0)
+print(hits[0].get('_id', ''))
+" 2>/dev/null || true)
+
+  if [ -z "${candidate_id}" ]; then
+    return 0
+  fi
+
+  local state
+  state=$(get_ml_model_state "${url}" "${candidate_id}")
+  if [ "${state}" = "DEPLOYED" ]; then
+    echo "${candidate_id}"
+  fi
+}
+
+register_local_pretrained_model() {
+  local url="${1:?OpenSearch URL required}"
+  local model_name="${2:?Model name required}"
+  local model_version="${3:?Model version required}"
+  local result_var="${4:?Result variable name required}"
+
+  echo "==> Registering and deploying local embedding model (${model_name}) ..."
+  local register_response
+  register_response=$(curl -s -X POST "${url}/_plugins/_ml/models/_register?deploy=true" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\":\"${model_name}\",\"version\":\"${model_version}\",\"model_format\":\"TORCH_SCRIPT\"}")
+
+  local task_id
+  task_id=$(echo "${register_response}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('task_id',''))")
+  if [ -z "${task_id}" ]; then
+    echo "Failed to register model: ${register_response}"
+    return 1
+  fi
+
+  wait_for_ml_task "${url}" "${task_id}" "${result_var}"
+}
+
+resolve_local_embedding_model_id() {
+  local url="${1:?OpenSearch URL required}"
+  local model_name="${2:?Model name required}"
+  local model_version="${3:?Model version required}"
+  local force_register="${4:-false}"
+  local result_var="${5:?Result variable name required}"
+
+  local model_id=""
+
+  if [ "${force_register}" != "true" ]; then
+    model_id=$(find_deployed_local_model_id "${url}" "${model_name}")
+    if [ -n "${model_id}" ]; then
+      echo "==> Reusing deployed ML model ${model_id} (${model_name})"
+      printf -v "${result_var}" '%s' "${model_id}"
+      return 0
+    fi
+    echo "==> No DEPLOYED model named '${model_name}' in OpenSearch; registering a new model ..."
+  else
+    echo "==> --force: registering and deploying a new local embedding model ..."
+  fi
+
+  register_local_pretrained_model "${url}" "${model_name}" "${model_version}" model_id
+  wait_for_model_deployed "${url}" "${model_id}"
+  echo "==> Model deployed: ${model_id}"
+  printf -v "${result_var}" '%s' "${model_id}"
+}

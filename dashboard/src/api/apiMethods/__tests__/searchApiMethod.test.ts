@@ -28,6 +28,8 @@
 
 import {
 	getBasicSearchResult,
+	getSemanticSearchResult,
+	getSimilarEntities,
 	getRelationShipResult,
 	getGlobalSearchResult,
 	getRelationShip
@@ -184,6 +186,31 @@ describe('searchApiMethod', () => {
 			expect(mockFetchApi).toHaveBeenCalledWith(
 				expect.any(String),
 				expect.objectContaining(params)
+			)
+		})
+	})
+
+	describe('getSemanticSearchResult', () => {
+		it('should POST to semantic search endpoint', async () => {
+			const body = { query: 'revenue table', topK: 10 }
+			await getSemanticSearchResult({ data: body })
+
+			expect(mockSearchApiUrl).toHaveBeenCalledWith('semantic')
+			expect(mockFetchApi).toHaveBeenCalledWith(
+				'/api/search/semantic',
+				expect.objectContaining({ method: 'POST', data: body })
+			)
+		})
+	})
+
+	describe('getSimilarEntities', () => {
+		it('should GET similar entities with guid query param', async () => {
+			await getSimilarEntities('guid-123', { typeName: 'hive_table' })
+
+			expect(mockSearchApiUrl).toHaveBeenCalledWith('similar')
+			expect(mockFetchApi).toHaveBeenCalledWith(
+				'/api/search/similar',
+				{ method: 'GET', params: { guid: 'guid-123', typeName: 'hive_table' } }
 			)
 		})
 	})
