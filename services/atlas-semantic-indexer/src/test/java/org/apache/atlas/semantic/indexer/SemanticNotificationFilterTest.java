@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.semantic.indexer;
 
+import org.apache.atlas.glossary.GlossaryUtils;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
@@ -61,9 +62,18 @@ public class SemanticNotificationFilterTest {
     }
 
     @Test
-    public void termAssignmentKeepsOnlyTheEntityEnd() {
+    public void acceptsTermAssignmentRelationshipCreate() {
         EntityNotificationV2 notification = new EntityNotificationV2(
-                relationship("AtlasGlossarySemanticAssignment"), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
+                relationship(GlossaryUtils.TERM_ASSIGNMENT), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
+
+        assertTrue(SemanticNotificationFilter.shouldProcess(notification));
+        assertEquals(SemanticNotificationFilter.extractGuidTypes(notification), Map.of("entity-guid", "hive_table"));
+    }
+
+    @Test
+    public void acceptsTermAssignmentRelationshipDelete() {
+        EntityNotificationV2 notification = new EntityNotificationV2(
+                relationship(GlossaryUtils.TERM_ASSIGNMENT), OperationType.RELATIONSHIP_DELETE, System.currentTimeMillis());
 
         assertTrue(SemanticNotificationFilter.shouldProcess(notification));
         assertEquals(SemanticNotificationFilter.extractGuidTypes(notification), Map.of("entity-guid", "hive_table"));
@@ -72,16 +82,17 @@ public class SemanticNotificationFilterTest {
     @Test
     public void skipsTermAssignmentUpdate() {
         EntityNotificationV2 notification = new EntityNotificationV2(
-                relationship("AtlasGlossarySemanticAssignment"), OperationType.RELATIONSHIP_UPDATE, System.currentTimeMillis());
+                relationship(GlossaryUtils.TERM_ASSIGNMENT), OperationType.RELATIONSHIP_UPDATE, System.currentTimeMillis());
 
         assertFalse(SemanticNotificationFilter.shouldProcess(notification));
     }
 
     @Test
-    public void extractsNoGuidFromOtherRelationships() {
+    public void skipsOtherRelationships() {
         EntityNotificationV2 notification = new EntityNotificationV2(
                 relationship("hive_table_columns"), OperationType.RELATIONSHIP_CREATE, System.currentTimeMillis());
 
+        assertFalse(SemanticNotificationFilter.shouldProcess(notification));
         assertTrue(SemanticNotificationFilter.extractGuidTypes(notification).isEmpty());
     }
 

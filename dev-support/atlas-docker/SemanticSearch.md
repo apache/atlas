@@ -97,9 +97,11 @@ propagation) rewrites `__classificationsText` but sends no `ENTITY_UPDATE`.
 
 Atlas sends `RELATIONSHIP_*` notifications only when this is `true` on the **Atlas server** (default `false`).
 Without it, assigning a term to an entity, or removing it, through the glossary API or UI
-(`POST`/`DELETE /v2/glossary/terms/{guid}/assignedEntities`) sends **no** Kafka message at all, so the
-entity keeps its old embedding until its next update or a repair run. Assigning terms inside an entity
-create/update (the `meanings` relationship attribute) sends `ENTITY_UPDATE` and works either way.
+(`POST`/`DELETE /v2/glossary/terms/{guid}/assignedEntities`) sends **no** `RELATIONSHIP_CREATE` or
+`RELATIONSHIP_DELETE` on Kafka at all. The semantic indexer never sees those operations in that case; the
+entity keeps its old embedding until an `ENTITY_UPDATE` for that entity (if one is sent) or a repair run.
+Assigning terms inside an entity create/update (the `meanings` relationship attribute) sends `ENTITY_UPDATE`
+and works either way.
 
 Enable it (Atlas server `atlas-application.properties`, restart required) if term assignments should reach the
 embeddings right away:

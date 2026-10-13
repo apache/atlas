@@ -33,6 +33,8 @@ import java.util.Set;
 /**
  * Filters {@link EntityNotificationV2} messages for the Semantic Indexer Kafka consumer.
  * Uses an explicit allowlist of operation types that can change embeddable entity text.
+ * {@link OperationType#RELATIONSHIP_CREATE} and {@link OperationType#RELATIONSHIP_DELETE} are on that list,
+ * but only when the relationship type is {@link GlossaryUtils#TERM_ASSIGNMENT}; other relationship types are dropped.
  */
 public final class SemanticNotificationFilter {
     private static final Set<OperationType> INDEXED_OPERATION_TYPES = Collections.unmodifiableSet(EnumSet.of(
@@ -48,7 +50,21 @@ public final class SemanticNotificationFilter {
     }
 
     public static boolean shouldProcess(EntityNotificationV2 notification) {
-        return notification != null && INDEXED_OPERATION_TYPES.contains(notification.getOperationType());
+        if (notification == null) {
+            return false;
+        }
+
+        OperationType operationType = notification.getOperationType();
+        if (!INDEXED_OPERATION_TYPES.contains(operationType)) {
+            return false;
+        }
+
+        if (operationType == OperationType.RELATIONSHIP_CREATE || operationType == OperationType.RELATIONSHIP_DELETE) {
+            AtlasRelationshipHeader relationship = notification.getRelationship();
+            return relationship != null && GlossaryUtils.TERM_ASSIGNMENT.equals(relationship.getTypeName());
+        }
+
+        return true;
     }
 
     /**
