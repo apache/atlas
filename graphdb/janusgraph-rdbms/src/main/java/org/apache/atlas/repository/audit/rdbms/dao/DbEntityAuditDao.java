@@ -100,6 +100,20 @@ public class DbEntityAuditDao extends BaseDao<DbEntityAudit> {
         return orderByQuery.toString();
     }
 
+    public List<String> getDistinctEntityIdsByActionPrefixAndTimeRange(String actionPrefix, long fromTimestamp, long toTimestamp) {
+        try {
+            return em.createNamedQuery("DbEntityAudit.getDistinctEntityIdsByActionPrefixAndTimeRange", String.class)
+                    .setParameter("actionPrefix", actionPrefix)
+                    .setParameter("fromTimestamp", fromTimestamp)
+                    .setParameter("toTimestamp", toTimestamp)
+                    .getResultList();
+        } catch (NoResultException excp) {
+            // ignore
+        }
+
+        return Collections.emptyList();
+    }
+
     public List<DbEntityAudit> getLatestAuditsByEntityIdAction(String entityId, String action, List<String> filterActions) {
         try {
             StringBuilder query = new StringBuilder("SELECT e FROM DbEntityAudit e WHERE e.entityId = :entityId");
