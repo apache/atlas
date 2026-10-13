@@ -122,6 +122,15 @@ public class ImportFilePathValidatorTest {
     }
 
     @Test
+    public void validateRejectsWhenAllowedDirectoryDoesNotExist() throws Exception {
+        File nonExistentDir = new File(importDirectory, "missing-import-dir");
+        ApplicationProperties.get().setProperty(AtlasConfiguration.IMPORT_ALLOWED_DIRECTORY.getPropertyName(),
+                nonExistentDir.getAbsolutePath());
+
+        assertImportFileNotAccessible("export.zip");
+    }
+
+    @Test
     public void validateReturnsSameErrorForMissingAndInvalidFiles() throws Exception {
         File existingFile = new File(importDirectory, "existing.txt");
         assertTrue(existingFile.createNewFile());
