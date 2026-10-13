@@ -72,7 +72,7 @@ public class TaskExecutor {
         // barrier is deterministic regardless of how slow the host/JVM is, which avoids
         // the flakiness of a fixed Thread.sleep() on slower CI runners.
         try {
-            this.executorService.submit(() -> { }).get();
+            this.executorService.submit(() -> {}).get();
         } catch (ExecutionException e) {
             LOG.warn("waitUntilDone: barrier task failed", e);
         }
