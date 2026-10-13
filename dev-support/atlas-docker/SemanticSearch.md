@@ -399,7 +399,13 @@ store — they are patched later by the Semantic Indexer — so **reindex wipes 
    docker exec atlas-semantic-indexer /opt/atlas-semantic-indexer/bin/atlas_semantic_repair.sh
    ```
    Or from the semantic-indexer tarball: `ATLAS_CONF=/path/to/atlas/conf bin/atlas_semantic_repair.sh`.
-3. Verify search with the requests in [Test REST APIs](#5-test-rest-apis).
+3. Verify search, for example:
+   ```bash
+   curl -u admin:atlasR0cks! -H 'Content-Type: application/json' \
+     -d '{"query":"customer lifetime value","topK":5}' \
+     http://localhost:21000/api/atlas/v2/search/semantic | jq '.queryType, (.fullTextResult | length)'
+   ```
+   Expect `"SEMANTIC"` and a non-zero length once repair finished (same checks as in **Local Docker guide → Test REST APIs**).
 
 A reindex writes to OpenSearch directly from HBase; it does not go through the Atlas entity store, so it
 publishes **no** Kafka events. The Semantic Indexer therefore never sees the rebuilt entities; it only
@@ -424,15 +430,15 @@ Content-Type: application/json
 GET /api/atlas/v2/search/similar?guid=<entity-guid>&topK=10&attributes=owner&attributes=createTime
 ```
 
-Results are in `fullTextResult`, best first: each item has the entity header (`entity`) and its `score`;
-`entities` is not set. Without `topK`, both endpoints use `atlas.semantic.search.default.topK`. `attributes`
+Results are in `fullTextResult`, best first: each item has the entity header (`entity`) and its `score`.
+Without `topK`, both endpoints use `atlas.semantic.search.default.topK`. `attributes`
 adds those attributes to each returned entity header. `typeName` and `excludeDeletedEntities` (default true:
 `__state` ACTIVE) are filters of the k-NN query, so OpenSearch returns up to `topK` matching entities. Entities the
 user can't read are masked by Ranger (guid `-1`, no attributes), not removed, so they still count in `topK`.
 `/similar` needs read access on the source entity. Backend failures return a
 generic error; the OpenSearch details are in the Atlas server log.
 
-**Attribute filters** (`/semantic` only): `entityFilters` takes a `FilterCriteria` as in basic search, applied
+**Attribute filters** (`POST /v2/search/semantic` only): `entityFilters` takes a `FilterCriteria` as in basic search, applied
 inside the k-NN query like `typeName`. As in basic search, system attributes and business metadata
 (`<name>.<attribute>`, e.g. `Governance.domain`) can always be used; entity attributes need `typeName`.
 
@@ -458,15 +464,7 @@ Content-Type: application/json
 - `__typeName` matches the exact type, not subtypes; use `typeName` with `includeSubTypes` for that.
 - Not filterable, because they have no usable field in the vertex index: booleans, enums, `biginteger` /
   `bigdecimal`, arrays and maps, `__createdBy`, `__modifiedBy`.
-- Values are compared exactly and case-sensitively, as in basic search. Like basic search, Atlas first filters in
-  OpenSearch, then checks every condition on each entity it loads with basic search's in-memory filter. Most strings
-  (e.g. `qualifiedName`, `description`) are analyzed text in the vertex index, so OpenSearch only matches them loosely
-  (as a phrase, or by the first word for `startsWith`); the hits that fail the exact check are dropped. A request with
-  `entityFilters` can therefore return fewer than `topK` entities; Atlas asks OpenSearch for twice `topK` candidates
-  to make up for it. Strings with `indexType: STRING` (e.g. `name`, `owner`) have a keyword field; values longer than
-  256 characters are not in it and never match.
-- Relationships are not in the vertex document: "tables of database X" works through the `qualifiedName` prefix
-  (`<db>.<table>@<cluster>` for Hive), not through the `db` relationship.
+- Values are compared exactly and case-sensitively, as in basic search.
 
 After upgrading to a build that changes the embedding text (field order, skipped properties, glossary terms),
 run `atlas_semantic_repair.sh --all` so that all embeddings are built from the same text.
