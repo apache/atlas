@@ -18,31 +18,31 @@
 
 package org.apache.atlas;
 
-import com.sun.jersey.api.client.ClientResponse;
+import javax.ws.rs.core.Response;
 
 public class AtlasServiceException extends Exception {
-    private final ClientResponse.Status status;
+    private final Response.Status status;
 
     public AtlasServiceException(AtlasBaseClient.API api, Exception e) {
         super("Metadata service API " + api.getMethod() + " : " + api.getNormalizedPath() + " failed", e);
 
-        this.status = ClientResponse.Status.BAD_REQUEST;
+        this.status = Response.Status.BAD_REQUEST;
     }
 
-    private AtlasServiceException(AtlasBaseClient.API api, ClientResponse.Status status, String response) {
+    private AtlasServiceException(AtlasBaseClient.API api, Response.Status status, String response) {
         super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1) + " (" + status + ") Response Body (" + response + ")");
 
         this.status = status;
     }
 
-    public AtlasServiceException(AtlasBaseClient.API api, ClientResponse response) {
-        this(api, ClientResponse.Status.fromStatusCode(response.getStatus()), response.getEntity(String.class));
+    public AtlasServiceException(AtlasBaseClient.API api, Response response) {
+        this(api, Response.Status.fromStatusCode(response.getStatus()), response.readEntity(String.class));
     }
 
     public AtlasServiceException(Exception e) {
         super(e);
 
-        this.status = ClientResponse.Status.BAD_REQUEST;
+        this.status = Response.Status.BAD_REQUEST;
     }
 
     public AtlasServiceException(AtlasServiceException e) {
@@ -51,7 +51,7 @@ public class AtlasServiceException extends Exception {
         this.status = e.status;
     }
 
-    public ClientResponse.Status getStatus() {
+    public Response.Status getStatus() {
         return status;
     }
 }
