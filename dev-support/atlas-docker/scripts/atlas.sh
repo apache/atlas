@@ -41,7 +41,8 @@ then
   exit 1
 fi
 
-su -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py" atlas
+# Preserve env so Docker `-e` (e.g. ATLAS_OTEL_*, ATLAS_BACKEND) reaches atlas_start.py.
+su --preserve-environment atlas -c "cd ${ATLAS_HOME}/bin && ./atlas_start.py"
 ATLAS_PID=`ps -ef  | grep -v grep | grep -i "org.apache.atlas.Atlas" | awk '{print $2}'`
 
 # prevent the container from exiting
