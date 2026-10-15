@@ -744,7 +744,14 @@
                     <webApp>
                         <contextPath>/</contextPath>
                         <descriptor>${project.basedir}/src/main/webapp/WEB-INF/web.xml</descriptor>
-                        <extraClasspath>${project.build.testOutputDirectory}</extraClasspath>
+                        <!--
+                          ATLAS-5220: the shipped WAR is profile-slim (storage-hbase by default), so the
+                          embedded berkeleyje backend used by the integration tests is NOT bundled in
+                          WEB-INF/lib. deploy-war does not add test-scoped dependency jars to the server
+                          classpath, so make the berkeleyje backend (copied by maven-dependency-plugin,
+                          see the copy-it-backend-libs execution below) available to the IT server here.
+                        -->
+                        <extraClasspath>${project.build.testOutputDirectory},${project.build.directory}/it-backend-libs/janusgraph-berkeleyje.jar,${project.build.directory}/it-backend-libs/je.jar</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
@@ -812,6 +819,33 @@
                             <goal>stop</goal>
                         </goals>
                         <phase>post-integration-test</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <!--
+                      ATLAS-5220: copy the embedded berkeleyje storage backend (test-scoped, and therefore
+                      not packaged into the profile-slim WAR) so the jetty integration-test server can
+                      initialise JanusGraph on berkeleyje (see test atlas-application.properties). The jars
+                      are referenced from the jetty plugin's extraClasspath above. Version is stripped so
+                      the classpath entries stay stable across janusgraph upgrades.
+                    -->
+                    <execution>
+                        <id>copy-it-backend-libs</id>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <phase>process-test-classes</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/it-backend-libs</outputDirectory>
+                            <includeArtifactIds>janusgraph-berkeleyje,je</includeArtifactIds>
+                            <stripVersion>true</stripVersion>
+                            <overWriteReleases>true</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
