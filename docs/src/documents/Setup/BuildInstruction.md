@@ -43,6 +43,23 @@ Above will build Apache Atlas for an environment having functional HBase and Sol
    * Set HBASE_CONF_DIR to point to a valid Apache HBase config directory (see "Graph persistence engine - HBase" in the [Configuration](#/Configuration) section).
    * Create indices in Apache Solr (see "Graph Search Index - Solr" in the [Configuration](#/Configuration) section).
 
+### Slim server packaging (ATLAS-5220)
+
+Build only the graph storage, search index, and audit backends required for your deployment by combining `-Pdist` with optional Maven profiles:
+
+<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+{`# Default slim (HBase + Solr + HBase audit) — no embedded HBase/Solr download
+mvn clean package -DskipTests -Pdist,storage-hbase,index-solr,audit-hbase
+
+# RDBMS storage + RDBMS audit
+mvn clean package -DskipTests -Pdist,storage-rdbms,index-solr,audit-rdbms
+
+# Elasticsearch index instead of Solr
+mvn clean package -DskipTests -Pdist,storage-hbase,index-elasticsearch,audit-hbase`}
+</SyntaxHighlighter>
+
+Available profiles: `storage-{hbase,cassandra,berkeleyje,rdbms}`, `index-{solr,elasticsearch}`, `audit-{hbase,inmemory,rdbms,cassandra,noop}`. `-Pdist` sets filtered defaults in `atlas-application.properties` but does not bundle HBase/Solr unless `embedded-hbase-solr` is also specified.
+
 
 ### Packaging Apache Atlas with embedded Apache HBase & Apache Solr
 To create Apache Atlas package that includes Apache HBase and Apache Solr, build with the embedded-hbase-solr profile as shown below:

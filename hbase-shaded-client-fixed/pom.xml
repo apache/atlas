@@ -34,6 +34,14 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <!--
+          This module contains no Atlas source code; it only unpacks the third-party
+          hbase-shaded-client jar (excluding 2 META-INF/services entries) and repacks it.
+          The unpacked classes are copied into target/classes, so running SpotBugs here
+          would analyze the entire shaded HBase client and exhaust the analysis heap
+          (java.lang.OutOfMemoryError). Skip SpotBugs for this module.
+        -->
+        <skipCheck>true</skipCheck>
     </properties>
 
     <dependencies>
@@ -68,6 +76,29 @@
                                     <outputDirectory>${project.build.directory}/unpacked</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Expose unpacked HBase classes on compile classpath for reactor dependents (mvn compile without package). -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-unpacked-hbase-to-classes</id>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.build.directory}/unpacked</directory>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
