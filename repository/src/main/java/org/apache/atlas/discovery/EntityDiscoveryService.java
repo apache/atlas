@@ -1290,7 +1290,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         try {
             return call.run();
         } catch (AtlasBaseException e) {
-            if (!isUnknownTypeError(e) || !forceTypeRefresh()) {
+            if (!recoverUnknownType(e)) {
                 throw e;
             }
 
@@ -1304,12 +1304,59 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         try {
             return call.run();
         } catch (AtlasBaseException e) {
-            if (!isUnknownTypeError(e) || !forceTypeRefresh()) {
+            if (!recoverUnknownType(e)) {
                 throw e;
             }
 
             return call.run();
         }
+    }
+
+    /**
+     * Reloads the registry, then point-loads a business-metadata definition the category scan missed.
+     * The point-load runs after the scan so a lagging category index cannot delete the type just added.
+     */
+    private boolean recoverUnknownType(AtlasBaseException failure) {
+        if (!isUnknownTypeError(failure) || !forceTypeRefresh()) {
+            return false;
+        }
+
+        String businessMetadataName = businessMetadataName(failure);
+
+        if (businessMetadataName != null && typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.installBusinessMetadata(businessMetadataName);
+        }
+
+        return true;
+    }
+
+    private static String businessMetadataName(AtlasBaseException failure) {
+        if (failure.getAtlasErrorCode() != AtlasErrorCode.UNKNOWN_ATTRIBUTE || failure.getMessage() == null) {
+            return null;
+        }
+
+        String prefix = "Attribute ";
+        String marker = " not found for type ";
+        String message = failure.getMessage();
+
+        if (!message.startsWith(prefix)) {
+            return null;
+        }
+
+        int markerAt = message.indexOf(marker);
+
+        if (markerAt < 0) {
+            return null;
+        }
+
+        String attributeName = message.substring(prefix.length(), markerAt);
+        int    dot           = attributeName.indexOf('.');
+
+        if (dot <= 0) {
+            return null;
+        }
+
+        return attributeName.substring(0, dot);
     }
 
     @FunctionalInterface

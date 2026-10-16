@@ -216,6 +216,41 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     }
 
     @Override
+    public boolean installClassificationFromGraph(String name) throws AtlasBaseException {
+        if (StringUtils.isBlank(name) || getTypeRegistry().getClassificationTypeByName(name) != null) {
+            return getTypeRegistry().getClassificationTypeByName(name) != null;
+        }
+
+        AtlasVertex vertex = findTypeVertexByNameAndCategory(name, TypeCategory.TRAIT);
+
+        if (vertex == null) {
+            return false;
+        }
+
+        AtlasClassificationDef classificationDef = new AtlasClassificationDefStoreV2(this, getTypeRegistry())
+                .getByName(name);
+
+        return addClassificationDefFromPeer(classificationDef);
+    }
+
+    @Override
+    public boolean installBusinessMetadataFromGraph(String name) throws AtlasBaseException {
+        if (StringUtils.isBlank(name) || getTypeRegistry().getBusinessMetadataTypeByName(name) != null) {
+            return getTypeRegistry().getBusinessMetadataTypeByName(name) != null;
+        }
+
+        AtlasVertex vertex = findTypeVertexByNameAndCategory(name, TypeCategory.BUSINESS_METADATA);
+
+        if (vertex == null) {
+            return false;
+        }
+
+        AtlasBusinessMetadataDef businessMetadataDef = getBusinessMetadataDefStore(getTypeRegistry()).getByName(name);
+
+        return addBusinessMetadataDefFromPeer(businessMetadataDef);
+    }
+
+    @Override
     protected Map<String, StoredTypeMeta> getStoredTypeIndex() {
         Map<String, StoredTypeMeta> index = new HashMap<>();
 

@@ -51,6 +51,14 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEn
 public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
 
+    /**
+     * How long a dead process may keep the cluster-wide runner slot.  The slot used to be leased
+     * for {@link AtlasConfiguration#TASK_CLAIM_STALE_THRESHOLD_MS} (an hour) and was never renewed,
+     * so a server stopped mid-task left every later propagation task pending until that hour
+     * ended.  A live server renews this window; a dead one loses it when the window lapses.
+     */
+    static final long RUNNER_LEASE_MS = 120_000L;
+
     private final AtlasGraph graph;
     private final long       inProgressStaleThresholdMs;
     private final String     nodeId;
@@ -196,8 +204,11 @@ public class TaskRegistry {
      * marker and both writes stand.  Taking the slot, by contrast, means creating a vertex that only
      * one node can create, whichever task each of them had in mind.
      *
-     * <p>The slot is leased so that a node dying mid-task cannot keep the cluster idle forever; the
-     * lease runs for the same stale threshold that returns its abandoned task to {@code PENDING}.
+     * <p>The slot is leased so that a node dying mid-task cannot keep the cluster idle forever.
+     * The lease is a short window ({@link #RUNNER_LEASE_MS}), renewed while this process is alive
+     * and still making progress.  A stopped server stops renewing, and the slot frees when the
+     * window lapses instead of when the hour-long stale threshold does.  That threshold still
+     * decides when a live server's task has gone quiet.
      *
      * <p>The slot is taken and committed <em>before</em> a task is looked for, which is what makes
      * the claim exclusive rather than merely optimistic.  The store gets to refuse a claim only when
@@ -231,7 +242,7 @@ public class TaskRegistry {
             return null;
         }
 
-        if (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TASK_RUNNER, nodeId, inProgressStaleThresholdMs)) {
+        if (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TASK_RUNNER, nodeId, runnerLeaseMs())) {
             LOG.debug("TaskRegistry.claimNextPendingTask(): node={} no claim, another node holds the runner slot", nodeId);
 
             return null;
@@ -273,16 +284,44 @@ public class TaskRegistry {
     }
 
     /**
+     * Gives the runner slot back when this process is stopping.  {@link #updateStatus} already
+     * does this when a task finishes, but a shutdown that interrupts nothing — the task thread
+     * never reaches it — used to leave the slot taken until the lease lapsed.
+     */
+    @GraphTransaction
+    public void releaseRunnerLease() {
+        GraphClaim.releaseLease(graph, Constants.CLAIM_TASK_RUNNER, nodeId);
+    }
+
+    /**
+     * Keeps this process's runner lease alive while it still has a task in progress that has not
+     * gone quiet.  Does nothing when the slot belongs to someone else, so a poll cannot take over
+     * a peer's lapsed lease and then hold it with no task running.
+     */
+    @GraphTransaction
+    public void renewRunnerLease() {
+        long leaseMs = runnerLeaseMs();
+
+        if (leaseMs <= 0L || !ownsRunnerLease() || !hasFreshInProgressTask()) {
+            return;
+        }
+
+        GraphClaim.renewLeaseIfHeld(graph, Constants.CLAIM_TASK_RUNNER, nodeId, leaseMs);
+    }
+
+    /**
      * Returns {@code IN_PROGRESS} tasks whose owner has gone quiet for longer than the stale
-     * threshold back to {@code PENDING}.  Without this a node that died mid-task would hold the
-     * cluster-wide slot forever and no task would ever run again.
+     * threshold back to {@code PENDING}.  A task whose runner lease has already lapsed is
+     * abandoned immediately: the process that claimed it is gone, and waiting out the hour-long
+     * threshold is what left the cluster idle after a server was stopped mid-task.
      */
     @GraphTransaction
     public void recoverStaleInProgressTasks() {
         AtlasGraphQuery query = graph.query()
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
                 .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
-        long now = System.currentTimeMillis();
+        long    now        = System.currentTimeMillis();
+        boolean holderGone = !GraphClaim.hasLiveHolder(graph, Constants.CLAIM_TASK_RUNNER);
 
         for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
             if (!isInProgress(vertex)) {
@@ -292,15 +331,15 @@ public class TaskRegistry {
             String taskGuid    = vertex.getProperty(Constants.TASK_GUID, String.class);
             Long   updatedTime = vertex.getProperty(Constants.TASK_UPDATED_TIME, Long.class);
 
-            if (!isStaleInProgress(updatedTime, now)) {
+            if (!holderGone && !isStaleInProgress(updatedTime, now)) {
                 continue;
             }
 
-            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): node={} recovering stale IN_PROGRESS task {} back to PENDING",
-                    nodeId, taskGuid);
+            LOG.warn("TaskRegistry.recoverStaleInProgressTasks(): node={} recovering IN_PROGRESS task {} back to PENDING ({})",
+                    nodeId, taskGuid, holderGone ? "runner lease lapsed" : "task has gone quiet");
 
-            // The runner slot the dead node held is not released here: it is leased for this same
-            // threshold, so it has lapsed too and the next claimant takes it over.  This clears a
+            // The runner slot is not released here.  A lapsed lease is taken over by the next
+            // claimant; a live one still belongs to the server that is renewing it.  This clears a
             // claim only if the task was marked by a node running a build that recorded claims on
             // task vertices, which would otherwise outlive the task and block every later claim.
             GraphClaim.releaseClaim(vertex);
@@ -329,6 +368,44 @@ public class TaskRegistry {
 
         for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
             if (isInProgress(vertex)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Lease window for the runner slot.  Never longer than the stale-task threshold, and long
+     * enough to cover a few poll intervals so one delayed renewal does not look like a crash.
+     */
+    private long runnerLeaseMs() {
+        long renewWindow = Math.max(RUNNER_LEASE_MS, AtlasConfiguration.TASKS_POLL_INTERVAL_MS.getLong() * 3L);
+
+        return Math.min(inProgressStaleThresholdMs, renewWindow);
+    }
+
+    private boolean ownsRunnerLease() {
+        String owner = GraphClaim.claimedBy(GraphClaim.holderOf(graph, Constants.CLAIM_TASK_RUNNER));
+
+        return nodeId.equals(owner);
+    }
+
+    /** An in-progress task this process is still within the stale threshold of updating. */
+    private boolean hasFreshInProgressTask() {
+        long now = System.currentTimeMillis();
+        AtlasGraphQuery query = graph.query()
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString());
+
+        for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
+            if (!isInProgress(vertex)) {
+                continue;
+            }
+
+            Long updatedTime = vertex.getProperty(Constants.TASK_UPDATED_TIME, Long.class);
+
+            if (!isStaleInProgress(updatedTime, now)) {
                 return true;
             }
         }

@@ -53,7 +53,8 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
 
     /** The graph's own index of schema element names, which is where two nodes defining the same element collide. */
-    private static final String SCHEMA_NAME_INDEX_KEY = "~T$SchemaName";
+    private static final String SCHEMA_NAME_INDEX_KEY    = "~T$SchemaName";
+    private static final String MIXED_INDEX_UNAVAILABLE  = "is not available in mixed index";
 
     private static final ObjectUpdateSynchronizer                     OBJECT_UPDATE_SYNCHRONIZER = new ObjectUpdateSynchronizer();
     private static final ThreadLocal<List<PostTransactionHook>>       postTransactionHooks       = new ThreadLocal<>();
@@ -231,6 +232,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                         LOG.warn("JanusGraph locking conflict in {}.{} – rolling back and retrying (attempt {}/{}), backoff {}ms",
                                 invokingClass, invokedMethodName, attempt, maxRetries + 1, backoff);
                         graph.rollback();
+                        expireStaleMixedIndexSchema(t);
                         RequestContext.get().endMetricRecord(metric);
                         metric = null;
                         OBJECT_UPDATE_SYNCHRONIZER.releaseLockedObjects();
@@ -321,11 +323,46 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 return true;
             }
 
-            if (isSchemaCreationRace(cause)) {
+            if (isSchemaCreationRace(cause) || isMixedIndexSchemaLag(cause)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * A peer has committed a new mixed-index field, and this node's schema cache has refreshed the
+     * property key without refreshing the index that should contain it. Janus then refuses the
+     * commit. Dropping both cached elements lets the retry read the index the peer stored.
+     */
+    private static boolean isMixedIndexSchemaLag(Throwable cause) {
+        return cause.getClass().getSimpleName().endsWith("SchemaViolationException")
+                && StringUtils.contains(cause.getMessage(), MIXED_INDEX_UNAVAILABLE);
+    }
+
+    private void expireStaleMixedIndexSchema(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            String message = cause.getMessage();
+
+            if (!cause.getClass().getSimpleName().endsWith("SchemaViolationException")
+                    || !StringUtils.contains(message, MIXED_INDEX_UNAVAILABLE)) {
+                if (cause.getCause() == cause) {
+                    break;
+                }
+
+                continue;
+            }
+
+            int    marker      = message.indexOf(MIXED_INDEX_UNAVAILABLE);
+            String propertyKey = message.substring(0, marker).trim();
+            String indexName   = message.substring(marker + MIXED_INDEX_UNAVAILABLE.length()).trim();
+
+            graph.expireCachedSchemaElement(propertyKey);
+            graph.expireCachedSchemaElement(indexName);
+            LOG.info("Expired cached schema for mixed-index lag on property '{}' index '{}'", propertyKey, indexName);
+
+            return;
+        }
     }
 
     /**

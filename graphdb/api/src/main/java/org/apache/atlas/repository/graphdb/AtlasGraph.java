@@ -211,6 +211,14 @@ public interface AtlasGraph<V, E> {
     }
 
     /**
+     * Drops this node's cached copy of a schema element so the next transaction reads it from
+     * storage. A peer that just added a property to a mixed index can otherwise commit a write
+     * against a cache that still lists the property on the index but not among the index fields.
+     */
+    default void expireCachedSchemaElement(String schemaName) {
+    }
+
+    /**
      * Commits changes made to the graph in the current transaction.
      */
     void commit();
@@ -385,5 +393,16 @@ public interface AtlasGraph<V, E> {
      */
     default AtlasUniqueKeyHandler getUniqueKeyHandler() {
         return null; // Default implementation returns null, subclasses can override to provide specific implementation
+    }
+
+    /**
+     * Whether a {@code __claim} lookup can use the composite index.
+     *
+     * <p>JanusGraph ignores a composite index until it is ENABLED. A {@code has(__claim)} query in
+     * that state full-scans the graph, which is what leaves HBase task claims pending. Graphs that
+     * do not have that index lifecycle answer {@code true} so the existing query remains the lookup.
+     */
+    default boolean isClaimIndexUsable() {
+        return true;
     }
 }

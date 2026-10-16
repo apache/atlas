@@ -42,6 +42,24 @@ public interface AtlasTypeDefStore {
      */
     void refreshFromStore() throws AtlasBaseException;
 
+    /**
+     * Loads one classification into this node's registry from its graph vertex.
+     * Used when a peer has just created the type and the category scan has not
+     * published it yet. Returns false when the store has no such classification.
+     */
+    default boolean installClassificationFromGraph(String name) throws AtlasBaseException {
+        return false;
+    }
+
+    /**
+     * Loads one business-metadata definition into this node's registry from its graph vertex.
+     * Used when a peer has just created the type and the category scan has not published it yet.
+     * Returns false when the store has no such business-metadata definition.
+     */
+    default boolean installBusinessMetadataFromGraph(String name) throws AtlasBaseException {
+        return false;
+    }
+
     /* EnumDef operations */
 
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;

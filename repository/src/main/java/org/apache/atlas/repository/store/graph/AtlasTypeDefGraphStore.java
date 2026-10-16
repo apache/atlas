@@ -1110,6 +1110,72 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         return ttr;
     }
 
+    protected boolean addClassificationDefFromPeer(AtlasClassificationDef classificationDef) throws AtlasBaseException {
+        if (classificationDef == null || StringUtils.isBlank(classificationDef.getName())) {
+            return false;
+        }
+
+        if (typeRegistry.getClassificationTypeByName(classificationDef.getName()) != null) {
+            return true;
+        }
+
+        AtlasTransientTypeRegistry ttr           = null;
+        boolean                    commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(typeUpdateLockMaxWaitTimeSeconds);
+
+            if (ttr.getClassificationTypeByName(classificationDef.getName()) != null) {
+                return true;
+            }
+
+            AtlasTypesDef toAdd = new AtlasTypesDef();
+
+            toAdd.getClassificationDefs().add(classificationDef);
+            rectifyTypeErrorsIfAny(toAdd);
+            ttr.addTypes(toAdd);
+
+            commitUpdates = true;
+
+            return true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+        }
+    }
+
+    protected boolean addBusinessMetadataDefFromPeer(AtlasBusinessMetadataDef businessMetadataDef) throws AtlasBaseException {
+        if (businessMetadataDef == null || StringUtils.isBlank(businessMetadataDef.getName())) {
+            return false;
+        }
+
+        if (typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName()) != null) {
+            return true;
+        }
+
+        AtlasTransientTypeRegistry ttr           = null;
+        boolean                    commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(typeUpdateLockMaxWaitTimeSeconds);
+
+            if (ttr.getBusinessMetadataTypeByName(businessMetadataDef.getName()) != null) {
+                return true;
+            }
+
+            AtlasTypesDef toAdd = new AtlasTypesDef();
+
+            toAdd.getBusinessMetadataDefs().add(businessMetadataDef);
+            rectifyTypeErrorsIfAny(toAdd);
+            ttr.addTypes(toAdd);
+
+            commitUpdates = true;
+
+            return true;
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+        }
+    }
+
     private void rectifyTypeErrorsIfAny(AtlasTypesDef typesDef) {
         final Set<String> entityNames = new HashSet<>();
 

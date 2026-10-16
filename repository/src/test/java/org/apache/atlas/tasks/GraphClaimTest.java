@@ -140,6 +140,7 @@ public class GraphClaimTest {
         AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
         AtlasVertex     peerHolder = mock(AtlasVertex.class);
 
+        when(graph.isClaimIndexUsable()).thenReturn(true);
         when(graph.query()).thenReturn(query);
         when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
         when(query.vertices()).thenReturn(Collections.singletonList(peerHolder));
@@ -199,6 +200,7 @@ public class GraphClaimTest {
         when(graph.getUniqueKeyHandler()).thenReturn(uniqueKeys);
         when(uniqueKeys.supportsUniqueKeyLookup()).thenReturn(true);
         when(uniqueKeys.findVertexIdByUniqueKey(Constants.CLAIM_KEY, CLAIM_NAME)).thenThrow(new IllegalStateException("lookup failed"));
+        when(graph.isClaimIndexUsable()).thenReturn(true);
         when(graph.query()).thenReturn(query);
         when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
         when(query.vertices()).thenReturn(Collections.singletonList(holder));
@@ -215,6 +217,7 @@ public class GraphClaimTest {
         AtlasVertex     holder = mock(AtlasVertex.class);
 
         when(graph.getUniqueKeyHandler()).thenReturn(null);
+        when(graph.isClaimIndexUsable()).thenReturn(true);
         when(graph.query()).thenReturn(query);
         when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
         when(query.vertices()).thenReturn(Collections.singletonList(holder));
@@ -224,12 +227,24 @@ public class GraphClaimTest {
     }
 
     @Test
+    public void holderOfDoesNotScanWhenTheClaimIndexIsNotUsable() {
+        AtlasGraph graph = mock(AtlasGraph.class);
+
+        when(graph.getUniqueKeyHandler()).thenReturn(null);
+        when(graph.isClaimIndexUsable()).thenReturn(false);
+
+        assertNull(GraphClaim.holderOf(graph, CLAIM_NAME));
+        verify(graph, never()).query();
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     public void releaseIfNoLiveHolderAndCommit_clearsExpiredLeaseMarker() {
         AtlasGraph      graph      = mock(AtlasGraph.class);
         AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
         AtlasVertex     staleHolder = mock(AtlasVertex.class);
 
+        when(graph.isClaimIndexUsable()).thenReturn(true);
         when(graph.query()).thenReturn(query);
         when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
         when(query.vertices()).thenReturn(Collections.singletonList(staleHolder));
@@ -255,6 +270,7 @@ public class GraphClaimTest {
         AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
         AtlasVertex     liveHolder = mock(AtlasVertex.class);
 
+        when(graph.isClaimIndexUsable()).thenReturn(true);
         when(graph.query()).thenReturn(query);
         when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
         when(query.vertices()).thenReturn(Collections.singletonList(liveHolder));

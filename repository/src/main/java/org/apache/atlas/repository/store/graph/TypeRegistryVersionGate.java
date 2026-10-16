@@ -18,9 +18,11 @@
 package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -86,6 +88,7 @@ public class TypeRegistryVersionGate {
                         storeVersion, lastSeenVersion);
 
                 typeDefStoreProvider.get().refreshFromStore();
+                expireMixedIndexSchema();
 
                 lastSeenVersion = storeVersion;
 
@@ -100,6 +103,54 @@ public class TypeRegistryVersionGate {
     }
 
     /**
+     * A typedef delta can add fields to a mixed index on another node. This node's cache of
+     * {@code vertex_index} stays stale until Janus delivers the schema-eviction log, which is
+     * later than the registry reload. Drop the cached index definitions so the next write reads
+     * the fields the peer stored.
+     */
+    private void expireMixedIndexSchema() {
+        graph.expireCachedSchemaElement(Constants.VERTEX_INDEX);
+        graph.expireCachedSchemaElement(Constants.EDGE_INDEX);
+        graph.expireCachedSchemaElement(Constants.FULLTEXT_INDEX);
+    }
+
+    /**
+     * Point-loads one classification a peer has already written, when the category scan used by
+     * {@link #forceRefresh()} has not published it. The typename index answers this without a scan.
+     */
+    public boolean installClassification(String name) {
+        if (StringUtils.isBlank(name)) {
+            return false;
+        }
+
+        try {
+            return typeDefStoreProvider.get().installClassificationFromGraph(name);
+        } catch (AtlasBaseException excp) {
+            LOG.warn("TypeRegistryVersionGate: could not load classification '{}' from the store", name, excp);
+
+            return false;
+        }
+    }
+
+    /**
+     * Point-loads one business-metadata definition a peer has already written, when the category
+     * scan used by {@link #forceRefresh()} has not published it.
+     */
+    public boolean installBusinessMetadata(String name) {
+        if (StringUtils.isBlank(name)) {
+            return false;
+        }
+
+        try {
+            return typeDefStoreProvider.get().installBusinessMetadataFromGraph(name);
+        } catch (AtlasBaseException excp) {
+            LOG.warn("TypeRegistryVersionGate: could not load business metadata '{}' from the store", name, excp);
+
+            return false;
+        }
+    }
+
+    /**
      * Reloads from the store even when the version watermark says this node is current.
      * Use only on the failure path where a type is already known to be missing — the
      * watermark can be stale if {@link #markSeen(long)} ran before the type landed, or
@@ -108,6 +159,7 @@ public class TypeRegistryVersionGate {
      * @return {@code true} when a reload ran, {@code false} when it failed
      */
     public boolean forceRefresh() {
+
         synchronized (this) {
             try {
                 LOG.info("TypeRegistryVersionGate: forcing typedef delta refresh (last-seen {})", lastSeenVersion);

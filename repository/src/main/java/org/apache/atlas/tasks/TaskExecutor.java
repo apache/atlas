@@ -107,6 +107,9 @@ public class TaskExecutor {
         // Wake-ups on task creation cover the common case, but a task can be left pending with
         // every worker idle — a peer died holding it, or it outlived the run that created it.
         this.pollService.scheduleWithFixedDelay(this::wakeUp, pollIntervalMs, pollIntervalMs, TimeUnit.MILLISECONDS);
+        // The runner lease is only a couple of minutes long.  Renew it on the same cadence as the
+        // poll so a task that outlasts that window keeps the slot, and a dead process does not.
+        this.pollService.scheduleWithFixedDelay(this::renewRunnerLease, pollIntervalMs, pollIntervalMs, TimeUnit.MILLISECONDS);
     }
 
     public void addAll(List<AtlasTask> tasks) {
@@ -153,6 +156,26 @@ public class TaskExecutor {
             executorService.shutdownNow();
 
             Thread.currentThread().interrupt();
+        }
+
+        // A task that finished releases the slot itself.  This covers a stop that never got that
+        // far: the process is going away, and the next server must not wait out the lease.
+        try {
+            registry.releaseRunnerLease();
+        } catch (Exception exception) {
+            LOG.warn("TaskExecutor: could not release the task-runner lease", exception);
+        }
+    }
+
+    /**
+     * Extends this node's runner lease while it still has a task in progress.  Scheduled on the
+     * poll thread, which keeps running when the task thread is inside a long propagation.
+     */
+    private void renewRunnerLease() {
+        try {
+            registry.renewRunnerLease();
+        } catch (Exception exception) {
+            LOG.debug("TaskExecutor: runner lease was not renewed", exception);
         }
     }
 

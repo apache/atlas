@@ -28,6 +28,7 @@ public class RdbmsUniqueKeyHandler {
     private static final String SQL_SELECT_UNIQUE_VERTEX_ID                    = "SELECT vertex_id FROM janus_unique_vertex_key WHERE key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_KEY                   = "DELETE FROM janus_unique_vertex_key WHERE key_name = ? AND val = ?";
     private static final String SQL_INSERT_UNIQUE_VERTEX_TYPE_KEY              = "INSERT INTO janus_unique_vertex_type_key (vertex_id, type_name, key_name, val) VALUES (?, ?, ?, ?)";
+    private static final String SQL_SELECT_UNIQUE_VERTEX_TYPE_ID               = "SELECT vertex_id FROM janus_unique_vertex_type_key WHERE type_name = ? AND key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY              = "DELETE FROM janus_unique_vertex_type_key WHERE type_name = ? AND key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_KEY_BY_VERTEX_ID      = "DELETE FROM janus_unique_vertex_key WHERE vertex_id = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY_BY_VERTEX_ID = "DELETE FROM janus_unique_vertex_type_key WHERE vertex_id = ?";
@@ -60,6 +61,32 @@ public class RdbmsUniqueKeyHandler {
         }
 
         return queryVertexId(trx.getEntityManager(), keyName, value);
+    }
+
+    /**
+     * Vertex id for ({@code typeName}, {@code keyName}, {@code value}) in
+     * {@code janus_unique_vertex_type_key}, or {@code null} when no row holds it.
+     * Hive qualifiedName uniqueness lives in this table, not {@code janus_unique_vertex_key}.
+     */
+    public Object findVertexIdByTypeUniqueKey(String typeName, String keyName, Object value) {
+        RdbmsTransaction trx = RdbmsTransaction.getActiveTransaction();
+
+        if (trx == null) {
+            return null;
+        }
+
+        List<?> rows = trx.getEntityManager().createNativeQuery(SQL_SELECT_UNIQUE_VERTEX_TYPE_ID)
+                .setParameter(1, typeName)
+                .setParameter(2, keyName)
+                .setParameter(3, getStringValue(value))
+                .setMaxResults(1)
+                .getResultList();
+
+        if (rows == null || rows.isEmpty()) {
+            return null;
+        }
+
+        return toVertexId(rows.get(0));
     }
 
     private Object queryVertexId(EntityManager em, String keyName, Object value) {

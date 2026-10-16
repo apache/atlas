@@ -45,6 +45,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.tasks.GraphClaimable;
@@ -181,6 +182,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private static final int            INDEX_INIT_RETRIES       = 3;
     private static final long           INDEX_INIT_RETRY_SLEEP_MS = 5000L;
     private static final long           INDEX_INIT_WAIT_POLL_MS   = 3000L;
+    private static final int             DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS = 30;
+    private static final long            DEFAULT_SCHEMA_VISIBILITY_WAIT_MS  = 500L;
+    private static volatile int          schemaVisibilityAttempts           = DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS;
+    private static volatile long         schemaVisibilityWaitMs             = DEFAULT_SCHEMA_VISIBILITY_WAIT_MS;
+    private static final int             ATLAS_DATA_PROBE_LIMIT             = 100;
+    private static final String          TYPEDEF_BOOTSTRAP_KEY_PREFIX       = TYPEDEF_BOOTSTRAP_FILE_KEY.substring(0, TYPEDEF_BOOTSTRAP_FILE_KEY.lastIndexOf('.') + 1);
     private static final List<Class<?>> INDEX_EXCLUSION_CLASSES  = new ArrayList<>(Arrays.asList(Boolean.class, BigDecimal.class, BigInteger.class));
     private static final Set<String>    GLOBAL_UNIQUE_INDEX_KEYS = new HashSet<>();
     private static final Set<String>    TYPE_UNIQUE_INDEX_KEYS   = new HashSet<>();
@@ -374,6 +381,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private void ensureBootstrapLookupIndexesUsable() {
         ensureLookupIndexUsable(TYPEDEF_BOOTSTRAP_FILE_KEY);
         ensureLookupIndexUsable(Constants.CLAIM_KEY);
+        ensureLookupIndexUsable(Constants.TASK_STATUS);
+        ensureLookupIndexUsable(Constants.TASK_GUID);
     }
 
     private void ensureLookupIndexUsable(String indexName) {
@@ -481,7 +490,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     // in REGISTERED state (e.g. built over a key that already had data) is ignored by
                     // the query planner, so bootstrap would fall back to full graph scans.
                     && management.isCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY)
-                    && management.isCompositeIndexEnabled(Constants.CLAIM_KEY);
+                    && management.isCompositeIndexEnabled(Constants.CLAIM_KEY)
+                    && management.isCompositeIndexEnabled(Constants.TASK_STATUS)
+                    && management.isCompositeIndexEnabled(Constants.TASK_GUID);
 
             management.setIsSuccess(true);
 
@@ -800,10 +811,76 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     /**
-     * Initializes the indices for the graph - create indices for Global AtlasVertex and AtlasEdge Keys
+     * Initializes the indices for the graph - create indices for Global AtlasVertex and AtlasEdge Keys.
+     * <p>
+     * A management transaction opened before JanusGraph has finished reading the stored schema sees
+     * no indexes. Committing that view creates a second, empty set of indexes, and every later lookup
+     * (patch registry included) follows the empty ones. When the index is already visible this returns
+     * immediately. When the graph has Atlas data and the index is not visible, startup stops instead of
+     * scanning every vertex. A graph holding only claim and typedef-bootstrap records is new: those are
+     * written before this runs, including on a store that was just emptied.
      */
     private void initialize(AtlasGraph graph) throws RepositoryException, IndexException {
-        try (AtlasGraphManagement management = graph.getManagementSystem()) {
+        for (int attempt = 1; attempt <= schemaVisibilityAttempts; attempt++) {
+            // Probe before opening management. A management transaction and a data
+            // transaction cannot be open together, and the probe has to commit first.
+            Boolean hasAtlasData = graphHasAtlasData(graph);
+
+            try (AtlasGraphManagement management = graph.getManagementSystem()) {
+                if (management.getGraphIndex(VERTEX_INDEX) != null) {
+                    initializeSchema(graph, management);
+
+                    return;
+                }
+
+                // One empty read is not a new graph. A second read has to agree before indexes are
+                // created, because creating them over a stored schema replaces it.
+                if (Boolean.FALSE.equals(hasAtlasData) && attempt > 1) {
+                    LOG.info("GraphBackedSearchIndexer: graph has no Atlas data and {} is absent. Creating indexes.", VERTEX_INDEX);
+
+                    initializeSchema(graph, management);
+
+                    return;
+                }
+
+                if (Boolean.FALSE.equals(hasAtlasData)) {
+                    LOG.info("GraphBackedSearchIndexer: no Atlas data and no {} yet (attempt {}/{}). Confirming this is a new graph before creating indexes.",
+                            VERTEX_INDEX, attempt, schemaVisibilityAttempts);
+                } else {
+                    LOG.warn("GraphBackedSearchIndexer: vertex index is not visible but the graph already has Atlas data (attempt {}/{}). Not creating indexes.",
+                            attempt, schemaVisibilityAttempts);
+                }
+            } catch (RepositoryException failure) {
+                throw failure;
+            } catch (Exception failure) {
+                throw new RepositoryException(failure);
+            }
+
+            if (attempt == schemaVisibilityAttempts) {
+                break;
+            }
+
+            if (!sleepQuietly(schemaVisibilityWaitMs)) {
+                throw new RepositoryException("Interrupted while waiting for the graph schema to become visible");
+            }
+        }
+
+        throw new RepositoryException("Graph schema is not visible on a graph that already has data. Refusing to start so existing indexes are not replaced and lookups do not scan the whole graph.");
+    }
+
+    /** Test hook. Production uses {@link #DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS} and a half-second wait. */
+    static void setSchemaVisibilityWindowForTests(int attempts, long waitMs) {
+        schemaVisibilityAttempts = attempts;
+        schemaVisibilityWaitMs   = waitMs;
+    }
+
+    static void resetSchemaVisibilityWindowForTests() {
+        schemaVisibilityAttempts = DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS;
+        schemaVisibilityWaitMs   = DEFAULT_SCHEMA_VISIBILITY_WAIT_MS;
+    }
+
+    private void initializeSchema(AtlasGraph graph, AtlasGraphManagement management) throws RepositoryException {
+        try {
             LOG.info("Creating indexes for graph.");
 
             uniqueKeyHandler = graph.getUniqueKeyHandler();
@@ -873,6 +950,59 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } finally {
             recomputeIndexedKeys = true;
         }
+    }
+
+    /**
+     * {@code true} when the store holds a vertex other than an Atlas claim or typedef-bootstrap record,
+     * {@code false} when the scan completed and found only those, and {@code null} when the scan itself
+     * failed. Claim and bootstrap records are written before indexes exist, so they are present on a
+     * new graph. A failed scan is not a new graph: creating indexes on that signal hides the stored schema.
+     */
+    private Boolean graphHasAtlasData(AtlasGraph graph) {
+        try {
+            int scanned = 0;
+
+            for (Object element : graph.query().vertices(ATLAS_DATA_PROBE_LIMIT)) {
+                scanned++;
+
+                if (!isCoordinationVertex((AtlasVertex<?, ?>) element)) {
+                    graph.commit();
+
+                    return true;
+                }
+            }
+
+            graph.commit();
+
+            // A full page of coordination records is not what a new graph looks like.
+            return scanned >= ATLAS_DATA_PROBE_LIMIT;
+        } catch (Exception exception) {
+            LOG.warn("GraphBackedSearchIndexer: could not tell whether the graph already has Atlas data; indexes will not be created", exception);
+
+            try {
+                graph.rollback();
+            } catch (Exception rollbackFailure) {
+                LOG.debug("GraphBackedSearchIndexer: rollback after the data probe failed", rollbackFailure);
+            }
+
+            return null;
+        }
+    }
+
+    static boolean isCoordinationVertex(AtlasVertex<?, ?> vertex) {
+        Collection<? extends String> keys = vertex.getPropertyKeys();
+
+        if (keys == null || keys.isEmpty()) {
+            return false;
+        }
+
+        for (String key : keys) {
+            if (!key.startsWith(Constants.CLAIM_KEY) && !key.startsWith(TYPEDEF_BOOTSTRAP_KEY_PREFIX)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

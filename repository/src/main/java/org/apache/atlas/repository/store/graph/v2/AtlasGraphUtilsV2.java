@@ -686,6 +686,10 @@ public class AtlasGraphUtilsV2 {
 
         AtlasVertex vertex = results.hasNext() ? results.next() : null;
 
+        if (vertex == null) {
+            vertex = findByTypeUniqueKeyTable(graph, typeName, Collections.singletonMap(propertyName, attrVal));
+        }
+
         RequestContext.get().endMetricRecord(metric);
 
         return vertex;
@@ -717,7 +721,83 @@ public class AtlasGraphUtilsV2 {
         Iterator<AtlasVertex> results = query.vertices().iterator();
         AtlasVertex           vertex  = results.hasNext() ? results.next() : null;
 
+        // Super-type queries store the concrete type in janus_unique_vertex_type_key, not the super type.
+        if (vertex == null && !isSuperType) {
+            vertex = findByTypeUniqueKeyTable(graph, typeName, attributeValues);
+        }
+
         RequestContext.get().endMetricRecord(metric);
+
+        return vertex;
+    }
+
+    /**
+     * The graph/mixed index can miss a vertex that Postgres already recorded in
+     * {@code janus_unique_vertex_type_key}. Creating another vertex then fails the unique insert.
+     * Resolve that row to its vertex so a replayed create updates the existing entity.
+     */
+    private static AtlasVertex findByTypeUniqueKeyTable(AtlasGraph graph, String typeName, Map<String, Object> attributeValues) {
+        if (graph == null || StringUtils.isEmpty(typeName) || MapUtils.isEmpty(attributeValues)) {
+            return null;
+        }
+
+        try {
+            graph.ensureTransaction();
+        } catch (Exception exception) {
+            LOG.debug("findByTypeUniqueKeyTable(): could not open a transaction for type {}", typeName, exception);
+
+            return null;
+        }
+
+        AtlasUniqueKeyHandler uniqueKeyHandler = graph.getUniqueKeyHandler();
+
+        if (uniqueKeyHandler == null || !uniqueKeyHandler.supportsUniqueKeyLookup()) {
+            return null;
+        }
+
+        Object vertexId = null;
+
+        for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+
+            Object found;
+
+            try {
+                found = uniqueKeyHandler.findVertexIdByTypeUniqueKey(typeName, entry.getKey(), entry.getValue());
+            } catch (Exception exception) {
+                LOG.debug("findByTypeUniqueKeyTable(): lookup failed for type {}", typeName, exception);
+
+                return null;
+            }
+
+            if (found == null) {
+                continue;
+            }
+
+            if (vertexId == null) {
+                vertexId = found;
+            } else if (!String.valueOf(vertexId).equals(String.valueOf(found))) {
+                LOG.warn("findByTypeUniqueKeyTable(): type {} unique keys point at vertices {} and {}", typeName, vertexId, found);
+
+                return null;
+            }
+        }
+
+        if (vertexId == null) {
+            return null;
+        }
+
+        AtlasVertex vertex = graph.getVertex(String.valueOf(vertexId));
+
+        if (vertex == null) {
+            LOG.warn("findByTypeUniqueKeyTable(): type {} unique-key row points at missing vertex {}", typeName, vertexId);
+
+            return null;
+        }
+
+        LOG.info("findByTypeUniqueKeyTable(): graph index missed type {}; using vertex {} from janus_unique_vertex_type_key", typeName, vertexId);
 
         return vertex;
     }

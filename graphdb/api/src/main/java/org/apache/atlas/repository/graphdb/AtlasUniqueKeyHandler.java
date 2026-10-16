@@ -51,4 +51,13 @@ public abstract class AtlasUniqueKeyHandler {
     public Object findVertexIdByUniqueKey(String keyName, Object value) {
         return null;
     }
+
+    /**
+     * Vertex id that holds the per-type unique key ({@code typeName}, {@code keyName}, {@code value})
+     * in {@code janus_unique_vertex_type_key}, or {@code null} if this backend has no such row.
+     * {@code null} means "no row" only when {@link #supportsUniqueKeyLookup()} is {@code true}.
+     */
+    public Object findVertexIdByTypeUniqueKey(String typeName, String keyName, Object value) {
+        return null;
+    }
 }

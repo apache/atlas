@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -26,6 +27,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.mockito.Mockito;
+import org.testng.SkipException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
@@ -284,6 +286,131 @@ public class TaskRegistryTest {
     }
 
     /**
+     * The runner slot used to be leased for the hour-long stale threshold.  A server stopped
+     * while it held the slot then blocked every later task until that hour ended.
+     */
+    @Test
+    public void claimNextPendingTask_leasesTheRunnerSlotForAShortWindow() throws AtlasBaseException {
+        clearAllTasks();
+
+        AtlasTask task = new AtlasTask("short-lease", "test", Collections.emptyMap());
+
+        registry.save(task);
+        graph.commit();
+
+        long before = System.currentTimeMillis();
+
+        assertNotNull(registry.claimNextPendingTask());
+        graph.commit();
+
+        long   staleMs   = AtlasConfiguration.TASK_CLAIM_STALE_THRESHOLD_MS.getLong();
+        long   pollMs    = AtlasConfiguration.TASKS_POLL_INTERVAL_MS.getLong();
+        long   leaseMs   = Math.min(staleMs, Math.max(TaskRegistry.RUNNER_LEASE_MS, pollMs * 3L));
+        Long   expiresAt = GraphClaim.expiryOf(findRunnerSlot());
+
+        assertNotNull(expiresAt, "Taking the runner slot must record when the lease lapses");
+        assertTrue(expiresAt - before <= leaseMs + 5_000L,
+                "The runner lease must lapse with the short window, not stay taken for the whole stale threshold");
+
+        if (staleMs > leaseMs) {
+            assertTrue(expiresAt - before < staleMs,
+                    "A stopped server must not keep the runner slot until the stale-task threshold");
+        }
+
+        registry.deleteByGuid(task.getGuid());
+        graph.commit();
+    }
+
+    /**
+     * A live lease means the owner is still running the task.  Recovery must not hand that task
+     * to someone else just because this registry's stale threshold has not been reached.
+     */
+    @Test
+    public void recoverStaleInProgressTasks_leavesTaskWhileRunnerLeaseIsLive() throws AtlasBaseException {
+        clearAllTasks();
+
+        AtlasTask task = new AtlasTask("live-runner", "test", Collections.emptyMap());
+
+        registry.save(task);
+        graph.commit();
+
+        assertNotNull(registry.claimNextPendingTask());
+        graph.commit();
+
+        if (GraphClaim.holderOf(graph, Constants.CLAIM_TASK_RUNNER) == null) {
+            throw new SkipException("The runner lease is not visible through holderOf in this graph, so a live holder cannot be distinguished from a lapsed one");
+        }
+
+        new TaskRegistry(graph, Long.MAX_VALUE).recoverStaleInProgressTasks();
+        graph.commit();
+
+        assertEquals(registry.getById(task.getGuid()).getStatus(), AtlasTask.Status.IN_PROGRESS,
+                "A task whose runner lease is still live must stay with the server that claimed it");
+        assertNull(registry.claimNextPendingTask(), "A second node must not be handed a task a live runner is already executing");
+        graph.commit();
+
+        registry.deleteByGuid(task.getGuid());
+        graph.commit();
+    }
+
+    /**
+     * Stopping the server releases the slot, or the short lease lapses, while the task it had
+     * claimed is still well inside the stale threshold.  That task has to become pending again
+     * immediately, which is what lets the next server run it.
+     */
+    @Test
+    public void recoverStaleInProgressTasks_returnsTaskWhenRunnerLeaseHasLapsed() throws AtlasBaseException {
+        clearAllTasks();
+
+        AtlasTask task = new AtlasTask("dead-runner", "test", Collections.emptyMap());
+
+        registry.save(task);
+        graph.commit();
+
+        assertNotNull(registry.claimNextPendingTask());
+        graph.commit();
+
+        registry.releaseRunnerLease();
+        dropRunnerSlot();
+        graph.commit();
+
+        new TaskRegistry(graph, Long.MAX_VALUE).recoverStaleInProgressTasks();
+        graph.commit();
+
+        assertEquals(registry.getById(task.getGuid()).getStatus(), AtlasTask.Status.PENDING,
+                "A task left in progress by a server that no longer holds the runner slot must be pending again");
+
+        AtlasTask reclaimed = registry.claimNextPendingTask();
+
+        assertNotNull(reclaimed, "Once the runner slot is free the abandoned task must be claimable");
+        assertEquals(reclaimed.getGuid(), task.getGuid());
+
+        registry.deleteByGuid(task.getGuid());
+        graph.commit();
+    }
+
+    /**
+     * Renewal is how a live server keeps a short lease.  It must not be a way for an idle server
+     * to take a slot a peer still holds.
+     */
+    @Test
+    public void renewRunnerLease_doesNotTakeALeaseHeldByAnotherNode() throws AtlasBaseException {
+        clearAllTasks();
+
+        assertTrue(GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_TASK_RUNNER, "another-node", 60_000L),
+                "The peer should be able to take a free slot");
+
+        registry.renewRunnerLease();
+        graph.commit();
+
+        assertEquals(GraphClaim.claimedBy(findRunnerSlot()), "another-node",
+                "Renewing must leave a peer's runner lease untouched");
+
+        dropRunnerSlot();
+        graph.commit();
+    }
+
+    /**
      * The status field alone cannot serialise anything - two nodes can both read PENDING and both
      * write IN_PROGRESS.  The claim marker is what the store refuses to write twice, so a claim
      * that does not take it is not actually exclusive.
@@ -536,12 +663,39 @@ public class TaskRegistryTest {
 
         // A test that leaves a task mid-flight also leaves the cluster-wide runner slot taken, and the
         // next test's claim would then fail for a reason that has nothing to do with what it checks.
+        // holderOf hides the slot when the claim index is not enabled, which is this test graph, so
+        // look the vertex up directly and drop it.
+        dropRunnerSlot();
+
+        graph.commit();
+    }
+
+    /**
+     * The runner vertex.  {@link GraphClaim#holderOf} declines to scan while the claim index is
+     * still being built, and this test graph never enables it, so the scan is the read that works.
+     */
+    private AtlasVertex findRunnerSlot() {
         AtlasVertex slot = GraphClaim.holderOf(graph, Constants.CLAIM_TASK_RUNNER);
 
         if (slot != null) {
-            GraphClaim.releaseLease(graph, Constants.CLAIM_TASK_RUNNER, GraphClaim.claimedBy(slot));
+            return slot;
         }
 
-        graph.commit();
+        for (AtlasVertex vertex : (Iterable<AtlasVertex>) graph.query().has(Constants.CLAIM_KEY, Constants.CLAIM_TASK_RUNNER).vertices()) {
+            return vertex;
+        }
+
+        return null;
+    }
+
+    private void dropRunnerSlot() {
+        AtlasVertex slot = findRunnerSlot();
+
+        if (slot == null) {
+            return;
+        }
+
+        GraphClaim.releaseClaim(slot);
+        graph.removeVertex(slot);
     }
 }

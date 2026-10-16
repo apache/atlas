@@ -147,6 +147,17 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     /**
+     * Bind {@code _ALL_ENTITY_TYPES} to the registry readers should search.
+     * A transient update copy must not stay bound after the lock is released:
+     * its business-metadata attributes are unresolved when the lock commits nothing.
+     */
+    static void usePublishedTypeRegistry(AtlasTypeRegistry typeRegistry) {
+        if (typeRegistry != null && ENTITY_ROOT instanceof AtlasRootEntityType) {
+            ((AtlasRootEntityType) ENTITY_ROOT).typeRegistry = typeRegistry;
+        }
+    }
+
+    /**
      * Takes a set of entityType names and a registry and returns a set of the entitytype names and the names of all their subTypes.
      *
      * @param entityTypes

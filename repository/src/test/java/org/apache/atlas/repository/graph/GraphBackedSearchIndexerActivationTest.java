@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.graph;
 
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.repository.Constants;
@@ -24,7 +25,9 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.configuration2.Configuration;
@@ -33,8 +36,14 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -115,6 +124,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(management.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(management.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(management.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
+        when(management.isCompositeIndexEnabled(Constants.TASK_STATUS)).thenReturn(true);
+        when(management.isCompositeIndexEnabled(Constants.TASK_GUID)).thenReturn(true);
         when(management.getPropertyKey(anyString())).thenReturn(propertyKey);
         when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
@@ -175,6 +186,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(waitManagementThird.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(waitManagementThird.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(waitManagementThird.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
+        when(waitManagementThird.isCompositeIndexEnabled(Constants.TASK_STATUS)).thenReturn(true);
+        when(waitManagementThird.isCompositeIndexEnabled(Constants.TASK_GUID)).thenReturn(true);
 
         GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
 
@@ -220,6 +233,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(waitManagement.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(waitManagement.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(waitManagement.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
+        when(waitManagement.isCompositeIndexEnabled(Constants.TASK_STATUS)).thenReturn(true);
+        when(waitManagement.isCompositeIndexEnabled(Constants.TASK_GUID)).thenReturn(true);
         when(waitManagement.getPropertyKey(anyString())).thenReturn(propertyKey);
         when(waitManagement.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
@@ -272,6 +287,8 @@ public class GraphBackedSearchIndexerActivationTest {
         when(management.getGraphIndex(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(graphIndex);
         when(management.isCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY)).thenReturn(true);
         when(management.isCompositeIndexEnabled(Constants.CLAIM_KEY)).thenReturn(true);
+        when(management.isCompositeIndexEnabled(Constants.TASK_STATUS)).thenReturn(true);
+        when(management.isCompositeIndexEnabled(Constants.TASK_GUID)).thenReturn(true);
         when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
 
         // the peer has not created __typeName yet when this node first looks
@@ -397,7 +414,116 @@ public class GraphBackedSearchIndexerActivationTest {
 
             verify(management, times(1)).ensureCompositeIndexEnabled(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY);
             verify(management, times(1)).ensureCompositeIndexEnabled(Constants.CLAIM_KEY);
+            verify(management, times(1)).ensureCompositeIndexEnabled(Constants.TASK_STATUS);
+            verify(management, times(1)).ensureCompositeIndexEnabled(Constants.TASK_GUID);
         }
+    }
+
+    @Test
+    public void instanceIsActive_doesNotCreateIndexesWhenSchemaIsHiddenOnAGraphWithData() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphQuery query = Mockito.mock(AtlasGraphQuery.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(graph.query()).thenReturn(query);
+        List<AtlasVertex> vertices = Arrays.asList(claimVertex(), vertexWithKeys("__guid", "__typeName"));
+
+        when(query.vertices(anyInt())).thenReturn(vertices);
+        when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(null);
+        when(management.ensureCompositeIndexEnabled(anyString())).thenReturn(true);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+
+        GraphBackedSearchIndexer.setSchemaVisibilityWindowForTests(2, 0L);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class);
+                MockedConstruction<IndexRecoveryService.RecoveryInfoManagement> claimManagerConstruction =
+                        Mockito.mockConstruction(IndexRecoveryService.RecoveryInfoManagement.class, (mock, context) ->
+                                when(mock.tryClaimOwnership(anyString(), anyLong())).thenReturn(true))) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+
+            org.testng.Assert.expectThrows(AtlasException.class, indexer::instanceIsActive);
+
+            org.testng.Assert.assertEquals(claimManagerConstruction.constructed().size(), 1);
+        } finally {
+            GraphBackedSearchIndexer.resetSchemaVisibilityWindowForTests();
+        }
+
+        verify(management, never()).createVertexMixedIndex(anyString(), anyString(), anyList());
+        verify(management, never()).setIsSuccess(true);
+    }
+
+    @Test
+    public void instanceIsActive_createsIndexesWhenTheGraphHoldsOnlyClaimAndBootstrapRecords() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphQuery query = Mockito.mock(AtlasGraphQuery.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(graph.query()).thenReturn(query);
+        List<AtlasVertex> vertices = Arrays.asList(claimVertex(),
+                vertexWithKeys(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY, Constants.TYPEDEF_BOOTSTRAP_STATE_KEY), claimVertex());
+
+        when(query.vertices(anyInt())).thenReturn(vertices);
+        AtlasPropertyKey propertyKey = Mockito.mock(AtlasPropertyKey.class);
+
+        when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(null);
+        when(management.getPropertyKey(anyString())).thenReturn(propertyKey);
+        when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
+        when(management.ensureCompositeIndexEnabled(anyString())).thenReturn(true);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+
+        GraphBackedSearchIndexer.setSchemaVisibilityWindowForTests(5, 0L);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class);
+                MockedConstruction<IndexRecoveryService.RecoveryInfoManagement> claimManagerConstruction =
+                        Mockito.mockConstruction(IndexRecoveryService.RecoveryInfoManagement.class, (mock, context) ->
+                                when(mock.tryClaimOwnership(anyString(), anyLong())).thenReturn(true))) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+
+            indexer.instanceIsActive();
+        } finally {
+            GraphBackedSearchIndexer.resetSchemaVisibilityWindowForTests();
+        }
+
+        verify(management, times(1)).createVertexMixedIndex(eq(Constants.VERTEX_INDEX), anyString(), anyList());
+        verify(management, atLeast(1)).setIsSuccess(true);
+    }
+
+    @Test
+    public void isCoordinationVertex_onlyForClaimAndBootstrapRecords() {
+        org.testng.Assert.assertTrue(GraphBackedSearchIndexer.isCoordinationVertex(claimVertex()));
+        org.testng.Assert.assertTrue(GraphBackedSearchIndexer.isCoordinationVertex(
+                vertexWithKeys(Constants.TYPEDEF_BOOTSTRAP_FILE_KEY, Constants.TYPEDEF_BOOTSTRAP_APPLIED_AT_KEY)));
+        org.testng.Assert.assertFalse(GraphBackedSearchIndexer.isCoordinationVertex(vertexWithKeys(Constants.CLAIM_KEY, "__guid")));
+        org.testng.Assert.assertFalse(GraphBackedSearchIndexer.isCoordinationVertex(vertexWithKeys("__typeName")));
+        org.testng.Assert.assertFalse(GraphBackedSearchIndexer.isCoordinationVertex(vertexWithKeys()));
+    }
+
+    private static AtlasVertex claimVertex() {
+        return vertexWithKeys("__claim_v_type", Constants.CLAIM_KEY, Constants.CLAIM_OWNER_KEY, Constants.CLAIM_TIME_KEY, "__claimExpiry");
+    }
+
+    private static AtlasVertex vertexWithKeys(String... keys) {
+        AtlasVertex vertex = Mockito.mock(AtlasVertex.class);
+
+        Mockito.doReturn(new HashSet<>(Arrays.asList(keys))).when(vertex).getPropertyKeys();
+
+        return vertex;
     }
 
     private static class FakePermanentLockingException extends RuntimeException {

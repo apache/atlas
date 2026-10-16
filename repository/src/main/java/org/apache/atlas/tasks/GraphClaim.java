@@ -209,9 +209,22 @@ public final class GraphClaim {
             LOG.debug("GraphClaim: unique-key lookup for '{}' failed; falling back to graph query", claimName, exception);
         }
 
+        // Index-init and typedef bootstrap run before __claim is ENABLED, and the graph they touch
+        // is only the claim vertex itself. Every later claim (task runner, audit aging, purge) must
+        // not full-scan while the composite index is still ignored by the query planner.
+        if (!isBootstrapClaim(claimName) && !graph.isClaimIndexUsable()) {
+            LOG.debug("GraphClaim: __claim index is not ENABLED; not scanning for '{}'", claimName);
+
+            return null;
+        }
+
         Iterator<AtlasVertex> holders = graph.query().has(Constants.CLAIM_KEY, claimName).vertices().iterator();
 
         return holders.hasNext() ? holders.next() : null;
+    }
+
+    private static boolean isBootstrapClaim(String claimName) {
+        return Constants.CLAIM_INDEX.equals(claimName) || Constants.CLAIM_TYPEDEF_BOOTSTRAP.equals(claimName);
     }
 
     private static AtlasVertex vertexFromUniqueKey(AtlasGraph graph, AtlasUniqueKeyHandler uniqueKeyHandler, String claimName) {
@@ -291,6 +304,27 @@ public final class GraphClaim {
 
             return false;
         }
+    }
+
+    /**
+     * Extends a lease this node already holds.  Unlike {@link #claimLease} this never creates a
+     * claim and never takes one over after it lapses: a heartbeat that did either would sit on the
+     * slot without a task to run, and every other node would keep waiting.
+     *
+     * @return {@code true} when this node held the lease and its window was extended
+     */
+    public static boolean renewLeaseIfHeld(AtlasGraph graph, String claimName, String ownerId, long leaseMillis) {
+        AtlasVertex holder = holderOf(graph, claimName);
+
+        if (holder == null || !StringUtils.equals(ownerId, claimedBy(holder))) {
+            return false;
+        }
+
+        setLeaseWindow(holder, System.currentTimeMillis(), leaseMillis);
+
+        LOG.debug("GraphClaim: renewed lease on '{}' for node={}", claimName, ownerId);
+
+        return true;
     }
 
     /**

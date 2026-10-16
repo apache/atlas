@@ -140,6 +140,31 @@ public class GraphTransactionInterceptorTest {
         verify(graph, times(1)).commit();
     }
 
+    /**
+     * The peer registered the classification attribute on vertex_index, but this node's cached
+     * index type does not list it yet. The commit must be repeated after that cache entry is dropped.
+     */
+    @Test
+    public void invoke_retriesWhenMixedIndexFieldIsNotCachedYet() throws Throwable {
+        AtlasGraph                  graph          = Mockito.mock(AtlasGraph.class);
+        TaskManagement              taskManagement = Mockito.mock(TaskManagement.class);
+        GraphTransactionInterceptor interceptor    = new GraphTransactionInterceptor(graph, taskManagement);
+        MethodInvocation            invocation     = Mockito.mock(MethodInvocation.class);
+        Method                      method         = TestTxnTarget.class.getMethod("execute");
+
+        when(invocation.getMethod()).thenReturn(method);
+        when(invocation.proceed())
+                .thenThrow(new RuntimeException(new SchemaViolationException(
+                        "tag_nDSay.at4 is not available in mixed index vertex_index")))
+                .thenReturn("ok");
+
+        assertEquals(interceptor.invoke(invocation), "ok");
+        verify(invocation, times(2)).proceed();
+        verify(graph).expireCachedSchemaElement("tag_nDSay.at4");
+        verify(graph).expireCachedSchemaElement("vertex_index");
+        verify(graph, times(1)).commit();
+    }
+
     /** A duplicate of anything else is not a race, and repeating it would only fail again. */
     @Test
     public void invoke_doesNotRetryARealDuplicate() throws Throwable {

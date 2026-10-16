@@ -1223,4 +1223,33 @@ public class TestAtlasTypeRegistry {
         assertTrue(finished, "writer did not complete - it was starved by continuous reloads");
         assertTrue(writerAcquired.get(), "writer failed to acquire the type-registry update lock");
     }
+
+    @Test
+    public void testAllEntityTypesKeepsBusinessAttributeAfterNoOpRefresh() throws AtlasBaseException {
+        AtlasTypeRegistry registry = new AtlasTypeRegistry();
+        AtlasAttributeDef attr     = new AtlasAttributeDef("attr1", AtlasBaseTypeDef.ATLAS_TYPE_INT);
+        AtlasBusinessMetadataDef bm = new AtlasBusinessMetadataDef("bm_fdoap", "bm", "1.0", Collections.singletonList(attr));
+
+        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        ttr.addType(bm);
+        registry.releaseTypeRegistryForUpdate(ttr, true);
+
+        assertNotNull(AtlasEntityType.getEntityRoot().getAttribute("bm_fdoap.attr1"));
+
+        ttr = registry.lockTypeRegistryForUpdate();
+        registry.releaseTypeRegistryForUpdate(ttr, false);
+
+        assertNotNull(registry.getBusinessMetadataTypeByName("bm_fdoap"));
+        assertNotNull(AtlasEntityType.getEntityRoot().getAttribute("bm_fdoap.attr1"));
+
+        AtlasBusinessMetadataDef later = new AtlasBusinessMetadataDef("bm_later", "bm", "1.0",
+                Collections.singletonList(new AtlasAttributeDef("attr2", AtlasBaseTypeDef.ATLAS_TYPE_INT)));
+
+        ttr = registry.lockTypeRegistryForUpdate();
+        ttr.addType(later);
+        registry.releaseTypeRegistryForUpdate(ttr, true);
+
+        assertNotNull(AtlasEntityType.getEntityRoot().getAttribute("bm_fdoap.attr1"));
+        assertNotNull(AtlasEntityType.getEntityRoot().getAttribute("bm_later.attr2"));
+    }
 }

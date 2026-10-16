@@ -1615,6 +1615,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(newClassification);
 
+            if (classificationType == null && typeRegistryVersionGate != null && typeRegistryVersionGate.forceRefresh()) {
+                classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+            }
+
+            if (classificationType == null && typeRegistryVersionGate != null
+                    && typeRegistryVersionGate.installClassification(newClassification)) {
+                classificationType = typeRegistry.getClassificationTypeByName(newClassification);
+            }
+
             if (classificationType == null) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, newClassification);
             }
