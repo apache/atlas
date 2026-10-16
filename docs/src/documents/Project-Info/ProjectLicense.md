@@ -271,3 +271,13 @@ MIT License.  For details, see 3party-licenses/jQuery-QueryBuilder-LICENSE
 
 This product bundles backgrid-columnmanager 0.2.4, which is available under
 MIT License.  For details, see 3party-licenses/backgrid-columnmanager-LICENSE
+
+This product bundles Bootstrap 3.4.1, which is available under
+MIT License.  For details, see 3party-licenses/bootstrap-LICENSE
+
+This product bundles jQuery 1.12.2, which is available under
+MIT License.  For details, see 3party-licenses/jquery-LICENSE
+
+This product bundles Google Code Prettify, which is available under
+Apache License.  For details, see 3party-licenses/google-code-prettify-LICENSE
+
