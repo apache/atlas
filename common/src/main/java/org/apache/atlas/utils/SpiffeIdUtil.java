@@ -59,13 +59,37 @@ public final class SpiffeIdUtil {
     }
 
     /**
-     * Parses a configured, comma-separated list of SPIFFE header names into an ordered list of
-     * trimmed, non-empty names. Supports a single header name as a list of length one.
+     * Parses SPIFFE header names from {@link org.apache.commons.configuration2.Configuration#getStringArray(String)}.
+     * Atlas {@link org.apache.atlas.ApplicationProperties} uses a comma list delimiter, so a property such as
+     * {@code x-source, x-upstream} must be read with {@code getStringArray}; {@code getString} returns only the
+     * first element.
      *
-     * @param configValue the raw config value (e.g. {@code x-awc-source-workload-id})
-     * @return an ordered, immutable list of header names; empty when the input is blank
+     * @param configValues values from configuration (may be {@code null} or empty)
+     * @return an ordered, immutable list of trimmed, non-empty header names
+     */
+    public static List<String> parseHeaderNames(String[] configValues) {
+        if (configValues == null || configValues.length == 0) {
+            return Collections.emptyList();
+        }
+
+        List<String> ret = new ArrayList<>();
+
+        for (String configValue : configValues) {
+            ret.addAll(parseHeaderNamesFromSingleConfigValue(configValue));
+        }
+
+        return Collections.unmodifiableList(ret);
+    }
+
+    /**
+     * Parses one configuration entry that may itself contain comma-separated header names (for tests and
+     * programmatic use). Prefer {@link #parseHeaderNames(String[])} with {@code getStringArray} at runtime.
      */
     public static List<String> parseHeaderNames(String configValue) {
+        return parseHeaderNamesFromSingleConfigValue(configValue);
+    }
+
+    private static List<String> parseHeaderNamesFromSingleConfigValue(String configValue) {
         if (StringUtils.isBlank(configValue)) {
             return Collections.emptyList();
         }

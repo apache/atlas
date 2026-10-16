@@ -83,12 +83,22 @@ public class SpiffeIdUtilTest {
 
     @Test
     public void parseHeaderNames_handlesSingleAndMultiple() {
-        assertTrue(SpiffeIdUtil.parseHeaderNames(null).isEmpty());
+        assertTrue(SpiffeIdUtil.parseHeaderNames((String) null).isEmpty());
         assertTrue(SpiffeIdUtil.parseHeaderNames("   ").isEmpty());
         assertEquals(SpiffeIdUtil.parseHeaderNames("x-awc-source-workload-id"),
                 Collections.singletonList("x-awc-source-workload-id"));
 
         List<String> names = SpiffeIdUtil.parseHeaderNames(" x-source , x-upstream ,");
+
+        assertEquals(names, Arrays.asList("x-source", "x-upstream"));
+    }
+
+    @Test
+    public void parseHeaderNames_fromStringArray_matchesGetStringArraySemantics() {
+        assertTrue(SpiffeIdUtil.parseHeaderNames((String[]) null).isEmpty());
+        assertTrue(SpiffeIdUtil.parseHeaderNames(new String[0]).isEmpty());
+
+        List<String> names = SpiffeIdUtil.parseHeaderNames(new String[] {"x-source", "x-upstream"});
 
         assertEquals(names, Arrays.asList("x-source", "x-upstream"));
     }

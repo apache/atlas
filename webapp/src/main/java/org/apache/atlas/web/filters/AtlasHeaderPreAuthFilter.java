@@ -89,7 +89,7 @@ public class AtlasHeaderPreAuthFilter implements Filter {
         headerAuthEnabled  = configuration.getBoolean(PROP_HEADER_AUTH_ENABLED, false);
         userNameHeaderName = StringUtils.trimToNull(configuration.getString(PROP_USERNAME_HEADER, ""));
         rolesHeaderName    = StringUtils.trimToNull(configuration.getString(PROP_ROLES_HEADER, ""));
-        spiffeHeaderNames  = SpiffeIdUtil.parseHeaderNames(configuration.getString(PROP_SPIFFE_HEADER, ""));
+        spiffeHeaderNames  = SpiffeIdUtil.parseHeaderNames(configuration.getStringArray(PROP_SPIFFE_HEADER));
 
         if (headerAuthEnabled && userNameHeaderName == null && spiffeHeaderNames.isEmpty()) {
             LOG.warn("Disabling header-based authentication, as neither {} nor {} is set",
