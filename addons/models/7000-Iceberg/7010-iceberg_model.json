@@ -53,7 +53,7 @@
       "serviceType":   "iceberg",
       "typeVersion":   "1.0",
       "attributeDefs": [
-        { "name": "clusterName",         "typeName": "string",               "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
+        { "name": "clusterName",         "typeName": "string",               "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true, "searchWeight": 9 },
         { "name": "realmId",             "typeName": "string",               "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "catalogType",         "typeName": "iceberg_catalog_type", "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
         { "name": "storageType",         "typeName": "string",               "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
@@ -71,7 +71,7 @@
         { "name": "clusterName", "typeName": "string",             "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "realmId",     "typeName": "string",             "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "levels",      "typeName": "array<string>",      "cardinality": "SINGLE", "isIndexable": false, "isOptional": false, "isUnique": false },
-        { "name": "location",    "typeName": "string",             "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+        { "name": "location",    "typeName": "string",             "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false, "searchWeight": 5 },
         { "name": "properties",  "typeName": "map<string,string>", "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false }
       ]
     },
@@ -81,14 +81,15 @@
       "superTypes":    [ "DataSet" ],
       "serviceType":   "iceberg",
       "typeVersion":   "1.0",
+      "options":       { "schemaElementsAttribute": "columns" },
       "attributeDefs": [
         { "name": "clusterName",           "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "realmId",               "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "tableType",             "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "tableUuid",             "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false, "includeInNotification": true },
         { "name": "formatVersion",         "typeName": "iceberg_table_format_version", "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
-        { "name": "location",              "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
-        { "name": "metadataLocation",      "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+        { "name": "location",              "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false, "searchWeight": 5 },
+        { "name": "metadataLocation",      "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false, "searchWeight": 5 },
         { "name": "currentSnapshotId",     "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
         { "name": "currentSequenceNumber", "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "snapshotTimestampMs",   "typeName": "date",                         "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
@@ -101,7 +102,7 @@
         { "name": "schemaId",              "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "partitionSpec",         "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "sortOrder",             "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
-        { "name": "viewDefinition",        "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+        { "name": "viewDefinition",        "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false, "searchWeight": 9 },
         { "name": "viewDialect",           "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
         { "name": "viewDefaultCatalog",    "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "viewDefaultNamespace",  "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
@@ -115,12 +116,13 @@
       "superTypes":    [ "DataSet" ],
       "serviceType":   "iceberg",
       "typeVersion":   "1.0",
+      "options":       { "schemaAttributes": "[\"name\", \"type\", \"fieldId\", \"required\", \"position\", \"doc\"]" },
       "attributeDefs": [
         { "name": "fieldId",  "typeName": "int",     "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "type",     "typeName": "string",  "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "required", "typeName": "boolean", "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "position", "typeName": "int",     "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
-        { "name": "doc",      "typeName": "string",  "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+        { "name": "doc",      "typeName": "string",  "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false, "searchWeight": 9 },
         { "name": "isNested", "typeName": "boolean", "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false }
       ]
     },
