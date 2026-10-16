@@ -57,7 +57,8 @@ jest.mock('../SideBarTree.tsx', () => {
 })
 
 jest.mock('@utils/Utils.ts', () => ({
-	customSortBy: jest.fn((arr) => arr.sort((a: any, b: any) => a.label.localeCompare(b.label)))
+	customSortBy: jest.fn((arr) => arr.sort((a: any, b: any) => a.label.localeCompare(b.label))),
+	isEmpty: jest.fn((val) => !val || (Array.isArray(val) && val.length === 0))
 }))
 
 describe('RelationshipsTree', () => {
@@ -144,10 +145,21 @@ describe('RelationshipsTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchRelationshipsData on mount', () => {
+		it('should dispatch fetchRelationshipsData on mount if data is empty', () => {
 			renderComponent()
 
 			expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchRelationshipsData' })
+		})
+
+		it('should not dispatch fetchRelationshipsData on mount if data exists', () => {
+			renderComponent({}, {
+				relationships: {
+					relationships: { relationshipDefs: [{ name: 'test' }] },
+					loading: false
+				}
+			})
+
+			expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchRelationshipsData' })
 		})
 
 		it('should call refreshData when refresh button is clicked', async () => {

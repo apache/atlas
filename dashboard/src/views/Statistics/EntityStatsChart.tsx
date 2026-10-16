@@ -28,6 +28,17 @@ import {
 } from "recharts";
 import GraphCustomTooltip from "./StatsGraphs/GraphCustomTooltip";
 
+// Workaround: Recharts in the current version does not export LegendPayload.
+// This type is manually defined here to fix a TS2305 error and should be 
+// refactored to use the exported type once Recharts is upgraded.
+type LegendPayload = {
+	id?: string;
+	value?: string;
+	type?: string;
+	color?: string;
+	inactive?: boolean;
+};
+
 type ChartDataPoint = {
 	timestamp: number;
 	Active: number;
@@ -87,21 +98,24 @@ const EntityStatsChart = ({
 					cursor={{ stroke: "rgba(0, 0, 0, 0.1)", strokeWidth: 2 }}
 				/>
 				<Legend
-					onClick={(e) => {
-						if (e && e.id) {
-							onLegendClick(String(e.id));
+					onClick={(e: LegendPayload) => {
+						const key = e?.value || e?.id;
+						if (key) {
+							onLegendClick(key);
 						}
 					}}
-					payload={Object.keys(activeKeys).map((key) => ({
-						id: key,
-						type: "square",
-						value: key,
-						color:
-							activeKeys[key as keyof ActiveKeys] === true
-								? getColorForKey(key)
-								: "#d3d3d3",
-						inactive: !activeKeys[key as keyof ActiveKeys],
-					}))}
+					{...({
+						payload: Object.keys(activeKeys).map((key): LegendPayload => ({
+							id: key,
+							value: key,
+							type: "square",
+							color:
+								activeKeys[key as keyof ActiveKeys] === true
+									? getColorForKey(key)
+									: "#d3d3d3",
+							inactive: !activeKeys[key as keyof ActiveKeys],
+						}))
+					} as Record<string, unknown>)}
 				/>
 				{activeKeys.Active && (
 					<Area

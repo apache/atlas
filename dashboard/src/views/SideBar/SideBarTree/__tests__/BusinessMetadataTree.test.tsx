@@ -146,10 +146,21 @@ describe('BusinessMetadataTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchBusinessMetaData on mount', () => {
+		it('should dispatch fetchBusinessMetaData on mount if data is empty', () => {
 			renderComponent()
 
 			expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchBusinessMetaData' })
+		})
+
+		it('should not dispatch fetchBusinessMetaData on mount if data exists', () => {
+			renderComponent({}, {
+				businessMetaData: {
+					businessMetaData: { businessMetadataDefs: [{ name: 'test' }] },
+					loading: false
+				}
+			})
+
+			expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchBusinessMetaData' })
 		})
 
 		it('should call refreshData when refresh button is clicked', async () => {

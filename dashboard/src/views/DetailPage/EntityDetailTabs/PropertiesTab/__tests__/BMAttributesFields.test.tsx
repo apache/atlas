@@ -53,7 +53,7 @@ jest.mock("@hooks/reducerHook", () => ({
 const SINGLE_DATE_TIMESTAMP = 1717200000000;
 const MULTI_DATE_TIMESTAMPS = [1717200000000, 1717286400000];
 
-jest.mock("@components/DatePicker/CustomDatepicker", () => ({
+jest.mock("@components/DatePicker/CustomDatePicker", () => ({
 	__esModule: true,
 	default: ({
 		onChange,
