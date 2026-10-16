@@ -17,13 +17,13 @@
 
 /** Matches Entity Status Overview donut — single source for dashboard charts */
 export const ENTITY_STATUS_DONUT_COLORS = {
-	Active: "#10b981",
-	Shell: "#f59e0b",
-	Deleted: "#ef4444",
+	Active: "var(--chart-active-color)",
+	Shell: "var(--chart-shell-color)",
+	Deleted: "var(--chart-deleted-color)",
 } as const;
 
 /** Active primary series / bar fill (aligned with Classification Distribution bars) */
-export const CHART_BAR_ACTIVE_BLUE = "#1976d2";
+export const CHART_BAR_ACTIVE_BLUE = "var(--chart-bar-active-color)";
 
 /** Horizontal bar charts: Y-axis title + ticks; keep left tight to reduce card gutter */
 export const HORIZONTAL_BAR_CHART_MARGIN = {

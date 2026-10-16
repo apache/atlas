@@ -60,7 +60,7 @@ const SystemDetails = () => {
         <Stack gap="1rem">
           <Stack direction="row" gap="1rem">
             <Stack width="50%">
-              <Paper elevation={3} style={{ padding: "16px" }}>
+              <Paper elevation={3} sx={{ p: 2 }}>
                 <Typography fontWeight="600">OS</Typography>
                 <Divider />
                 <Table>
@@ -80,7 +80,7 @@ const SystemDetails = () => {
             </Stack>
             <Stack width="50%">
               {" "}
-              <Paper elevation={3} style={{ padding: "16px" }}>
+              <Paper elevation={3} sx={{ p: 2 }}>
                 <Typography fontWeight="600">Runtime</Typography>
                 <Divider />
                 <Table>
@@ -103,7 +103,7 @@ const SystemDetails = () => {
           </Stack>
           <Stack>
             {" "}
-            <Paper elevation={3} style={{ padding: "16px" }}>
+            <Paper elevation={3} sx={{ p: 2 }}>
               <Typography fontWeight="600">Memory</Typography>
               <Divider />
               <Table>
