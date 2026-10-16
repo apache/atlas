@@ -47,8 +47,10 @@ public class AtlasPatch implements Serializable {
     private String      action;
     private String      updatedBy;
     private String      createdBy;
+    private String      appliedBy;
     private long        createdTime;
     private long        updatedTime;
+    private long        appliedAt;
     private PatchStatus status;
 
     public AtlasPatch() {}
@@ -122,6 +124,14 @@ public class AtlasPatch implements Serializable {
         this.createdBy = createdBy;
     }
 
+    public String getAppliedBy() {
+        return appliedBy;
+    }
+
+    public void setAppliedBy(String appliedBy) {
+        this.appliedBy = appliedBy;
+    }
+
     public long getCreatedTime() {
         return createdTime;
     }
@@ -138,9 +148,17 @@ public class AtlasPatch implements Serializable {
         this.updatedTime = updatedTime;
     }
 
+    public long getAppliedAt() {
+        return appliedAt;
+    }
+
+    public void setAppliedAt(long appliedAt) {
+        this.appliedAt = appliedAt;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(id, description, type, action, updatedBy, createdBy, createdTime, updatedTime, status);
+        return Objects.hash(id, description, type, action, updatedBy, createdBy, appliedBy, createdTime, updatedTime, appliedAt, status);
     }
 
     @Override
@@ -161,6 +179,8 @@ public class AtlasPatch implements Serializable {
                 Objects.equals(action, that.action) &&
                 Objects.equals(updatedBy, that.updatedBy) &&
                 Objects.equals(createdBy, that.createdBy) &&
+                Objects.equals(appliedBy, that.appliedBy) &&
+                appliedAt == that.appliedAt &&
                 status == that.status;
     }
 
@@ -172,13 +192,15 @@ public class AtlasPatch implements Serializable {
                 ", action='" + action + '\'' +
                 ", updatedBy='" + updatedBy + '\'' +
                 ", createdBy='" + createdBy + '\'' +
+                ", appliedBy='" + appliedBy + '\'' +
                 ", createdTime=" + createdTime +
                 ", updatedTime=" + updatedTime +
+                ", appliedAt=" + appliedAt +
                 ", status=" + status +
                 '}';
     }
 
-    public enum PatchStatus { UNKNOWN, APPLIED, SKIPPED, FAILED }
+    public enum PatchStatus { UNKNOWN, NOT_APPLIED, IN_PROGRESS, APPLIED, SKIPPED, FAILED }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
     @JsonInclude(JsonInclude.Include.NON_NULL)

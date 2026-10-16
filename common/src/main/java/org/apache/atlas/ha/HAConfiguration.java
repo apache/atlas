@@ -52,22 +52,26 @@ public final class HAConfiguration {
     }
 
     /**
-     * Return whether HA is enabled or not.
-     * @param configuration underlying configuration instance
-     * @return
+     * Whether legacy ZooKeeper active-passive HA is enabled.
+     *
+     * <p>This flag belonged to the old model where Curator elected a single ACTIVE leader and
+     * followers stayed passive.  AMRA active-active peers do not use it: every node becomes ACTIVE
+     * through {@code AtlasActivationService}, and multi-instance behaviour is governed by
+     * {@link org.apache.atlas.AtlasRunMode} and cluster-wide graph claims instead.
+     *
+     * <p>{@link #ATLAS_SERVER_IDS} still names each JVM in a multi-node cluster (typedef-sync signals,
+     * address lookup) but does <em>not</em> imply HA mode.  Some older releases inferred HA from
+     * multiple IDs when this flag was absent; that inference is removed because modular topologies
+     * list several IDs while {@code atlas.server.ha.enabled=false}.
+     *
+     * @return {@code true} only when {@link #ATLAS_SERVER_HA_ENABLED_KEY} is explicitly {@code true}
      */
     public static boolean isHAEnabled(Configuration configuration) {
-        boolean ret;
-
         if (configuration.containsKey(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)) {
-            ret = configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY);
-        } else {
-            String[] ids = configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS);
-
-            ret = ids != null && ids.length > 1;
+            return configuration.getBoolean(ATLAS_SERVER_HA_ENABLED_KEY);
         }
 
-        return ret;
+        return false;
     }
 
     /**

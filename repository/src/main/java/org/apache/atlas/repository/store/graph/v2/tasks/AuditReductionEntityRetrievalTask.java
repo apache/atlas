@@ -118,20 +118,17 @@ public class AuditReductionEntityRetrievalTask extends AbstractTask {
     }
 
     protected void run(Map<String, Object> parameters) throws AtlasBaseException, IOException, AtlasException {
-        try {
-            AtlasTask auditAgingTask = createAgingTaskWithEligibleGUIDs(parameters);
+        AtlasTask auditAgingTask = createAgingTaskWithEligibleGUIDs(parameters);
 
-            if (auditAgingTask != null) {
-                LOG.info("{} task created for audit aging type-{}", ATLAS_AUDIT_REDUCTION, parameters.get(AUDIT_AGING_TYPE_KEY));
-            }
-        } catch (Exception e) {
-            LOG.error("Error while retrieving entities eligible for audit aging and creating audit aging tasks", e);
+        if (auditAgingTask != null) {
+            LOG.info("{} task created for audit aging type-{}", ATLAS_AUDIT_REDUCTION, parameters.get(AUDIT_AGING_TYPE_KEY));
         }
     }
 
     protected AtlasTask createAgingTaskWithEligibleGUIDs(Map<String, Object> parameters) throws AtlasBaseException {
         Set<String>         entityTypes      = new HashSet<>(((Collection<String>) parameters.get(AUDIT_AGING_ENTITY_TYPES_KEY)));
-        AtlasAuditAgingType auditAgingType   = (AtlasAuditAgingType) parameters.get(AUDIT_AGING_TYPE_KEY);
+        // The task is stored as JSON and claimed later, so the enum is reloaded as its name.
+        AtlasAuditAgingType auditAgingType   = auditAgingType(parameters.get(AUDIT_AGING_TYPE_KEY));
         boolean             subTypesIncluded = (boolean) parameters.get(AUDIT_AGING_SUBTYPES_INCLUDED_KEY);
 
         SearchParameters searchEntitiesToReduceAudit = new SearchParameters();
@@ -177,6 +174,14 @@ public class AuditReductionEntityRetrievalTask extends AbstractTask {
         }
 
         return ageoutTask;
+    }
+
+    private static AtlasAuditAgingType auditAgingType(Object value) {
+        if (value instanceof AtlasAuditAgingType) {
+            return (AtlasAuditAgingType) value;
+        }
+
+        return AtlasAuditAgingType.valueOf(String.valueOf(value));
     }
 
     private boolean validateTypesAndIncludeSubTypes(Set<String> entityTypes, AtlasAuditAgingType auditAgingType, boolean subTypesIncluded) throws AtlasBaseException {

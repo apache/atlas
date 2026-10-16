@@ -174,6 +174,27 @@ public interface AtlasGraphManagement extends AutoCloseable {
     void updateSchemaStatus();
 
     /**
+     * Ensures the named composite index is ENABLED and populated with any pre-existing data.
+     *
+     * <p>A composite index built over a property key that already carries data is created in the
+     * REGISTERED (not ENABLED) state and is ignored by the query planner until it is enabled and
+     * reindexed. This is a no-op fast path when the index is already ENABLED.</p>
+     *
+     * @param indexName name of the composite index (its single property key name)
+     * @return {@code true} when the index is ENABLED (and thus usable) after the call
+     */
+    boolean ensureCompositeIndexEnabled(String indexName);
+
+    /**
+     * Read-only check of whether the named composite index is ENABLED (and therefore usable by the
+     * query planner). A composite index that merely exists but is REGISTERED is ignored by queries.
+     *
+     * @param indexName name of the composite index (its single property key name)
+     * @return {@code true} when the index exists, is composite, and is ENABLED
+     */
+    boolean isCompositeIndexEnabled(String indexName);
+
+    /**
      * Disable the index with the given name.
      *
      * @param indexName

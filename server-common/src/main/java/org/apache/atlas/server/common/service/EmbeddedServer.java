@@ -78,10 +78,26 @@ public class EmbeddedServer {
         return new EmbeddedServer(host, port, path);
     }
 
+    /** Starts the server and blocks until something else stops it. */
     public void start() throws AtlasBaseException {
+        startWithoutJoin();
+
+        try {
+            server.join();
+        } catch (Exception e) {
+            throw new AtlasBaseException(AtlasErrorCode.EMBEDDED_SERVER_START, e);
+        }
+    }
+
+    /**
+     * Starts the server and returns once the web application has deployed, which is where Atlas
+     * runs its bootstrap.  A caller that only wants the bootstrap - the initializer - can then stop
+     * the server itself, on this thread, rather than from a shutdown hook: stopping a server that is
+     * still deploying deadlocks against the thread doing the deploying.
+     */
+    public void startWithoutJoin() throws AtlasBaseException {
         try {
             server.start();
-            server.join();
         } catch (Exception e) {
             throw new AtlasBaseException(AtlasErrorCode.EMBEDDED_SERVER_START, e);
         }

@@ -25,7 +25,10 @@ ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_SERVER_JAVA_VERSION}-openjdk-${TARGETARC
 RUN update-java-alternatives --set /usr/lib/jvm/java-1.${ATLAS_SERVER_JAVA_VERSION}.0-openjdk-${TARGETARCH}
 
 COPY ./scripts/atlas.sh                                 ${ATLAS_SCRIPTS}/
+COPY ./scripts/atlas-active-active.sh                   ${ATLAS_SCRIPTS}/
 COPY ./dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz /home/atlas/dist/
+
+RUN chmod +x ${ATLAS_SCRIPTS}/atlas.sh ${ATLAS_SCRIPTS}/atlas-active-active.sh
 
 RUN tar xfz /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-server.tar.gz --directory=/opt/ && \
     ln -s /opt/apache-atlas-${ATLAS_VERSION} ${ATLAS_HOME} && \
