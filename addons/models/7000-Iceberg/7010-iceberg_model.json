@@ -22,7 +22,7 @@
       ]
     },
     {
-      "name":        "iceberg_operation_type",
+      "name":        "iceberg_ddl_operation_type",
       "description": "Catalog operation recorded by an iceberg_ddl audit entity",
       "serviceType": "iceberg",
       "typeVersion": "1.0",
@@ -42,6 +42,34 @@
         { "ordinal": 12, "value": "REPLACE_VIEW" },
         { "ordinal": 13, "value": "DROP_VIEW" },
         { "ordinal": 14, "value": "RENAME_VIEW" }
+      ]
+    }
+  ],
+  "structDefs": [
+    {
+      "name":          "iceberg_partition_field",
+      "description":   "One field of an Iceberg partition spec: a transform applied to one or more source columns",
+      "serviceType":   "iceberg",
+      "typeVersion":   "1.0",
+      "attributeDefs": [
+        { "name": "fieldId",           "typeName": "int",           "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false },
+        { "name": "name",              "typeName": "string",        "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false },
+        { "name": "sourceIds",         "typeName": "array<int>",    "cardinality": "LIST", "isIndexable": false, "isOptional": false, "isUnique": false },
+        { "name": "sourceColumnNames", "typeName": "array<string>", "cardinality": "LIST", "isIndexable": true, "isOptional": true, "isUnique": false },
+        { "name": "transform",         "typeName": "string",        "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "searchWeight": 7 }
+      ]
+    },
+    {
+      "name":          "iceberg_sort_field",
+      "description":   "One field of an Iceberg sort order: a transform applied to a source column, with direction and null ordering",
+      "serviceType":   "iceberg",
+      "typeVersion":   "1.0",
+      "attributeDefs": [
+        { "name": "sourceIds",         "typeName": "array<int>",    "cardinality": "LIST", "isIndexable": false, "isOptional": false, "isUnique": false },
+        { "name": "sourceColumnNames", "typeName": "array<string>", "cardinality": "LIST", "isIndexable": true, "isOptional": true, "isUnique": false },
+        { "name": "transform",         "typeName": "string",        "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false },
+        { "name": "direction",         "typeName": "string",        "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false },
+        { "name": "nullOrder",         "typeName": "string",        "cardinality": "SINGLE", "isIndexable": false, "isOptional": false, "isUnique": false }
       ]
     }
   ],
@@ -102,6 +130,8 @@
         { "name": "schemaId",              "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "partitionSpec",         "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
         { "name": "sortOrder",             "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+        { "name": "defaultSpecId",         "typeName": "int",                          "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
+        { "name": "defaultSortOrderId",    "typeName": "int",                          "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
         { "name": "viewDefinition",        "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false, "searchWeight": 9 },
         { "name": "viewDialect",           "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
         { "name": "viewDefaultCatalog",    "typeName": "string",                       "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
@@ -127,13 +157,35 @@
       ]
     },
     {
+      "name":          "iceberg_partition_spec",
+      "description":   "One Iceberg partition spec of a table. A table retains every spec it has ever used, because data files written under an older spec remain partitioned by it; iceberg_table.defaultSpecId identifies the spec in effect now.",
+      "superTypes":    [ "Asset" ],
+      "serviceType":   "iceberg",
+      "typeVersion":   "1.0",
+      "attributeDefs": [
+        { "name": "specId", "typeName": "int",                            "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
+        { "name": "fields", "typeName": "array<iceberg_partition_field>", "cardinality": "LIST", "isIndexable": false, "isOptional": true, "isUnique": false }
+      ]
+    },
+    {
+      "name":          "iceberg_sort_order",
+      "description":   "One Iceberg sort order of a table. Retained for the same reason as a partition spec; iceberg_table.defaultSortOrderId identifies the order in effect now.",
+      "superTypes":    [ "Asset" ],
+      "serviceType":   "iceberg",
+      "typeVersion":   "1.0",
+      "attributeDefs": [
+        { "name": "orderId", "typeName": "int",                       "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
+        { "name": "fields",  "typeName": "array<iceberg_sort_field>", "cardinality": "LIST", "isIndexable": false, "isOptional": true, "isUnique": false }
+      ]
+    },
+    {
       "name":          "iceberg_ddl",
       "description":   "Supertype for Iceberg REST catalog operation audit records; inherits queryText, execTime, userName and serviceType from the Atlas ddl base type. Not instantiated directly - use the per-parent subtypes.",
       "superTypes":    [ "ddl" ],
       "serviceType":   "iceberg",
       "typeVersion":   "1.0",
       "attributeDefs": [
-        { "name": "operationType", "typeName": "iceberg_operation_type", "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
+        { "name": "operationType", "typeName": "iceberg_ddl_operation_type", "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "eventId",       "typeName": "string",                 "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false, "includeInNotification": true },
         { "name": "realmId",       "typeName": "string",                 "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false },
         { "name": "requestId",     "typeName": "string",                 "cardinality": "SINGLE", "isIndexable": true, "isOptional": true, "isUnique": false },
@@ -169,21 +221,18 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "AGGREGATION",
-      "relationshipLabel":      "__iceberg_catalog.namespaces",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_catalog",
         "name":                "namespaces",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_namespace",
         "name":                "catalog",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
       }
     },
     {
@@ -191,21 +240,18 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "AGGREGATION",
-      "relationshipLabel":      "__iceberg_namespace.childNamespaces",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_namespace",
         "name":                "childNamespaces",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_namespace",
         "name":                "parentNamespace",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
       }
     },
     {
@@ -213,21 +259,18 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "AGGREGATION",
-      "relationshipLabel":      "__iceberg_namespace.tables",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_namespace",
         "name":                "tables",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_table",
         "name":                "namespace",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
       }
     },
     {
@@ -235,21 +278,56 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "COMPOSITION",
-      "relationshipLabel":      "__iceberg_table.columns",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_table",
         "name":                "columns",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_column",
         "name":                "table",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
+      }
+    },
+    {
+      "name":                   "iceberg_table_partition_specs",
+      "serviceType":            "iceberg",
+      "typeVersion":            "1.0",
+      "relationshipCategory":   "COMPOSITION",
+      "propagateTags":          "NONE",
+      "endDef1": {
+        "type":                "iceberg_table",
+        "name":                "partitionSpecs",
+        "isContainer":         true,
+        "cardinality":         "SET"
+      },
+      "endDef2": {
+        "type":                "iceberg_partition_spec",
+        "name":                "table",
+        "isContainer":         false,
+        "cardinality":         "SINGLE"
+      }
+    },
+    {
+      "name":                   "iceberg_table_sort_orders",
+      "serviceType":            "iceberg",
+      "typeVersion":            "1.0",
+      "relationshipCategory":   "COMPOSITION",
+      "propagateTags":          "NONE",
+      "endDef1": {
+        "type":                "iceberg_table",
+        "name":                "sortOrders",
+        "isContainer":         true,
+        "cardinality":         "SET"
+      },
+      "endDef2": {
+        "type":                "iceberg_sort_order",
+        "name":                "table",
+        "isContainer":         false,
+        "cardinality":         "SINGLE"
       }
     },
     {
@@ -257,21 +335,18 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "COMPOSITION",
-      "relationshipLabel":      "__iceberg_table.ddlQueries",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_table",
         "name":                "ddlQueries",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_table_ddl",
         "name":                "table",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
       }
     },
     {
@@ -279,21 +354,18 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "COMPOSITION",
-      "relationshipLabel":      "__iceberg_namespace.ddlQueries",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_namespace",
         "name":                "ddlQueries",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_namespace_ddl",
         "name":                "namespace",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
       }
     },
     {
@@ -301,21 +373,18 @@
       "serviceType":            "iceberg",
       "typeVersion":            "1.0",
       "relationshipCategory":   "COMPOSITION",
-      "relationshipLabel":      "__iceberg_catalog.ddlQueries",
       "propagateTags":          "NONE",
       "endDef1": {
         "type":                "iceberg_catalog",
         "name":                "ddlQueries",
         "isContainer":         true,
-        "cardinality":         "SET",
-        "isLegacyAttribute":   false
+        "cardinality":         "SET"
       },
       "endDef2": {
         "type":                "iceberg_catalog_ddl",
         "name":                "catalog",
         "isContainer":         false,
-        "cardinality":         "SINGLE",
-        "isLegacyAttribute":   false
+        "cardinality":         "SINGLE"
       }
     }
   ]
