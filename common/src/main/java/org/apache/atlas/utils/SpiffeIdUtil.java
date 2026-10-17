@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  *
  * <p>A SPIFFE ID is expected in the exact form {@code spiffe://<trust-domain>/ns/<namespace>/sa/<service-account>};
  * for service-to-service authentication the receiving server trusts the workload
- * identity carried in a header (e.g. {@code x-awc-source-workload-id}) and uses
+ * identity carried in a header (e.g. {@code X-Spiffe-Id}) and uses
  * the trailing service-account segment as the authenticated principal.
  */
 public final class SpiffeIdUtil {

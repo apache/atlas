@@ -154,8 +154,8 @@ public class AtlasHeaderPreAuthFilterTest {
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
                 .thenReturn("");
         when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
-                .thenReturn(new String[] {"x-awc-source-workload-id"});
-        when(request.getHeader("x-awc-source-workload-id"))
+                .thenReturn(new String[] {"X-Spiffe-Id"});
+        when(request.getHeader("X-Spiffe-Id"))
                 .thenReturn("spiffe://prod-cluster.k8s.example.com/ns/ingress-nginx/sa/nginx-ingress");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
@@ -183,9 +183,9 @@ public class AtlasHeaderPreAuthFilterTest {
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
                 .thenReturn("");
         when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
-                .thenReturn(new String[] {"x-awc-source-workload-id"});
+                .thenReturn(new String[] {"X-Spiffe-Id"});
         when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
-        when(request.getHeader("x-awc-source-workload-id"))
+        when(request.getHeader("X-Spiffe-Id"))
                 .thenReturn("spiffe://my-cluster/ns/service-namespace/sa/service-sa");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
@@ -207,9 +207,9 @@ public class AtlasHeaderPreAuthFilterTest {
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
                 .thenReturn("");
         when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
-                .thenReturn(new String[] {"x-upstream", "x-awc-source-workload-id"});
-        when(request.getHeader("x-upstream")).thenReturn(null);
-        when(request.getHeader("x-awc-source-workload-id"))
+                .thenReturn(new String[] {"X-Spiffe-Id-Unused", "X-Spiffe-Id"});
+        when(request.getHeader("X-Spiffe-Id-Unused")).thenReturn(null);
+        when(request.getHeader("X-Spiffe-Id"))
                 .thenReturn("spiffe://my-cluster/ns/service-namespace/sa/service-sa");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
@@ -231,8 +231,8 @@ public class AtlasHeaderPreAuthFilterTest {
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
                 .thenReturn("");
         when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
-                .thenReturn(new String[] {"x-awc-source-workload-id"});
-        when(request.getHeader("x-awc-source-workload-id")).thenReturn("not-a-spiffe-id");
+                .thenReturn(new String[] {"X-Spiffe-Id"});
+        when(request.getHeader("X-Spiffe-Id")).thenReturn("not-a-spiffe-id");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
             appProps.when(ApplicationProperties::get).thenReturn(configuration);

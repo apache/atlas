@@ -57,7 +57,7 @@ public class AtlasHeaderPreAuthFilter implements Filter {
     public static final String PROP_HEADER_AUTH_ENABLED = "atlas.authentication.method.header.enabled";
     public static final String PROP_USERNAME_HEADER     = "atlas.authentication.method.header.username";
     public static final String PROP_ROLES_HEADER        = "atlas.authentication.method.header.roles";
-    public static final String PROP_REQUEST_ID_HEADER   = "atlas.authentication.method.header.request-id";
+    public static final String PROP_REQUEST_ID_HEADER   = "atlas.authentication.method.header.requestid";
     public static final String PROP_SPIFFE_HEADER       = "atlas.authentication.method.header.spiffe";
     public static final String REQUEST_ID_ATTRIBUTE     = "atlas.request.id";
 
