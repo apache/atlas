@@ -19,6 +19,8 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationToken;
+import org.apache.atlas.server.common.filters.AtlasHeaderPreAuthFilter;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;

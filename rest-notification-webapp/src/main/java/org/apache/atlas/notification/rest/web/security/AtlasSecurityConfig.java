@@ -17,6 +17,10 @@
  */
 package org.apache.atlas.notification.rest.web.security;
 
+import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.server.common.filters.AtlasHeaderPreAuthFilter;
+import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.security.AtlasAuthenticationFailureHandler;
 import org.apache.atlas.server.common.security.AtlasAuthenticationProvider;
 import org.apache.atlas.server.common.security.AtlasAuthenticationSuccessHandler;
@@ -52,19 +56,23 @@ import javax.inject.Inject;
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class AtlasSecurityConfig extends org.apache.atlas.server.common.security.AtlasSecurityConfig {
+    private final AtlasHeaderPreAuthFilter headerPreAuthFilter;
+
     @Inject
-    public AtlasSecurityConfig(ObjectProvider<org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter> ssoAuthenticationFilterProvider,
-                               ObjectProvider<org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter> csrfPreventionFilterProvider,
-                               ObjectProvider<org.apache.atlas.server.common.filters.AtlasAuthenticationFilter> atlasAuthenticationFilterProvider,
+    public AtlasSecurityConfig(ObjectProvider<AtlasKnoxSSOAuthenticationFilter> ssoAuthenticationFilterProvider,
+                               ObjectProvider<AtlasCSRFPreventionFilter> csrfPreventionFilterProvider,
+                               ObjectProvider<AtlasAuthenticationFilter> atlasAuthenticationFilterProvider,
                                AtlasAuthenticationProvider authenticationProvider,
                                AtlasAuthenticationSuccessHandler successHandler,
                                AtlasAuthenticationFailureHandler failureHandler,
                                org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
                                Configuration configuration,
-                               ObjectProvider<org.apache.atlas.server.common.filters.ActiveServerFilter> activeServerFilterProvider) {
+                               ObjectProvider<org.apache.atlas.server.common.filters.ActiveServerFilter> activeServerFilterProvider,
+                               AtlasHeaderPreAuthFilter headerPreAuthFilter) {
         super(ssoAuthenticationFilterProvider, csrfPreventionFilterProvider, atlasAuthenticationFilterProvider,
                 authenticationProvider, successHandler, failureHandler, atlasAuthenticationEntryPoint, configuration,
                 activeServerFilterProvider);
+        this.headerPreAuthFilter = headerPreAuthFilter;
     }
 
     @Override
@@ -88,6 +96,6 @@ public class AtlasSecurityConfig extends org.apache.atlas.server.common.security
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         configureCommonHttpSecurity(httpSecurity);
         addHaAndMigrationGuards(httpSecurity);
-        addCommonAuthFilters(httpSecurity);
+        addNotificationRestAuthFilters(httpSecurity, headerPreAuthFilter);
     }
 }

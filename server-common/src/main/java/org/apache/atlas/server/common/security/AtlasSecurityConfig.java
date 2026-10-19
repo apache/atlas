@@ -22,6 +22,7 @@ import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.apache.atlas.server.common.filters.AtlasAuthenticationFilter;
 import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.server.common.filters.AtlasDelegatingAuthenticationEntryPoint;
+import org.apache.atlas.server.common.filters.AtlasHeaderPreAuthFilter;
 import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
@@ -178,10 +179,13 @@ public abstract class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         }
     }
 
-    protected void addCommonAuthFilters(HttpSecurity httpSecurity) throws Exception {
+    protected void addNotificationRestAuthFilters(HttpSecurity httpSecurity,
+                                            AtlasHeaderPreAuthFilter headerPreAuthFilter) throws Exception {
+        httpSecurity.addFilterBefore(headerPreAuthFilter, BasicAuthenticationFilter.class);
+
         AtlasKnoxSSOAuthenticationFilter ssoAuthenticationFilter = ssoAuthenticationFilterProvider.getIfAvailable();
         if (ssoAuthenticationFilter != null) {
-            httpSecurity.addFilterBefore(ssoAuthenticationFilter, BasicAuthenticationFilter.class);
+            httpSecurity.addFilterAfter(ssoAuthenticationFilter, AtlasHeaderPreAuthFilter.class);
         }
 
         AtlasAuthenticationFilter atlasAuthenticationFilter = atlasAuthenticationFilterProvider.getIfAvailable();
