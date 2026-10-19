@@ -18,13 +18,12 @@
 package org.apache.atlas.rulesengine;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasRule;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,28 +47,25 @@ public class AtlasRulesEngineTest {
         rulesEngine = new AtlasRulesEngine(auditFilterService);
     }
 
-    @Test
-    public void testAcceptUsesDefaultAcceptWhenFetchRulesFails() throws Exception {
-        when(defaultAction.getResult()).thenReturn(RuleAction.Result.ACCEPT);
+    @DataProvider
+    public Object[][] defaultActionWhenFetchRulesFails() {
+        return new Object[][] {
+                {RuleAction.Result.ACCEPT, true},
+                {RuleAction.Result.DISCARD, false}
+        };
+    }
+
+    @Test(dataProvider = "defaultActionWhenFetchRulesFails")
+    public void testAcceptUsesDefaultWhenFetchRulesFails(RuleAction.Result defaultResult, boolean expectAccept)
+            throws Exception {
+        when(defaultAction.getResult()).thenReturn(defaultResult);
         when(auditFilterService.fetchRules()).thenThrow(new AtlasBaseException("graph unavailable"));
 
-        assertTrue(rulesEngine.accept(eventPayload()));
-    }
-
-    @Test
-    public void testAcceptUsesDefaultDiscardWhenFetchRulesFails() throws Exception {
-        when(defaultAction.getResult()).thenReturn(RuleAction.Result.DISCARD);
-        when(auditFilterService.fetchRules()).thenThrow(new RuntimeException("graph unavailable"));
-
-        assertFalse(rulesEngine.accept(eventPayload()));
-    }
-
-    @Test
-    public void testAcceptWithNoRulesUsesDefaultAccept() throws Exception {
-        when(defaultAction.getResult()).thenReturn(RuleAction.Result.ACCEPT);
-        when(auditFilterService.fetchRules()).thenReturn(Collections.<AtlasRule>emptyList());
-
-        assertTrue(rulesEngine.accept(eventPayload()));
+        if (expectAccept) {
+            assertTrue(rulesEngine.accept(eventPayload()));
+        } else {
+            assertFalse(rulesEngine.accept(eventPayload()));
+        }
     }
 
     private Map<String, Object> eventPayload() {

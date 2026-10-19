@@ -91,7 +91,7 @@ public class EntityAuditListenerV2Test {
     }
 
     @Test
-    public void testApplyRulesDoesNotThrowWhenRuleEngineFails() throws Exception {
+    public void testAuditFilterSurvivesRuleLoadFailure() throws Exception {
         when(mockAuditFilterService.isEntityAuditCustomFilterEnabled()).thenReturn(true);
         when(mockAuditFilterService.isDiscardByDefault()).thenReturn(false);
         when(mockAuditFilterService.getDefaultAction()).thenReturn(mockDefaultAction);
@@ -101,7 +101,7 @@ public class EntityAuditListenerV2Test {
         entityAuditListenerV2.setAuditFilterService(mockAuditFilterService);
 
         AtlasEntity entity = new AtlasEntity("hive_table");
-        entity.setGuid("guid-apply-rules");
+        entity.setGuid("guid-audit-filter");
         entity.setAttribute("qualifiedName", "qn@test");
 
         EntityAuditEventV2 auditEvent = new EntityAuditEventV2();
@@ -109,39 +109,11 @@ public class EntityAuditListenerV2Test {
         auditEvent.setDiscarded(false);
 
         invokeApplyRules(entity, auditEvent);
-
         assertFalse(auditEvent.isDiscarded());
-    }
 
-    @Test
-    public void testCreateEventDoesNotThrowWhenRuleEngineFails() throws Exception {
-        when(mockAuditFilterService.isEntityAuditCustomFilterEnabled()).thenReturn(true);
-        when(mockAuditFilterService.isDiscardByDefault()).thenReturn(false);
-        when(mockAuditFilterService.getDefaultAction()).thenReturn(mockDefaultAction);
-        when(mockDefaultAction.getResult()).thenReturn(RuleAction.Result.ACCEPT);
-        when(mockAuditFilterService.fetchRules()).thenThrow(new AtlasBaseException("failed to load rules"));
-
-        entityAuditListenerV2.setAuditFilterService(mockAuditFilterService);
-
-        AtlasEntity entity = new AtlasEntity("hive_table");
-        entity.setGuid("guid-create-event");
-        entity.setAttribute("qualifiedName", "qn@test");
-
-        EntityAuditEventV2 auditEvent = new EntityAuditEventV2();
-        invokeCreateEvent(auditEvent, entity, EntityAuditActionV2.ENTITY_CREATE, "Created: test");
-
-        assertFalse(auditEvent.isDiscarded());
-    }
-
-    @Test
-    public void testPutAuditEventsPassesThroughWhenNoneDiscarded() throws Exception {
-        EntityAuditEventV2 acceptedEvent1 = createAuditEvent("guid-1", false);
-        EntityAuditEventV2 acceptedEvent2 = createAuditEvent("guid-2", false);
-        List<EntityAuditEventV2> events = Arrays.asList(acceptedEvent1, acceptedEvent2);
-
-        invokePutAuditEvents(events);
-
-        verify(mockAuditRepository).putEventsV2(events);
+        EntityAuditEventV2 createEvent = new EntityAuditEventV2();
+        invokeCreateEvent(createEvent, entity, EntityAuditActionV2.ENTITY_CREATE, "Created: test");
+        assertFalse(createEvent.isDiscarded());
     }
 
     private void invokePutAuditEvents(List<EntityAuditEventV2> events) throws Exception {

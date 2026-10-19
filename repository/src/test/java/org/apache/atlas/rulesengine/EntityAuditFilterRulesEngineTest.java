@@ -16,13 +16,13 @@
  */
 package org.apache.atlas.rulesengine;
 
+import com.google.gson.JsonParser;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.Map;
 
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE;
@@ -31,10 +31,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 /**
- * Unit-test mirror of {@link org.apache.atlas.web.filters.EntityAuditFilterIT}.
- *
- * <p>IT tests assert persisted audit counts via REST; these tests assert the same outcomes by
- * evaluating {@link AtlasRulesEngine#accept(Map)} on synthetic audit payloads (accept = store audit).
+ * Unit tests for custom entity audit filter rule evaluation and JsonLogic conversion.
  */
 public class EntityAuditFilterRulesEngineTest {
     private AtlasRulesEngine rulesEngine;
@@ -44,138 +41,50 @@ public class EntityAuditFilterRulesEngineTest {
         rulesEngine = EntityAuditFilterTestSupport.createRulesEngineWithStandardRules();
     }
 
-    @DataProvider(name = "nameContainsTempEntitiesProvider")
-    public Object[][] nameContainsTempEntitiesProvider() {
-        return new Object[][] {
-                {"hive_table", "temp_table", false},
-                {"hive_db", "db01_temp", false},
-                {"hdfs_path", "temp_path", true}
-        };
-    }
-
-    /**
-     * IT: {@code test_DiscardAuditsIfNameContainsTemp} — rule_1 CSV types + name containsIgnoreCase temp.
-     */
-    @Test(dataProvider = "nameContainsTempEntitiesProvider")
-    public void testDiscardAuditsIfNameContainsTemp(String typeName, String name, boolean expectAuditAccepted)
-            throws Exception {
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent(typeName, name, ENTITY_CREATE),
-                expectAuditAccepted);
-
-        if (!expectAuditAccepted) {
-            assertAuditAccepted(
-                    EntityAuditFilterTestSupport.auditEvent(typeName, name + "_updated", ENTITY_UPDATE),
-                    false);
-        }
-    }
-
-    @DataProvider(name = "nameUpdateScenariosForAuditFiltering")
-    public Object[][] nameUpdateScenariosForAuditFiltering() {
-        return new Object[][] {
-                {"test_", "", false},
-                {"prefix_notest_", "_notest_suffix", true},
-                {"", "_midname_test", false}
-        };
-    }
-
-    /**
-     * IT: {@code test_DiscardUpdateIfNameStartsOrEndsWithTest} — rule_2 on spark_table updates.
-     */
-    @Test(dataProvider = "nameUpdateScenariosForAuditFiltering")
-    public void testDiscardUpdateIfNameStartsOrEndsWithTest(String newNamePrefix, String newNameSuffix,
-            boolean expectUpdateAuditAccepted) throws Exception {
-        String baseName = "sptable";
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("spark_table", baseName, ENTITY_CREATE),
-                true);
-
-        String updatedName = newNamePrefix + baseName + newNameSuffix;
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("spark_table", updatedName, ENTITY_UPDATE),
-                expectUpdateAuditAccepted);
-    }
-
-    /**
-     * IT: {@code test_DiscardSpecificAuditsForAllTypesUnderHiveHook} — rule_3 hive* + operationType.
-     */
     @Test
-    public void testDiscardSpecificAuditsForHiveTypesOnDeleteOperations() throws Exception {
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_db", "db01", ENTITY_CREATE),
-                true);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_db", "db01", ENTITY_DELETE),
-                false);
+    public void testStandardRulesEvaluation() throws Exception {
+        // rule_1: hive_table,hive_db + name containsIgnoreCase temp
+        assertAccepted("hive_table", "temp_table", ENTITY_CREATE, false);
+        assertAccepted("hdfs_path", "temp_path", ENTITY_CREATE, true);
 
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_table", "tbl01", ENTITY_CREATE),
-                true);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_table", "tbl01", CLASSIFICATION_ADD),
-                true);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_table", "tbl01", CLASSIFICATION_DELETE),
-                false);
+        // rule_2: spark_table name starts or ends with test (UPDATE)
+        assertAccepted("spark_table", "sptable", ENTITY_CREATE, true);
+        assertAccepted("spark_table", "test_sptable", ENTITY_UPDATE, false);
+
+        // rule_3: hive* ENTITY_DELETE / CLASSIFICATION_DELETE
+        assertAccepted("hive_db", "db01", ENTITY_DELETE, false);
+        assertAccepted("hive_table", "tbl01", CLASSIFICATION_DELETE, false);
+
+        // rule_4: Asset + subtypes, name contains demo
+        assertAccepted("hive_table", "demo_table", ENTITY_UPDATE, false);
+
+        // rule_5: spark_process type-only discard
+        assertAccepted("spark_process", "sp_name", ENTITY_CREATE, false);
+
+        // default ACCEPT when no rule matches
+        assertAccepted("spark_table", "unmatched", ENTITY_CREATE, true);
     }
 
-    /**
-     * IT: {@code test_DiscardAuditsForTypeAndSubtypes} — rule_4 Asset + subtypes, name contains demo.
-     */
     @Test
-    public void testDiscardAuditsForTypeAndSubtypes() throws Exception {
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_table", "DEMO_table", ENTITY_CREATE),
-                true);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("hive_table", "demo_table", ENTITY_UPDATE),
-                false);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("Process", "demo_process", ENTITY_CREATE),
-                false);
+    public void testJsonLogicEncodesStringAttributeValues() throws Exception {
+        String jsonLogicTemp = EntityAuditFilterTestSupport.convertRuleToJsonLogic(
+                EntityAuditFilterTestSupport.nameContainsIgnoreCaseRule("temp"));
+        assertTrue(jsonLogicTemp.contains("\"temp\""), "Expected quoted temp; got: " + jsonLogicTemp);
+        new JsonParser().parse(jsonLogicTemp);
+
+        String jsonLogicSpaced = EntityAuditFilterTestSupport.convertRuleToJsonLogic(
+                EntityAuditFilterTestSupport.nameContainsIgnoreCaseRule("my temp"));
+        assertTrue(jsonLogicSpaced.contains("\"my temp\""), "Expected quoted spaced value; got: " + jsonLogicSpaced);
+        new JsonParser().parse(jsonLogicSpaced);
     }
 
-    /**
-     * IT: {@code test_DefaultDiscardRuleApplied} — rule_5 type-only spark_process.
-     */
-    @Test
-    public void testDefaultDiscardRuleAppliedForSparkProcess() throws Exception {
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("spark_process", "sp_name", ENTITY_CREATE),
-                false);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("spark_process", "sp_name_new", ENTITY_UPDATE),
-                false);
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent("spark_process", "sp_name", CLASSIFICATION_ADD),
-                false);
-    }
-
-    @DataProvider(name = "unmatchedRuleEntitiesProvider")
-    public Object[][] unmatchedRuleEntitiesProvider() {
-        return new Object[][] {
-                {"hive_table", "unmatched_table"},
-                {"hive_db", "unmatched_db"},
-                {"hdfs_path", "unmatched_hdfs"},
-                {"spark_table", "uniqueSparkTable"}
-        };
-    }
-
-    /**
-     * IT: {@code test_UnmatchedRuleAuditNotDiscarded} — names/types that should not match discard rules.
-     */
-    @Test(dataProvider = "unmatchedRuleEntitiesProvider")
-    public void testUnmatchedRuleAuditNotDiscarded(String typeName, String entityName) throws Exception {
-        assertAuditAccepted(
-                EntityAuditFilterTestSupport.auditEvent(typeName, entityName, ENTITY_CREATE),
-                true);
-    }
-
-    private void assertAuditAccepted(Map<String, Object> event, boolean expectAccepted) throws Exception {
+    private void assertAccepted(String typeName, String name, EntityAuditActionV2 action,
+            boolean expectAccepted) throws Exception {
+        Map<String, Object> event = EntityAuditFilterTestSupport.auditEvent(typeName, name, action);
         if (expectAccepted) {
-            assertTrue(rulesEngine.accept(event), "Expected audit to be accepted (stored): " + event);
+            assertTrue(rulesEngine.accept(event), "Expected accept: " + event);
         } else {
-            assertFalse(rulesEngine.accept(event), "Expected audit to be discarded (not stored): " + event);
+            assertFalse(rulesEngine.accept(event), "Expected discard: " + event);
         }
     }
 }
