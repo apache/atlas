@@ -159,7 +159,6 @@ public class TypeRegistryVersionGate {
      * @return {@code true} when a reload ran, {@code false} when it failed
      */
     public boolean forceRefresh() {
-
         synchronized (this) {
             try {
                 LOG.info("TypeRegistryVersionGate: forcing typedef delta refresh (last-seen {})", lastSeenVersion);

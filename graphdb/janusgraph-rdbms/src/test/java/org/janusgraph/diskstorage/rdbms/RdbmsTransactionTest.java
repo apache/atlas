@@ -17,6 +17,7 @@
  */
 package org.janusgraph.diskstorage.rdbms;
 
+import org.eclipse.persistence.queries.ScrollableCursor;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.rdbms.dao.DaoManager;
 import org.testng.annotations.BeforeMethod;
@@ -111,6 +112,37 @@ public class RdbmsTransactionTest {
 
         verify(entityTransaction).rollback();
         verify(entityManager, times(1)).close();
+    }
+
+    /**
+     * A scan its reader stopped early holds a pooled connection until its cursor is closed, and closing
+     * the entity manager leaves it open; however the transaction ends, the cursor has to be closed.
+     */
+    @Test
+    public void endingATransactionClosesTheCursorsLeftOpen() throws Exception {
+        ScrollableCursor committed  = mock(ScrollableCursor.class);
+        ScrollableCursor rolledBack = mock(ScrollableCursor.class);
+        ScrollableCursor closed     = mock(ScrollableCursor.class);
+
+        RdbmsTransaction first = new RdbmsTransaction(mock(BaseTransactionConfig.class), daoManager);
+        first.addCursor(committed);
+        first.commit();
+
+        entityManagerOpen = true;
+
+        RdbmsTransaction second = new RdbmsTransaction(mock(BaseTransactionConfig.class), daoManager);
+        second.addCursor(rolledBack);
+        second.rollback();
+
+        entityManagerOpen = true;
+
+        RdbmsTransaction third = new RdbmsTransaction(mock(BaseTransactionConfig.class), daoManager);
+        third.addCursor(closed);
+        third.close();
+
+        verify(committed).close();
+        verify(rolledBack).close();
+        verify(closed).close();
     }
 
     /**
