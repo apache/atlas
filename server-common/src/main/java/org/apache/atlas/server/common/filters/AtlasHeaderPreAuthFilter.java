@@ -16,11 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.atlas.web.filters;
+package org.apache.atlas.server.common.filters;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.server.common.filters.AtlasResponseRequestWrapper;
-import org.apache.atlas.server.common.filters.HeadersUtil;
 import org.apache.atlas.server.common.model.User;
 import org.apache.atlas.utils.SpiffeIdUtil;
 import org.apache.commons.configuration2.Configuration;
@@ -29,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
@@ -137,7 +136,7 @@ public class AtlasHeaderPreAuthFilter implements Filter {
         for (String role : rolesHeader.split(",")) {
             String trimmed = StringUtils.trimToNull(role);
             if (trimmed != null) {
-                ret.add(new org.springframework.security.core.authority.SimpleGrantedAuthority(trimmed));
+                ret.add(new SimpleGrantedAuthority(trimmed));
             }
         }
 
@@ -167,7 +166,8 @@ public class AtlasHeaderPreAuthFilter implements Filter {
 
                     if (username != null) {
                         List<GrantedAuthority> grantedAuths =
-                                getAuthoritiesFromRolesHeader(httpRequest.getHeader(rolesHeaderName));
+                                getAuthoritiesFromRolesHeader(
+                                        rolesHeaderName != null ? httpRequest.getHeader(rolesHeaderName) : null);
 
                         UserDetails principal = new User(username, "", grantedAuths);
 
