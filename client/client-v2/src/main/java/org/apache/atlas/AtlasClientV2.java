@@ -614,6 +614,14 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.DELETE_RULES_BY_GUID, EntityMutationResponse.class, null, guidList);
     }
 
+    public AtlasRule updateRule(String ruleGuid, AtlasRule updatedRule) throws AtlasServiceException {
+        return callAPI(formatPathParameters(API_V2.UPDATE_RULE, ruleGuid), AtlasRule.class, updatedRule, ruleGuid);
+    }
+
+    public EntityMutationResponse deleteAllRules() throws AtlasServiceException {
+        return callAPI(API_V2.DELETE_ALL_RULES, EntityMutationResponse.class, null);
+    }
+
     public BulkImportResponse bulkUpdateBusinessAttributes(String fileName) throws AtlasServiceException {
         MultiPart multipartEntity = getMultiPartData(fileName);
 
@@ -1389,8 +1397,10 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 IMPORT_GLOSSARY                 = new API_V2(GLOSSARY_URI + "/import", HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
         public static final API_V2 CREATE_RULE                     = new API_V2(ATLAS_RULES_API, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 GET_RULES                       = new API_V2(ATLAS_RULES_API, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 UPDATE_RULE                     = new API_V2(ATLAS_RULES_API + "%s", HttpMethod.PUT, Response.Status.OK);
         public static final API_V2 DELETE_RULE_BY_GUID             = new API_V2(ATLAS_RULES_API + "guid/", HttpMethod.DELETE, Response.Status.OK);
         public static final API_V2 DELETE_RULES_BY_GUID            = new API_V2(ATLAS_RULES_API, HttpMethod.DELETE, Response.Status.OK);
+        public static final API_V2 DELETE_ALL_RULES                = new API_V2(ATLAS_RULES_API + "all", HttpMethod.DELETE, Response.Status.OK);
 
         private API_V2(String path, String method, Response.Status status) {
             super(path, method, status);
