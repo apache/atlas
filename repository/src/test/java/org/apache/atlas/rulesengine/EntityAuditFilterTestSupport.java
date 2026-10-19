@@ -19,7 +19,6 @@ package org.apache.atlas.rulesengine;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.instance.AtlasRule;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 
 import java.lang.reflect.Constructor;
@@ -39,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Builds the same five audit filter rules as {@code EntityAuditFilterIT} and provides
+ * Builds the standard five audit filter rules (rule_1–rule_5) and provides
  * a rules engine backed by an in-memory type registry (no Atlas server).
  */
 final class EntityAuditFilterTestSupport {
@@ -69,49 +68,16 @@ final class EntityAuditFilterTestSupport {
         return new AtlasRulesEngine(auditFilterService);
     }
 
-    static AtlasRulesEngine createRulesEngineWithRules(List<AtlasRule> rules) throws Exception {
-        AtlasTypeRegistry registry = createTypeRegistry();
-        AtlasEntityAuditFilterService delegate = new AtlasEntityAuditFilterService(null, registry, null);
-        AtlasEntityAuditFilterService.JsonLogicConverter jsonLogicConverter = newJsonLogicConverter(delegate);
-
-        AtlasEntityAuditFilterService auditFilterService = mock(AtlasEntityAuditFilterService.class);
-        when(auditFilterService.fetchRules()).thenReturn(AtlasRuleUtils.getSortedRules(rules));
-        when(auditFilterService.getDefaultAction()).thenReturn(AtlasRuleUtils.getRuleActionFromString("ACCEPT"));
-        when(auditFilterService.getJsonLogicConverter()).thenReturn(jsonLogicConverter);
-
-        return new AtlasRulesEngine(auditFilterService);
-    }
-
     static String convertRuleToJsonLogic(AtlasRule rule) throws Exception {
-        return convertRuleToJsonLogic(rule, false);
-    }
-
-    /** Uses {@link AtlasRuleUtils#getRuleExprJsonString} (json-simple), same as {@link AtlasRulesEngine} at runtime. */
-    static String convertRuleToJsonLogic(AtlasRule rule, boolean useAtlasJsonForRuleExpr) throws Exception {
         AtlasEntityAuditFilterService delegate = new AtlasEntityAuditFilterService(null, createTypeRegistry(), null);
-        String ruleExprJson = useAtlasJsonForRuleExpr
-                ? AtlasType.toJson(rule.getRuleExpr().getRuleExprObjList())
-                : AtlasRuleUtils.getRuleExprJsonString(rule.getRuleExpr());
-        return newJsonLogicConverter(delegate).convertToJsonLogic(ruleExprJson);
+        return newJsonLogicConverter(delegate).convertToJsonLogic(
+                AtlasRuleUtils.getRuleExprJsonString(rule.getRuleExpr()));
     }
 
-    /** P0-2 example: string {@code attributeValue} {@code temp} with {@code containsIgnoreCase}. */
-    static AtlasRule nameContainsIgnoreCaseTempRule() {
-        return nameContainsIgnoreCaseNeedleRule(CRITERION_VAL_TEMP);
-    }
-
-    static AtlasRule nameContainsIgnoreCaseNeedleRule(String needle) {
-        return rule("p0_2_name_contains_" + needle.hashCode(), "DISCARD",
+    static AtlasRule nameContainsIgnoreCaseRule(String matchValue) {
+        return rule("name_contains_ignore_case_" + matchValue.hashCode(), "DISCARD",
                 criterion("hive_table,hive_db", CRITERION_ATTR_NAME,
-                        AtlasRule.RuleExprObject.Operator.CONTAINS_IGNORECASE, needle, false));
-    }
-
-    /** P0-2 example: string {@code attributeValue} {@code ENTITY_DELETE} with {@code operationType} EQ. */
-    static AtlasRule hiveEntityDeleteOperationTypeRule() {
-        return rule("p0_2_entity_delete_op", "DISCARD",
-                nestedCriterion("hive*", AtlasRule.Condition.OR, false,
-                        criterionLeaf(CRITERION_ATTR_OPERATION, AtlasRule.RuleExprObject.Operator.EQ,
-                                CRITERION_VAL_ENTITY_DELETE)));
+                        AtlasRule.RuleExprObject.Operator.CONTAINS_IGNORECASE, matchValue, false));
     }
 
     static Map<String, Object> auditEvent(String typeName, String name, EntityAuditActionV2 action) {
