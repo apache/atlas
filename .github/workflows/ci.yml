@@ -38,7 +38,6 @@ jobs:
     timeout-minutes: 180
 
     strategy:
-      fail-fast: false
       matrix:
         java: [ 8, 17 ]
 
