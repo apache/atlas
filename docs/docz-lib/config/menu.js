@@ -12,7 +12,8 @@ export default [
                     "Classification Propagation",
                     "Notifications",
                     "High Availability",
-                    "Business Metadata"
+                    "Business Metadata",
+                    "Entity Audit Filters"
                 ]
             },
             {
