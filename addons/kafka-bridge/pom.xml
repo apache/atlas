@@ -205,7 +205,14 @@
                     <webApp>
                         <contextPath>/</contextPath>
                         <descriptor>${project.basedir}/../../webapp/src/main/webapp/WEB-INF/web.xml</descriptor>
-                        <extraClasspath>${project.basedir}/../../webapp/target/test-classes/</extraClasspath>
+                        <!--
+                          ATLAS-5220: the shipped WAR is profile-slim (storage-hbase by default), so the
+                          embedded berkeleyje backend used by the integration tests is NOT bundled in the
+                          WAR. deploy-war does not add test-scoped dependency jars to the server classpath,
+                          so make the berkeleyje backend (copied by the webapp copy-it-backend-libs
+                          execution) available to the IT server here.
+                        -->
+                        <extraClasspath>${project.basedir}/../../webapp/target/test-classes/,${project.basedir}/../../webapp/target/it-backend-libs/janusgraph-berkeleyje.jar,${project.basedir}/../../webapp/target/it-backend-libs/je.jar</extraClasspath>
                     </webApp>
                     <useTestScope>true</useTestScope>
                     <systemProperties>
