@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 /**
  * The Compare-And-Swap behind {@link GraphClaimable}, with the compare performed by the graph
@@ -260,6 +261,14 @@ public final class GraphClaim {
      *         lease that has not yet expired
      */
     public static boolean claimLease(AtlasGraph graph, String claimName, String ownerId, long leaseMillis) {
+        return claimLease(graph, claimName, ownerId, leaseMillis, currentOwner -> false);
+    }
+
+    /**
+     * {@link #claimLease} that also takes over an unexpired lease whose holder {@code isDeadHolder} identifies as
+     * gone, such as an earlier process of this same server.
+     */
+    public static boolean claimLease(AtlasGraph graph, String claimName, String ownerId, long leaseMillis, Predicate<String> isDeadHolder) {
         AtlasVertex holder = holderOf(graph, claimName);
         long        now    = System.currentTimeMillis();
 
@@ -276,14 +285,19 @@ public final class GraphClaim {
             }
 
             if (expiresAt != null && expiresAt > now) {
-                LOG.debug("GraphClaim: lease on '{}' is held by node={} until {}, not taking it",
-                        claimName, currentOwner, expiresAt);
+                if (!isDeadHolder.test(currentOwner)) {
+                    LOG.debug("GraphClaim: lease on '{}' is held by node={} until {}, not taking it",
+                            claimName, currentOwner, expiresAt);
 
-                return false;
+                    return false;
+                }
+
+                LOG.warn("GraphClaim: lease on '{}' held by node={} until {} belongs to a process that is gone, taking it over for node={}",
+                        claimName, currentOwner, expiresAt, ownerId);
+            } else {
+                LOG.warn("GraphClaim: lease on '{}' held by node={} lapsed at {}, reclaiming for node={}",
+                        claimName, currentOwner, expiresAt, ownerId);
             }
-
-            LOG.warn("GraphClaim: lease on '{}' held by node={} lapsed at {}, reclaiming for node={}",
-                    claimName, currentOwner, expiresAt, ownerId);
 
             discardClaimVertex(graph, holder);
         }
@@ -336,8 +350,13 @@ public final class GraphClaim {
      * transaction; use {@link #claimLease} directly when they are.
      */
     public static boolean claimLeaseAndCommit(AtlasGraph graph, String claimName, String ownerId, long leaseMillis) {
+        return claimLeaseAndCommit(graph, claimName, ownerId, leaseMillis, currentOwner -> false);
+    }
+
+    /** {@link #claimLeaseAndCommit} with the dead-holder takeover of {@link #claimLease(AtlasGraph, String, String, long, Predicate)}. */
+    public static boolean claimLeaseAndCommit(AtlasGraph graph, String claimName, String ownerId, long leaseMillis, Predicate<String> isDeadHolder) {
         try {
-            if (!claimLease(graph, claimName, ownerId, leaseMillis)) {
+            if (!claimLease(graph, claimName, ownerId, leaseMillis, isDeadHolder)) {
                 // A refused claim can leave the transaction unable to commit - the rdbms store marks it
                 // rollback-only when the store rejects the write - and committing it anyway turns an
                 // ordinary lost race into an unexplained commit failure.  There is nothing to keep.

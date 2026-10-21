@@ -41,6 +41,33 @@ public final class NodeIdentity {
     }
 
     /**
+     * Whether {@code otherNodeId} is an earlier process of this server: same run mode and same host, different
+     * process.  A host runs one Atlas server per run mode, so that process has exited.
+     */
+    public static boolean isEarlierProcessOfThisServer(String otherNodeId) {
+        String thisNodeId = nodeId();
+        String server     = serverOf(otherNodeId);
+
+        return server != null && !StringUtils.equals(otherNodeId, thisNodeId) && server.equals(serverOf(thisNodeId));
+    }
+
+    /**
+     * Reduces a node id to {@code <RUN_MODE>@<host>}.  The host is taken from the JVM name after {@code #}, which
+     * stays the same across restarts even where the host part before it was recorded as {@value #UNKNOWN_HOST}.
+     */
+    static String serverOf(String nodeId) {
+        int runModeEnd = StringUtils.indexOf(nodeId, '@');
+        int jvmStart   = StringUtils.indexOf(nodeId, '#');
+        int hostStart  = StringUtils.lastIndexOf(nodeId, '@');
+
+        if (runModeEnd <= 0 || jvmStart < 0 || hostStart < jvmStart || hostStart == nodeId.length() - 1) {
+            return null;
+        }
+
+        return nodeId.substring(0, runModeEnd) + "@" + nodeId.substring(hostStart + 1);
+    }
+
+    /**
      * {@code HOSTNAME} is usually set only in containers; on a host started by a service manager it
      * is empty, so the resolved local host name is used instead.
      */

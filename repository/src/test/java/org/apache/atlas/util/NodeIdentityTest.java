@@ -25,6 +25,8 @@ import java.lang.management.ManagementFactory;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class NodeIdentityTest {
     @Test
@@ -37,5 +39,40 @@ public class NodeIdentityTest {
     @Test
     public void hostNameIsNeverBlank() {
         assertFalse(StringUtils.isBlank(NodeIdentity.hostName()));
+    }
+
+    @Test
+    public void serverOfKeepsTheRunModeAndTheJvmHost() {
+        assertEquals(NodeIdentity.serverOf("MONOLITHIC@host-1#123@host-1"), "MONOLITHIC@host-1");
+        assertEquals(NodeIdentity.serverOf("MONOLITHIC@unknown-host#3166151@host-1"), "MONOLITHIC@host-1");
+        assertNull(NodeIdentity.serverOf("a-peer"));
+        assertNull(NodeIdentity.serverOf(null));
+    }
+
+    @Test
+    public void anEarlierProcessOnThisHostIsThisServer() {
+        String jvmHost = jvmHost();
+
+        assertTrue(NodeIdentity.isEarlierProcessOfThisServer(AtlasRunMode.current().name() + "@unknown-host#1@" + jvmHost));
+    }
+
+    @Test
+    public void thisProcessIsNotAnEarlierProcess() {
+        assertFalse(NodeIdentity.isEarlierProcessOfThisServer(NodeIdentity.nodeId()));
+    }
+
+    @Test
+    public void anotherHostOrRunModeIsNotThisServer() {
+        String jvmHost = jvmHost();
+
+        assertFalse(NodeIdentity.isEarlierProcessOfThisServer(AtlasRunMode.current().name() + "@other#1@other-host"));
+        assertFalse(NodeIdentity.isEarlierProcessOfThisServer("NOT_A_RUN_MODE@" + jvmHost + "#1@" + jvmHost));
+        assertFalse(NodeIdentity.isEarlierProcessOfThisServer(null));
+    }
+
+    private static String jvmHost() {
+        String jvmName = ManagementFactory.getRuntimeMXBean().getName();
+
+        return jvmName.substring(jvmName.lastIndexOf('@') + 1);
     }
 }

@@ -27,6 +27,7 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NodeIdentity;
@@ -46,6 +47,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -373,18 +375,38 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
     /**
      * One server ages audits for the cluster. The schedule is installed on every JVM, and releasing
      * the lease at the end of the run would let a peer that woke a moment later age the same rows again.
-     * The lease is held until shortly before the next cycle.
+     * The lease is held until shortly before the next cycle.  It belongs to the server rather than the process:
+     * a restarted owner takes over the lease its earlier process left and ages audits on startup, instead of
+     * every server standing down until the lease runs out.
      */
     private void runScheduledAuditAging() {
         String ownerId = NodeIdentity.nodeId();
         long   leaseMs = Math.max(DateUtils.MILLIS_PER_MINUTE, getAuditAgingFrequencyInMillis() - DateUtils.MILLIS_PER_MINUTE);
 
-        if (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_AUDIT_AGING, ownerId, leaseMs)) {
-            LOG.info("Audit aging is owned by another node this cycle, standing down. ownerId={}", ownerId);
+        if (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_AUDIT_AGING, ownerId, leaseMs, NodeIdentity::isEarlierProcessOfThisServer)) {
+            logAuditAgingHolder(ownerId);
             return;
         }
 
         startAuditAgingByConfig();
+    }
+
+    private void logAuditAgingHolder(String ownerId) {
+        try {
+            AtlasVertex holder    = GraphClaim.holderOf(graph, Constants.CLAIM_AUDIT_AGING);
+            Long        expiresAt = GraphClaim.expiryOf(holder);
+
+            LOG.info("Audit aging is owned by node={} until {}, standing down. thisNode={}",
+                    GraphClaim.claimedBy(holder), expiresAt == null ? null : new Date(expiresAt), ownerId);
+        } catch (Exception e) {
+            LOG.info("Audit aging is owned by another node this cycle, standing down. thisNode={}", ownerId);
+        } finally {
+            try {
+                graph.rollback();
+            } catch (Exception e) {
+                LOG.debug("Rollback after reading the audit aging holder did not complete", e);
+            }
+        }
     }
 
     private long getAuditAgingFrequencyInMillis() {

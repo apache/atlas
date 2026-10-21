@@ -156,6 +156,55 @@ public class GraphClaimTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    public void aLiveLeaseOfADeadHolderIsTakenOver() {
+        AtlasGraph      graph      = mock(AtlasGraph.class);
+        AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
+        AtlasVertex     deadHolder = mock(AtlasVertex.class);
+        AtlasVertex     newHolder  = mock(AtlasVertex.class);
+
+        when(graph.isClaimIndexUsable()).thenReturn(true);
+        when(graph.query()).thenReturn(query);
+        when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
+        when(query.vertices()).thenReturn(Collections.singletonList(deadHolder));
+        when(graph.addVertex()).thenReturn(newHolder);
+        when(deadHolder.getProperty(Constants.CLAIM_KEY, String.class)).thenReturn(CLAIM_NAME);
+        when(deadHolder.getProperty(Constants.CLAIM_OWNER_KEY, String.class)).thenReturn("earlier-process");
+        when(deadHolder.getProperty(Constants.CLAIM_EXPIRY_KEY, Long.class)).thenReturn(System.currentTimeMillis() + 60_000L);
+        when(deadHolder.getProperty(Constants.CLAIM_VERTEX_TYPE_KEY, String.class)).thenReturn(Constants.CLAIM_VERTEX_TYPE_NAME);
+
+        try (MockedStatic<AtlasGraphProvider> graphProviderMock = Mockito.mockStatic(AtlasGraphProvider.class)) {
+            graphProviderMock.when(AtlasGraphProvider::getGraphInstance).thenReturn(graph);
+
+            assertTrue(GraphClaim.claimLeaseAndCommit(graph, CLAIM_NAME, "this-node", 30_000L, "earlier-process"::equals));
+        }
+
+        verify(graph).removeVertex(deadHolder);
+        verify(graph).addVertex();
+        verify(graph).commit();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void aLiveLeaseOfAPeerIsNotTakenOver() {
+        AtlasGraph      graph      = mock(AtlasGraph.class);
+        AtlasGraphQuery query      = mock(AtlasGraphQuery.class);
+        AtlasVertex     peerHolder = mock(AtlasVertex.class);
+
+        when(graph.isClaimIndexUsable()).thenReturn(true);
+        when(graph.query()).thenReturn(query);
+        when(query.has(Constants.CLAIM_KEY, CLAIM_NAME)).thenReturn(query);
+        when(query.vertices()).thenReturn(Collections.singletonList(peerHolder));
+        when(peerHolder.getProperty(Constants.CLAIM_OWNER_KEY, String.class)).thenReturn("a-peer");
+        when(peerHolder.getProperty(Constants.CLAIM_EXPIRY_KEY, Long.class)).thenReturn(System.currentTimeMillis() + 60_000L);
+
+        assertFalse(GraphClaim.claimLeaseAndCommit(graph, CLAIM_NAME, "this-node", 30_000L, "earlier-process"::equals));
+
+        verify(graph, never()).removeVertex(peerHolder);
+        verify(graph, never()).commit();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     public void holderOfUsesUniqueKeyLookupInsteadOfAVertexScan() {
         AtlasGraph graph = mock(AtlasGraph.class);
         org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler uniqueKeys =
