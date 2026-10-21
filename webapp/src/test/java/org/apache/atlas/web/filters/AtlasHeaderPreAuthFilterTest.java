@@ -19,6 +19,8 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.filters.AtlasAuthenticationToken;
+import org.apache.atlas.server.common.filters.AtlasHeaderPreAuthFilter;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -77,6 +79,8 @@ public class AtlasHeaderPreAuthFilterTest {
                 .thenReturn("X-Forwarded-User");
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
                 .thenReturn("X-Forwarded-Groups");
+        when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
+                .thenReturn(new String[0]);
         when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
         when(request.getHeader("X-Forwarded-Groups")).thenReturn("ROLE_ADMIN, ROLE_USER");
 
@@ -107,6 +111,8 @@ public class AtlasHeaderPreAuthFilterTest {
                 .thenReturn("X-Forwarded-User");
         when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
                 .thenReturn("X-Forwarded-Groups");
+        when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
+                .thenReturn(new String[0]);
         when(request.getHeader("X-Forwarded-User")).thenReturn("   ");
 
         try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
@@ -140,5 +146,103 @@ public class AtlasHeaderPreAuthFilterTest {
 
         assertSame(SecurityContextHolder.getContext().getAuthentication(), existing);
         verify(filterChain).doFilter(eq(request), any(HttpServletResponse.class));
+    }
+
+    @Test
+    public void testDoFilterEnabledWithSpiffeHeaderSetsServiceAccountAuthentication() throws Exception {
+        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
+                .thenReturn(new String[] {"X-Spiffe-Id"});
+        when(request.getHeader("X-Spiffe-Id"))
+                .thenReturn("spiffe://prod-cluster.k8s.example.com/ns/ingress-nginx/sa/nginx-ingress");
+
+        try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            appProps.when(ApplicationProperties::get).thenReturn(configuration);
+
+            AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
+            filter.doFilter(request, response, filterChain);
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(auth);
+        assertTrue(auth instanceof AtlasAuthenticationToken);
+
+        UserDetails principal = (UserDetails) ((AtlasAuthenticationToken) auth).getPrincipal();
+        assertEquals(principal.getUsername(), "nginx-ingress");
+        assertEquals(((AtlasAuthenticationToken) auth).getAuthType(), AtlasAuthenticationToken.AUTH_TYPE_TRUSTED_PROXY);
+        verify(filterChain).doFilter(eq(request), any(HttpServletResponse.class));
+    }
+
+    @Test
+    public void testDoFilterEnabledUsernameHeaderTakesPrecedenceOverSpiffe() throws Exception {
+        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
+                .thenReturn("X-Forwarded-User");
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
+                .thenReturn(new String[] {"X-Spiffe-Id"});
+        when(request.getHeader("X-Forwarded-User")).thenReturn("alice");
+        when(request.getHeader("X-Spiffe-Id"))
+                .thenReturn("spiffe://my-cluster/ns/service-namespace/sa/service-sa");
+
+        try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            appProps.when(ApplicationProperties::get).thenReturn(configuration);
+
+            AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
+            filter.doFilter(request, response, filterChain);
+        }
+
+        UserDetails principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        assertEquals(principal.getUsername(), "alice");
+    }
+
+    @Test
+    public void testDoFilterEnabledWithMultipleSpiffeHeadersUsesFirstValid() throws Exception {
+        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
+                .thenReturn(new String[] {"X-Spiffe-Id-Unused", "X-Spiffe-Id"});
+        when(request.getHeader("X-Spiffe-Id-Unused")).thenReturn(null);
+        when(request.getHeader("X-Spiffe-Id"))
+                .thenReturn("spiffe://my-cluster/ns/service-namespace/sa/service-sa");
+
+        try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            appProps.when(ApplicationProperties::get).thenReturn(configuration);
+
+            AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
+            filter.doFilter(request, response, filterChain);
+        }
+
+        UserDetails principal = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        assertEquals(principal.getUsername(), "service-sa");
+    }
+
+    @Test
+    public void testDoFilterEnabledMalformedSpiffeHeaderDoesNotAuthenticate() throws Exception {
+        when(configuration.getBoolean(AtlasHeaderPreAuthFilter.PROP_HEADER_AUTH_ENABLED, false)).thenReturn(true);
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_USERNAME_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getString(AtlasHeaderPreAuthFilter.PROP_ROLES_HEADER, ""))
+                .thenReturn("");
+        when(configuration.getStringArray(AtlasHeaderPreAuthFilter.PROP_SPIFFE_HEADER))
+                .thenReturn(new String[] {"X-Spiffe-Id"});
+        when(request.getHeader("X-Spiffe-Id")).thenReturn("not-a-spiffe-id");
+
+        try (MockedStatic<ApplicationProperties> appProps = org.mockito.Mockito.mockStatic(ApplicationProperties.class)) {
+            appProps.when(ApplicationProperties::get).thenReturn(configuration);
+
+            AtlasHeaderPreAuthFilter filter = new AtlasHeaderPreAuthFilter();
+            filter.doFilter(request, response, filterChain);
+        }
+
+        assertEquals(SecurityContextHolder.getContext().getAuthentication(), null);
     }
 }
