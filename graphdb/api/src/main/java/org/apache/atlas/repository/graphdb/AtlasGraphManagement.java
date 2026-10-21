@@ -180,6 +180,9 @@ public interface AtlasGraphManagement extends AutoCloseable {
      * REGISTERED (not ENABLED) state and is ignored by the query planner until it is enabled and
      * reindexed. This is a no-op fast path when the index is already ENABLED.</p>
      *
+     * <p>Rolls back this management's own transaction first; do not make schema changes through
+     * this management before calling it.</p>
+     *
      * @param indexName name of the composite index (its single property key name)
      * @return {@code true} when the index is ENABLED (and thus usable) after the call
      */

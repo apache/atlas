@@ -36,9 +36,11 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -254,12 +256,226 @@ public class GraphBackedSearchIndexerActivationTest {
             IndexRecoveryService.RecoveryInfoManagement claimManager = claimManagerConstruction.constructed().get(0);
             verify(claimManager, times(1)).tryClaimOwnership(anyString(), anyLong());
             verify(claimManager, times(1)).isOwner(anyString());
-            verify(claimManager, times(1)).releaseOwnership(anyString());
+            // once on giving up the lease to wait, once when activation finishes
+            verify(claimManager, times(2)).releaseOwnership(anyString());
 
             // once for the readiness check, once for reading the index field names
             verify(waitManagement, times(2)).setIsSuccess(true);
             verify(typeRegistry, times(1)).addIndexFieldName(Constants.TYPENAME_PROPERTY_KEY, INDEX_FIELD_NAME);
         }
+    }
+
+    /**
+     * Both nodes of AMRA-1 ended up waiting for the other to finish index setup. A node that keeps
+     * losing lock races must give the lease up and take it back once nobody holds it, rather than
+     * wait for a peer that is itself waiting.
+     */
+    @Test
+    public void instanceIsActive_whenLockContentionPersists_releasesAndReclaimsOwnershipInsteadOfWaitingForever() throws Exception {
+        AtlasGraphManagement[] failing = { lockedManagement(), lockedManagement(), lockedManagement() };
+
+        activateAfterContention(failing, true, claimManager -> {
+            // the initial claim and the claim taken back after giving the lease up
+            verify(claimManager, times(2)).tryClaimOwnership(anyString(), anyLong());
+            verify(claimManager, times(2)).releaseOwnership(anyString());
+        });
+    }
+
+    @Test
+    public void instanceIsActive_whenOwnershipLostAndNoPeerHoldsTheLease_reclaimsAndCreatesIndexes() throws Exception {
+        AtlasGraphManagement[] failing = { lockedManagement() };
+
+        activateAfterContention(failing, false, claimManager -> {
+            verify(claimManager, times(1)).isOwner(anyString());
+            verify(claimManager, times(2)).tryClaimOwnership(anyString(), anyLong());
+        });
+    }
+
+    private void activateAfterContention(AtlasGraphManagement[] failing, boolean stillOwner,
+            Consumer<IndexRecoveryService.RecoveryInfoManagement> verifyClaims) throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement notReady = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphManagement building = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphIndex graphIndex = Mockito.mock(AtlasGraphIndex.class);
+        AtlasPropertyKey propertyKey = Mockito.mock(AtlasPropertyKey.class);
+
+        List<AtlasGraphManagement> sequence = new ArrayList<>(Arrays.asList(failing));
+
+        sequence.add(notReady);
+        sequence.add(building);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(sequence.get(0), sequence.subList(1, sequence.size()).toArray(new AtlasGraphManagement[0]));
+
+        // the peer has not built anything, so the readiness check finds nothing to wait for
+        when(notReady.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(null);
+
+        when(building.getGraphIndex(Constants.VERTEX_INDEX)).thenReturn(graphIndex);
+        when(building.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
+        when(building.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(building.getPropertyKey(anyString())).thenReturn(propertyKey);
+        when(building.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class);
+                MockedStatic<GraphClaim> graphClaimMock = Mockito.mockStatic(GraphClaim.class);
+                MockedConstruction<IndexRecoveryService.RecoveryInfoManagement> claimManagerConstruction =
+                        Mockito.mockConstruction(IndexRecoveryService.RecoveryInfoManagement.class, (mock, context) -> {
+                            when(mock.tryClaimOwnership(anyString(), anyLong())).thenReturn(true);
+                            when(mock.isOwner(anyString())).thenReturn(stillOwner);
+                        })) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+            graphClaimMock.when(() -> GraphClaim.attempt(any())).thenCallRealMethod();
+            graphClaimMock.when(() -> GraphClaim.hasLiveHolder(graph, Constants.CLAIM_INDEX)).thenReturn(false);
+
+            indexer.instanceIsActive();
+
+            // this node built the indexes itself and made the bootstrap lookups usable
+            verify(building, times(1)).ensureCompositeIndexEnabled(Constants.CLAIM_KEY);
+
+            verifyClaims.accept(claimManagerConstruction.constructed().get(0));
+        }
+    }
+
+    @Test
+    public void instanceIsActive_renewsTheLeaseWhileIndexSetupOutlastsIt() throws Exception {
+        int claims = claimsDuringSlowSetup(Long.MAX_VALUE, false);
+
+        org.testng.Assert.assertTrue(claims >= 4, "the lease should be renewed several times during a setup that lasts longer than it, claims=" + claims);
+    }
+
+    /**
+     * Enabling the bootstrap lookup indexes waits on JanusGraph index status after the indexes are
+     * created; on a cluster that wait outlasted the lease and let the peer start index setup too.
+     */
+    @Test
+    public void instanceIsActive_renewsTheLeaseWhileEnablingLookupIndexes() throws Exception {
+        int claims = claimsDuringSlowSetup(Long.MAX_VALUE, true);
+
+        org.testng.Assert.assertTrue(claims >= 4, "the lease should be renewed while lookup indexes are being enabled, claims=" + claims);
+    }
+
+    @Test
+    public void instanceIsActive_stopsRenewingTheLeaseOnceSetupRunsPastTheLimit() throws Exception {
+        org.testng.Assert.assertEquals(claimsDuringSlowSetup(1L, false), 1, "only the initial claim once renewal has run past its limit");
+    }
+
+    /**
+     * Contention that a peer did not cause would otherwise loop forever: the node gives the lease
+     * up, takes it back and hits the same contention again.
+     */
+    @Test
+    public void instanceIsActive_failsAfterTakingOwnershipTheMaximumNumberOfTimes() throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = lockedManagement();
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(configuration.getLong(eq("atlas.index.init.max.cycles"), anyLong())).thenReturn(2L);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry);
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class);
+                MockedStatic<GraphClaim> graphClaimMock = Mockito.mockStatic(GraphClaim.class);
+                MockedConstruction<IndexRecoveryService.RecoveryInfoManagement> claimManagerConstruction =
+                        Mockito.mockConstruction(IndexRecoveryService.RecoveryInfoManagement.class, (mock, context) -> {
+                            when(mock.tryClaimOwnership(anyString(), anyLong())).thenReturn(true);
+                            when(mock.isOwner(anyString())).thenReturn(false);
+                        })) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+            graphClaimMock.when(() -> GraphClaim.attempt(any())).thenCallRealMethod();
+            graphClaimMock.when(() -> GraphClaim.hasLiveHolder(graph, Constants.CLAIM_INDEX)).thenReturn(false);
+
+            org.testng.Assert.expectThrows(AtlasException.class, indexer::instanceIsActive);
+
+            IndexRecoveryService.RecoveryInfoManagement claimManager = claimManagerConstruction.constructed().get(0);
+
+            // the initial claim and one claim taken back before giving up
+            verify(claimManager, times(2)).tryClaimOwnership(anyString(), anyLong());
+        }
+    }
+
+    /**
+     * Runs index setup that takes 600ms against a 300ms lease renewed every 50ms, and returns how
+     * many times the lease was claimed: once to start and once per renewal. The slow step is either
+     * creating the indexes or enabling the {@code __claim} lookup index.
+     */
+    private int claimsDuringSlowSetup(long maxRenewMs, boolean slowLookupIndexEnable) throws Exception {
+        IAtlasGraphProvider provider = Mockito.mock(IAtlasGraphProvider.class);
+        Configuration configuration = Mockito.mock(Configuration.class);
+        AtlasTypeRegistry typeRegistry = Mockito.mock(AtlasTypeRegistry.class);
+        AtlasGraph graph = Mockito.mock(AtlasGraph.class);
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+        AtlasGraphIndex graphIndex = Mockito.mock(AtlasGraphIndex.class);
+        AtlasPropertyKey propertyKey = Mockito.mock(AtlasPropertyKey.class);
+
+        when(provider.get()).thenReturn(graph);
+        when(graph.getManagementSystem()).thenReturn(management);
+        when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenAnswer(invocation -> {
+            if (!slowLookupIndexEnable) {
+                Thread.sleep(600L);
+            }
+
+            return graphIndex;
+        });
+        when(management.ensureCompositeIndexEnabled(Constants.CLAIM_KEY)).thenAnswer(invocation -> {
+            if (slowLookupIndexEnable) {
+                Thread.sleep(600L);
+            }
+
+            return true;
+        });
+        when(management.getGraphIndex(Constants.EDGE_INDEX)).thenReturn(graphIndex);
+        when(management.getGraphIndex(Constants.FULLTEXT_INDEX)).thenReturn(graphIndex);
+        when(management.getPropertyKey(anyString())).thenReturn(propertyKey);
+        when(management.getIndexFieldName(eq(Constants.VERTEX_INDEX), any(AtlasPropertyKey.class), anyBoolean())).thenReturn(INDEX_FIELD_NAME);
+        when(configuration.getLong(eq("atlas.index.init.lease.ms"), anyLong())).thenReturn(300L);
+        when(configuration.getLong(eq("atlas.index.init.lease.renew.ms"), anyLong())).thenReturn(50L);
+        when(configuration.getLong(eq("atlas.index.init.lease.max.renew.ms"), anyLong())).thenReturn(maxRenewMs);
+
+        // renewal runs on its own thread, where a construction mock would not answer as a mock
+        IndexRecoveryService.RecoveryInfoManagement claimManager = Mockito.mock(IndexRecoveryService.RecoveryInfoManagement.class);
+
+        when(claimManager.tryClaimOwnership(anyString(), anyLong())).thenReturn(true);
+        when(claimManager.isOwner(anyString())).thenReturn(true);
+
+        GraphBackedSearchIndexer indexer = new GraphBackedSearchIndexer(provider, configuration, typeRegistry) {
+            @Override
+            IndexRecoveryService.RecoveryInfoManagement newClaimManager(AtlasGraph graph) {
+                return claimManager;
+            }
+        };
+
+        try (MockedStatic<AtlasRunMode> runModeMock = Mockito.mockStatic(AtlasRunMode.class)) {
+            AtlasRunMode runMode = Mockito.mock(AtlasRunMode.class);
+            runModeMock.when(AtlasRunMode::current).thenReturn(runMode);
+            when(runMode.runsIndexSetup()).thenReturn(true);
+
+            indexer.instanceIsActive();
+
+            return (int) Mockito.mockingDetails(claimManager).getInvocations().stream()
+                    .filter(invocation -> invocation.getMethod().getName().equals("tryClaimOwnership"))
+                    .count();
+        }
+    }
+
+    private static AtlasGraphManagement lockedManagement() {
+        AtlasGraphManagement management = Mockito.mock(AtlasGraphManagement.class);
+
+        when(management.getGraphIndex(Constants.VERTEX_INDEX)).thenThrow(new FakePermanentLockingException("lock contention"));
+
+        return management;
     }
 
     /**

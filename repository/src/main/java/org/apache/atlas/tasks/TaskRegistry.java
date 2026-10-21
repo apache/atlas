@@ -19,7 +19,6 @@ package org.apache.atlas.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -28,6 +27,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.atlas.utils.AtlasJson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +36,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -72,7 +71,7 @@ public class TaskRegistry {
     TaskRegistry(AtlasGraph graph, long inProgressStaleThresholdMs) {
         this.graph = graph;
         this.inProgressStaleThresholdMs = inProgressStaleThresholdMs;
-        this.nodeId = buildNodeId();
+        this.nodeId = NodeIdentity.nodeId();
     }
 
     @GraphTransaction
@@ -347,18 +346,6 @@ public class TaskRegistry {
             setEncodedProperty(vertex, Constants.TASK_STATUS, AtlasTask.Status.PENDING.toString());
             setEncodedProperty(vertex, Constants.TASK_UPDATED_TIME, now);
         }
-    }
-
-    private String buildNodeId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (hostName == null || hostName.trim().isEmpty()) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     private boolean hasAnyTaskInProgress() {

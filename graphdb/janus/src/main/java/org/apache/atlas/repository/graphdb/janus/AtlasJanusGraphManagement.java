@@ -384,6 +384,11 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     public boolean ensureCompositeIndexEnabled(String indexName) {
         JanusGraph janusGraph = this.graph.getGraph();
 
+        // This instance acknowledges a new index only after every transaction it had open at that
+        // point closes, and the index cannot leave INSTALLED until it does. Holding this management
+        // open across the wait below would block it until the wait times out.
+        rollback();
+
         try {
             SchemaStatus status = compositeIndexStatus(janusGraph, indexName);
 
@@ -401,9 +406,10 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
             // A composite index built over a key that already had data lands in INSTALLED, then
             // REGISTERED once every instance has seen it. The query planner ignores both. REINDEX
             // is legal only from REGISTERED. Calling it while the index is still INSTALLED throws
-            // and leaves the index unused, so the status is read again after the wait.
+            // and leaves the index unused, so the status is read again after the wait. A peer can
+            // finish the reindex before this instance sees REGISTERED, so ENABLED ends the wait too.
             if (status == INSTALLED) {
-                ManagementSystem.awaitGraphIndexStatus(janusGraph, indexName).status(REGISTERED).call();
+                ManagementSystem.awaitGraphIndexStatus(janusGraph, indexName).status(REGISTERED, ENABLED).call();
 
                 status = compositeIndexStatus(janusGraph, indexName);
             }

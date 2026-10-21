@@ -61,6 +61,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -71,7 +72,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -83,6 +83,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
@@ -179,9 +182,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private static final String         VERTEX_ID_IN_IMPORT_KEY  = "__vIdInImport";
     private static final String         EDGE_ID_IN_IMPORT_KEY    = "__eIdInImport";
     private static final long           INDEX_INIT_LEASE_MS      = 300000L;
+    private static final long           INDEX_INIT_MAX_RENEW_MS  = 1200000L;
+    private static final int            INDEX_INIT_MAX_CYCLES    = 10;
     private static final int            INDEX_INIT_RETRIES       = 3;
     private static final long           INDEX_INIT_RETRY_SLEEP_MS = 5000L;
     private static final long           INDEX_INIT_WAIT_POLL_MS   = 3000L;
+    private static final String         INDEX_INIT_LEASE_MS_PROPERTY       = "atlas.index.init.lease.ms";
+    private static final String         INDEX_INIT_LEASE_RENEW_MS_PROPERTY = "atlas.index.init.lease.renew.ms";
+    private static final String         INDEX_INIT_MAX_RENEW_MS_PROPERTY   = "atlas.index.init.lease.max.renew.ms";
+    private static final String         INDEX_INIT_MAX_CYCLES_PROPERTY     = "atlas.index.init.max.cycles";
     private static final int             DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS = 30;
     private static final long            DEFAULT_SCHEMA_VISIBILITY_WAIT_MS  = 500L;
     private static volatile int          schemaVisibilityAttempts           = DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS;
@@ -214,6 +223,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private Set<String> vertexIndexKeys          = new HashSet<>();
     private Set<String> edgeIndexKeys            = new HashSet<>();
 
+    private final long indexInitLeaseMs;
+    private final long indexInitLeaseRenewMs;
+    private final long indexInitMaxRenewMs;
+    private final int  indexInitMaxCycles;
+
     private volatile boolean stoodDownFromIndexSetup;
 
     private enum IndexSetupWaitOutcome { COMPLETED_BY_PEER, OWNERSHIP_ACQUIRED, INTERRUPTED }
@@ -227,6 +241,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     GraphBackedSearchIndexer(IAtlasGraphProvider provider, Configuration configuration, AtlasTypeRegistry typeRegistry) throws IndexException, RepositoryException {
         this.provider     = provider;
         this.typeRegistry = typeRegistry;
+
+        this.indexInitLeaseMs      = positiveOrDefault(configuration, INDEX_INIT_LEASE_MS_PROPERTY, INDEX_INIT_LEASE_MS);
+        this.indexInitLeaseRenewMs = positiveOrDefault(configuration, INDEX_INIT_LEASE_RENEW_MS_PROPERTY, indexInitLeaseMs / 3);
+        this.indexInitMaxRenewMs   = positiveOrDefault(configuration, INDEX_INIT_MAX_RENEW_MS_PROPERTY, INDEX_INIT_MAX_RENEW_MS);
+        this.indexInitMaxCycles    = (int) positiveOrDefault(configuration, INDEX_INIT_MAX_CYCLES_PROPERTY, INDEX_INIT_MAX_CYCLES);
 
         //make sure solr index follows graph backed index listener
         addIndexListener(new SolrIndexHelper(typeRegistry));
@@ -284,8 +303,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             return;
         }
 
-        String ownerId = buildIndexInitOwnerId();
-        IndexRecoveryService.RecoveryInfoManagement claimManager = new IndexRecoveryService.RecoveryInfoManagement(provider.get());
+        String ownerId = NodeIdentity.nodeId();
+        IndexRecoveryService.RecoveryInfoManagement claimManager = newClaimManager(provider.get());
         GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
             @Override
             public String claimName() {
@@ -294,7 +313,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             @Override
             public Boolean tryClaim() {
-                return claimManager.tryClaimOwnership(ownerId, INDEX_INIT_LEASE_MS);
+                return claimManager.tryClaimOwnership(ownerId, indexInitLeaseMs);
             }
 
             @Override
@@ -330,12 +349,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             try {
                 initializeWithRetries(claimManager, ownerId);
-
-                // Only the node that actually created the indexes makes bootstrap lookup indexes
-                // usable; a node that stood down to a peer must not reindex.
-                if (!stoodDownFromIndexSetup) {
-                    ensureBootstrapLookupIndexesUsable();
-                }
             } catch (RepositoryException | IndexException e) {
                 throw new AtlasException("Error in reacting to active on initialization", e);
             } finally {
@@ -346,16 +359,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private String buildIndexInitOwnerId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
+    @VisibleForTesting
+    IndexRecoveryService.RecoveryInfoManagement newClaimManager(AtlasGraph graph) {
+        return new IndexRecoveryService.RecoveryInfoManagement(graph);
+    }
 
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
+    private static long positiveOrDefault(Configuration configuration, String property, long defaultValue) {
+        long value = configuration != null ? configuration.getLong(property, defaultValue) : defaultValue;
 
-        return runMode + "@" + hostName + "#" + jvmId;
+        return value > 0 ? value : defaultValue;
     }
 
     /**
@@ -399,56 +411,119 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
+    /**
+     * Runs index setup while this node holds the index lease.
+     *
+     * <p>A node that loses the lease, or keeps losing lock races, gives the lease up and goes back
+     * to waiting for either a peer to finish or the lease to come free. Waiting only for a peer to
+     * finish is not enough: when both nodes end up waiting, neither is building the indexes.
+     *
+     * <p>Contention that is not caused by a peer - a stale store lock, a failing backend - would
+     * cycle forever, so the number of times this node takes the lease back is capped.
+     */
     private void initializeWithRetries(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) throws RepositoryException, IndexException, AtlasException {
-        for (int attempt = 1; attempt <= INDEX_INIT_RETRIES; attempt++) {
-            try {
-                initialize();
-                return;
-            } catch (RepositoryException | IndexException e) {
-                if (!isLockContention(e)) {
-                    throw e;
-                }
+        for (int cycle = 1; ; cycle++) {
+            Exception contention = null;
 
-                if (!claimManager.isOwner(ownerId)) {
-                    LOG.warn("GraphBackedSearchIndexer: lost index-init ownership during attempt {}; waiting for peer completion", attempt);
-
-                    if (waitForIndexSetupCompletion()) {
-                        standDownFromIndexSetup();
-
-                        return;
+            for (int attempt = 1; attempt <= INDEX_INIT_RETRIES; attempt++) {
+                try {
+                    initializeHoldingLease(claimManager, ownerId);
+                    return;
+                } catch (RepositoryException | IndexException e) {
+                    if (!isLockContention(e)) {
+                        throw e;
                     }
 
-                    throw new AtlasException("Lost index-init ownership and was interrupted while waiting for peer completion", e);
-                }
+                    contention = e;
 
-                if (attempt >= INDEX_INIT_RETRIES) {
-                    LOG.warn("GraphBackedSearchIndexer: lock contention persisted after {} attempts; waiting for peer completion", attempt, e);
-
-                    if (waitForIndexSetupCompletion()) {
-                        standDownFromIndexSetup();
-
-                        return;
+                    if (!claimManager.isOwner(ownerId)) {
+                        LOG.warn("GraphBackedSearchIndexer: lost index-init ownership during attempt {}; waiting for peer completion or ownership", attempt);
+                        break;
                     }
 
-                    throw new AtlasException("Lock contention persisted and wait for peer completion was interrupted", e);
-                }
+                    if (attempt >= INDEX_INIT_RETRIES) {
+                        LOG.warn("GraphBackedSearchIndexer: lock contention persisted after {} attempts; releasing ownership and waiting for peer completion or ownership", attempt, e);
+                        break;
+                    }
 
-                LOG.warn("GraphBackedSearchIndexer: lock contention during attempt {}/{}; retrying after {}ms",
-                        attempt, INDEX_INIT_RETRIES, INDEX_INIT_RETRY_SLEEP_MS, e);
-                sleepQuietly(INDEX_INIT_RETRY_SLEEP_MS);
+                    LOG.warn("GraphBackedSearchIndexer: lock contention during attempt {}/{}; retrying after {}ms",
+                            attempt, INDEX_INIT_RETRIES, INDEX_INIT_RETRY_SLEEP_MS, e);
+                    sleepQuietly(INDEX_INIT_RETRY_SLEEP_MS);
+                }
             }
+
+            claimManager.releaseOwnership(ownerId);
+
+            if (cycle >= indexInitMaxCycles) {
+                throw new AtlasException("Index setup did not complete after taking index-init ownership " + cycle + " times", contention);
+            }
+
+            IndexSetupWaitOutcome waitOutcome = waitForIndexSetupCompletionOrOwnership(claimManager, ownerId);
+
+            if (waitOutcome == IndexSetupWaitOutcome.COMPLETED_BY_PEER) {
+                standDownFromIndexSetup();
+
+                return;
+            }
+
+            if (waitOutcome == IndexSetupWaitOutcome.INTERRUPTED) {
+                throw new AtlasException("Interrupted while waiting for index initialization to complete on another node", contention);
+            }
+
+            LOG.info("GraphBackedSearchIndexer: reacquired index-init ownership (owner={}, cycle {}/{}); retrying index setup", ownerId, cycle + 1, indexInitMaxCycles);
         }
     }
 
-    private boolean waitForIndexSetupCompletion() {
-        while (true) {
-            if (isIndexSetupComplete()) {
-                return true;
-            }
+    /**
+     * Index setup can outlast the lease - a first start against a new index backend creates every
+     * index from scratch - so the lease is renewed while it runs. Otherwise a waiting peer takes
+     * the lapsed lease and both nodes create indexes at once.
+     *
+     * <p>Renewal stops after a fixed total, so a setup that hangs lets its lease lapse and a peer
+     * take over instead of holding the lease forever.
+     *
+     * <p>Enabling the bootstrap lookup indexes waits on JanusGraph index status and can take longer
+     * than creating them, so it runs under the renewed lease too. Only the node that created the
+     * indexes gets here; a node that stood down to a peer must not reindex.
+     */
+    private void initializeHoldingLease(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) throws RepositoryException, IndexException {
+        long                     now        = System.currentTimeMillis();
+        long                     renewUntil = indexInitMaxRenewMs > Long.MAX_VALUE - now ? Long.MAX_VALUE : now + indexInitMaxRenewMs;
+        ScheduledExecutorService renewer    = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "index-init-lease-renewer");
 
-            if (!sleepQuietly(INDEX_INIT_WAIT_POLL_MS)) {
-                return false;
+            thread.setDaemon(true);
+
+            return thread;
+        });
+
+        renewer.scheduleWithFixedDelay(() -> renewIndexInitLease(claimManager, ownerId, renewUntil),
+                indexInitLeaseRenewMs, indexInitLeaseRenewMs, TimeUnit.MILLISECONDS);
+
+        try {
+            initialize();
+            ensureBootstrapLookupIndexesUsable();
+        } finally {
+            renewer.shutdownNow();
+        }
+    }
+
+    private void renewIndexInitLease(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId, long renewUntil) {
+        if (System.currentTimeMillis() >= renewUntil) {
+            LOG.warn("GraphBackedSearchIndexer: index setup has run past {}ms; no longer renewing the index-init lease (owner={}) so a peer can take over", indexInitMaxRenewMs, ownerId);
+
+            // a periodic task that throws is not run again
+            throw new IllegalStateException("index-init lease renewal limit reached");
+        }
+
+        try {
+            if (claimManager.isOwner(ownerId) && claimManager.tryClaimOwnership(ownerId, indexInitLeaseMs)) {
+                LOG.info("GraphBackedSearchIndexer: renewed index-init lease for {}ms (owner={})", indexInitLeaseMs, ownerId);
+            } else {
+                LOG.warn("GraphBackedSearchIndexer: could not renew index-init lease (owner={}); a peer may take over index setup", ownerId);
             }
+        } catch (Exception e) {
+            LOG.warn("GraphBackedSearchIndexer: error renewing index-init lease (owner={})", ownerId, e);
         }
     }
 
@@ -466,7 +541,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
 
                 try {
-                    if (claimManager.tryClaimOwnership(ownerId, INDEX_INIT_LEASE_MS)) {
+                    if (claimManager.tryClaimOwnership(ownerId, indexInitLeaseMs)) {
                         return IndexSetupWaitOutcome.OWNERSHIP_ACQUIRED;
                     }
                 } catch (Exception e) {
@@ -822,7 +897,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
      */
     private void initialize(AtlasGraph graph) throws RepositoryException, IndexException {
         for (int attempt = 1; attempt <= schemaVisibilityAttempts; attempt++) {
-            // Probe before opening management. A management transaction and a data
+            // The probe scans vertices without an index, so it runs only while the index is absent.
+            if (initializeSchemaIfIndexVisible(graph)) {
+                return;
+            }
+
+            // Probe with no management open. A management transaction and a data
             // transaction cannot be open together, and the probe has to commit first.
             Boolean hasAtlasData = graphHasAtlasData(graph);
 
@@ -949,6 +1029,22 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             throw new RepositoryException(t);
         } finally {
             recomputeIndexedKeys = true;
+        }
+    }
+
+    private boolean initializeSchemaIfIndexVisible(AtlasGraph graph) throws RepositoryException {
+        try (AtlasGraphManagement management = graph.getManagementSystem()) {
+            if (management.getGraphIndex(VERTEX_INDEX) == null) {
+                return false;
+            }
+
+            initializeSchema(graph, management);
+
+            return true;
+        } catch (RepositoryException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw new RepositoryException(failure);
         }
     }
 
@@ -1091,7 +1187,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
      * read them.
      */
     private void registerCommonIndexFieldNames() {
-        long deadline = System.currentTimeMillis() + INDEX_INIT_LEASE_MS;
+        long deadline = System.currentTimeMillis() + indexInitLeaseMs;
         int  attempt  = 0;
 
         while (true) {

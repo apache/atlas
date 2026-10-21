@@ -61,6 +61,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -79,7 +80,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -371,7 +371,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             File               topModeltypesDir  = new File(modelsDirName);
             File[]             modelsDirContents = topModeltypesDir.exists() ? topModeltypesDir.listFiles() : null;
             AtlasPatchRegistry patchRegistry     = new AtlasPatchRegistry(graph);
-            String             nodeId            = buildPatchNodeId();
+            String             nodeId            = NodeIdentity.nodeId();
 
             List<File> modelFolders = new ArrayList<>();
 
@@ -920,18 +920,6 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                 }
             }
         }
-    }
-
-    private String buildPatchNodeId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     /**

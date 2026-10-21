@@ -498,7 +498,8 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                 // transaction opened against an empty cache, then committed, is what hides the
                 // stored indexes.
                 boolean storedIndex = storedVertexIndexExists(graph);
-                boolean hasAtlasData = graphHasAtlasData(graph);
+                // The probe scans vertices without an index; only a graph with no stored index needs it.
+                boolean hasAtlasData = storedIndex || graphHasAtlasData(graph);
 
                 managementSystem = graph.openManagement();
 

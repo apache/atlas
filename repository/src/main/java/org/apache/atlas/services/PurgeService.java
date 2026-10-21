@@ -47,6 +47,7 @@ import org.apache.atlas.service.Service;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.tasks.GraphLeaseClaimable;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
@@ -58,7 +59,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -127,7 +127,7 @@ public class PurgeService implements Service, GraphLeaseClaimable {
         this.entityStore           = entityStore;
         this.typeRegistry          = typeRegistry;
         this.auditService          = auditService;
-        this.ownerId               = buildOwnerId();
+        this.ownerId               = NodeIdentity.nodeId();
     }
 
     @Override
@@ -688,18 +688,6 @@ public class PurgeService implements Service, GraphLeaseClaimable {
             return atlasProperties.getInt(CLEANUP_WORKER_BATCH_SIZE, DEFAULT_CLEANUP_WORKER_BATCH_SIZE);
         }
         return DEFAULT_CLEANUP_WORKER_BATCH_SIZE;
-    }
-
-    private String buildOwnerId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     private long getPurgeOwnerLeaseMs() {

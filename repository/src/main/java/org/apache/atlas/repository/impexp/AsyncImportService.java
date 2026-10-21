@@ -20,7 +20,6 @@ package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -35,6 +34,7 @@ import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.tasks.GraphClaimable;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -44,7 +44,6 @@ import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -81,7 +80,7 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
         this.graph       = graph;
         this.importCache = new ImportCacheManager<>(AsyncImportService::isTerminal);
         this.processingStaleThresholdMs = processingStaleThresholdMs;
-        this.nodeId = buildNodeId();
+        this.nodeId = NodeIdentity.nodeId();
     }
 
     /**
@@ -604,18 +603,6 @@ public class AsyncImportService implements GraphClaimable<AtlasAsyncImportReques
             LOG.warn("fetchStatusFromGraph(): unrecognised status '{}' for import {}", values.get(0), importId);
             return null;
         }
-    }
-
-    private String buildNodeId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     public void deleteRequests() {

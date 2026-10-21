@@ -18,7 +18,6 @@
 
 package org.apache.atlas.repository.patches;
 
-import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.patches.AtlasPatch;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
@@ -30,13 +29,13 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasTypeDefGraphStoreV2;
 import org.apache.atlas.tasks.GraphClaim;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -81,7 +80,7 @@ public class AtlasPatchRegistry {
         LOG.info("AtlasPatchRegistry: initializing..");
 
         this.graph              = graph;
-        this.nodeId             = buildNodeId();
+        this.nodeId             = NodeIdentity.nodeId();
         this.patchNameStatusMap = getPatchNameStatusForAllRegistered(graph);
 
         LOG.info("AtlasPatchRegistry: found {} patches", patchNameStatusMap.size());
@@ -391,18 +390,6 @@ public class AtlasPatchRegistry {
 
         setEncodedProperty(patchVertex, PATCH_CLAIMED_BY_PROPERTY_KEY, "");
         setEncodedProperty(patchVertex, PATCH_CLAIM_STARTED_AT_KEY, 0L);
-    }
-
-    private static String buildNodeId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     private static String patchClaimName(String patchId) {

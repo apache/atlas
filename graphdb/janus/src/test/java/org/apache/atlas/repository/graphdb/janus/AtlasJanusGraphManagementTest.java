@@ -39,10 +39,13 @@ import org.janusgraph.core.schema.SchemaStatus;
 import org.janusgraph.diskstorage.BackendTransaction;
 import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJobFuture;
 import org.janusgraph.graphdb.database.IndexSerializer;
+import org.janusgraph.graphdb.database.management.GraphIndexStatusWatcher;
 import org.janusgraph.graphdb.database.management.ManagementSystem;
 import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.janusgraph.graphdb.types.MixedIndexType;
+import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -61,7 +64,10 @@ import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.RETURNS_SELF;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -805,6 +811,52 @@ public class AtlasJanusGraphManagementTest {
 
         assertTrue(result);
         // fast path: no reindex should be attempted when the index is already ENABLED
+        verify(localMgmt, never()).updateIndex(any(), any());
+    }
+
+    @Test
+    public void testEnsureCompositeIndexEnabled_closesItsOwnManagementBeforeReadingIndexStatus() {
+        JanusGraphManagement localMgmt = mock(JanusGraphManagement.class);
+        JanusGraphIndex      index     = mock(JanusGraphIndex.class);
+        PropertyKey          fieldKey  = mock(PropertyKey.class);
+
+        when(mockJanusManagement.isOpen()).thenReturn(true);
+        when(mockAtlasGraph.getGraph()).thenReturn(mockJanusGraph);
+        when(mockJanusGraph.openManagement()).thenReturn(localMgmt);
+        when(localMgmt.getGraphIndex("idx")).thenReturn(index);
+        when(index.isCompositeIndex()).thenReturn(true);
+        when(index.getFieldKeys()).thenReturn(new PropertyKey[] {fieldKey});
+        when(index.getIndexStatus(fieldKey)).thenReturn(SchemaStatus.ENABLED);
+
+        management.ensureCompositeIndexEnabled("idx");
+
+        InOrder order = inOrder(mockJanusManagement, mockJanusGraph);
+
+        order.verify(mockJanusManagement).rollback();
+        order.verify(mockJanusGraph).openManagement();
+    }
+
+    @Test
+    public void testEnsureCompositeIndexEnabled_installedIndexEnabledByPeer_endsWaitWithoutReindex() throws Exception {
+        JanusGraphManagement    localMgmt = mock(JanusGraphManagement.class);
+        JanusGraphIndex         index     = mock(JanusGraphIndex.class);
+        PropertyKey             fieldKey  = mock(PropertyKey.class);
+        GraphIndexStatusWatcher watcher   = mock(GraphIndexStatusWatcher.class, RETURNS_SELF);
+
+        when(mockAtlasGraph.getGraph()).thenReturn(mockJanusGraph);
+        when(mockJanusGraph.openManagement()).thenReturn(localMgmt);
+        when(localMgmt.getGraphIndex("idx")).thenReturn(index);
+        when(index.isCompositeIndex()).thenReturn(true);
+        when(index.getFieldKeys()).thenReturn(new PropertyKey[] {fieldKey});
+        when(index.getIndexStatus(fieldKey)).thenReturn(SchemaStatus.INSTALLED, SchemaStatus.ENABLED);
+
+        try (MockedStatic<ManagementSystem> managementSystem = mockStatic(ManagementSystem.class)) {
+            managementSystem.when(() -> ManagementSystem.awaitGraphIndexStatus(mockJanusGraph, "idx")).thenReturn(watcher);
+
+            assertTrue(management.ensureCompositeIndexEnabled("idx"));
+        }
+
+        verify(watcher).status(SchemaStatus.REGISTERED, SchemaStatus.ENABLED);
         verify(localMgmt, never()).updateIndex(any(), any());
     }
 

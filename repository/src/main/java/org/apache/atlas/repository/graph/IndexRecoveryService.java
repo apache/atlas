@@ -31,6 +31,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.tasks.GraphLeaseClaimable;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -41,7 +42,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -87,7 +87,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler, 
         this.graph                  = graph;
         this.isIndexRecoveryEnabled = config.getBoolean(ApplicationProperties.INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
         this.ownerLeaseMillis       = config.getLong(SOLR_INDEX_RECOVERY_OWNER_LEASE_MS, SOLR_OWNER_LEASE_DEFAULT_MS);
-        this.ownerId                = buildOwnerId();
+        this.ownerId                = NodeIdentity.nodeId();
 
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
@@ -155,18 +155,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler, 
     @Override
     public long leaseMillis() {
         return ownerLeaseMillis;
-    }
-
-    private String buildOwnerId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     private long getRecoveryStartTimeFromConfig(Configuration config) {

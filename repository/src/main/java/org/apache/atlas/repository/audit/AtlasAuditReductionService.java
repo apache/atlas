@@ -20,7 +20,6 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.model.audit.AuditReductionCriteria;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -30,6 +29,7 @@ import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.tasks.GraphClaim;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -43,7 +43,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -377,7 +376,7 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
      * The lease is held until shortly before the next cycle.
      */
     private void runScheduledAuditAging() {
-        String ownerId = auditAgingOwnerId();
+        String ownerId = NodeIdentity.nodeId();
         long   leaseMs = Math.max(DateUtils.MILLIS_PER_MINUTE, getAuditAgingFrequencyInMillis() - DateUtils.MILLIS_PER_MINUTE);
 
         if (!GraphClaim.claimLeaseAndCommit(graph, Constants.CLAIM_AUDIT_AGING, ownerId, leaseMs)) {
@@ -386,18 +385,6 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
         }
 
         startAuditAgingByConfig();
-    }
-
-    private String auditAgingOwnerId() {
-        String runMode  = AtlasRunMode.current().name();
-        String hostName = System.getenv("HOSTNAME");
-        String jvmId    = ManagementFactory.getRuntimeMXBean().getName();
-
-        if (StringUtils.isBlank(hostName)) {
-            hostName = "unknown-host";
-        }
-
-        return runMode + "@" + hostName + "#" + jvmId;
     }
 
     private long getAuditAgingFrequencyInMillis() {
