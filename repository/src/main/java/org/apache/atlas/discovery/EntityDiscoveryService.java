@@ -914,7 +914,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             LOG.info("Total {} entities are eligible for Audit aging", guids.size());
         } catch (Throwable t) {
-            LOG.error("Error while retrieving eligible entities for audit aging");
+            LOG.error("Error while retrieving eligible entities for audit aging", t);
         } finally {
             searchTracker.remove(searchID);
         }

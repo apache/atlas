@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2.tasks;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -28,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -379,6 +381,106 @@ public class AuditReductionEntityRetrievalTaskTest {
 
         assertNotNull(result);
         verify(discoveryService).searchGUIDsWithParameters(any(), any(), any());
+    }
+
+    @Test
+    public void testDefaultAgingSearchesAllTypesWithoutFreeTextQuery() throws Exception {
+        Map<String, Object> params = createValidTaskParameters();
+        params.put(AUDIT_AGING_TYPE_KEY, AtlasAuditAgingType.DEFAULT);
+
+        setupMocksForSuccessfulRun();
+
+        invokeCreateAgingTaskMethod(params);
+
+        ArgumentCaptor<SearchParameters> searchParams = ArgumentCaptor.forClass(SearchParameters.class);
+        ArgumentCaptor<Set<String>>      entityTypes  = ArgumentCaptor.forClass(Set.class);
+
+        verify(discoveryService).searchGUIDsWithParameters(eq(AtlasAuditAgingType.DEFAULT), entityTypes.capture(), searchParams.capture());
+
+        // a free-text "!type1,type2" query is only a NOT query in Solr; it must not be used for any backend
+        assertEquals(searchParams.getValue().getTypeName(), SearchParameters.ALL_ENTITY_TYPES);
+        assertTrue(searchParams.getValue().getQuery() == null || searchParams.getValue().getQuery().isEmpty(), "unexpected query: " + searchParams.getValue().getQuery());
+        // the excluded types are passed on and filtered out by the discovery service
+        assertEquals(entityTypes.getValue(), new HashSet<>(Arrays.asList("Table", "Column")));
+    }
+
+    @Test
+    public void testCustomAgingSearchesTypesDirectlyWithoutFreeTextQuery() throws Exception {
+        Map<String, Object> params = createValidTaskParameters();
+        params.put(AUDIT_AGING_TYPE_KEY, AtlasAuditAgingType.CUSTOM);
+
+        setupMocksForSuccessfulRun();
+
+        invokeCreateAgingTaskMethod(params);
+
+        ArgumentCaptor<SearchParameters> searchParams = ArgumentCaptor.forClass(SearchParameters.class);
+
+        verify(discoveryService).searchGUIDsWithParameters(eq(AtlasAuditAgingType.CUSTOM), any(), searchParams.capture());
+
+        assertTrue(searchParams.getValue().getQuery() == null || searchParams.getValue().getQuery().isEmpty(), "unexpected query: " + searchParams.getValue().getQuery());
+        assertEquals(new HashSet<>(Arrays.asList(searchParams.getValue().getTypeName().split(","))), new HashSet<>(Arrays.asList("Table", "Column")));
+    }
+
+    @Test
+    public void testWildcardSuffixTypeNamesAreResolvedToConcreteTypes() throws Exception {
+        Map<String, Object> params = createValidTaskParameters();
+        params.put(AUDIT_AGING_ENTITY_TYPES_KEY, Arrays.asList("Tab*"));
+        params.put(AUDIT_AGING_TYPE_KEY, AtlasAuditAgingType.SWEEP);
+
+        setupMocksForSuccessfulRun();
+        atlasEntityTypeMock.when(() -> AtlasEntityType.getEntityTypesAndAllSubTypes(any(), any())).thenReturn(new HashSet<>(Arrays.asList("Table", "Table_ddl")));
+
+        invokeCreateAgingTaskMethod(params);
+
+        ArgumentCaptor<SearchParameters> searchParams = ArgumentCaptor.forClass(SearchParameters.class);
+
+        verify(discoveryService).searchGUIDsWithParameters(eq(AtlasAuditAgingType.SWEEP), any(), searchParams.capture());
+
+        assertEquals(new HashSet<>(Arrays.asList(searchParams.getValue().getTypeName().split(","))), new HashSet<>(Arrays.asList("Table", "Table_ddl")));
+        assertFalse(searchParams.getValue().getTypeName().contains("*"));
+    }
+
+    @Test
+    public void testInternalTypesAreNotSearchedForSweepAndCustom() throws Exception {
+        Map<String, Object> params = createValidTaskParameters();
+        params.put(AUDIT_AGING_ENTITY_TYPES_KEY, Arrays.asList("*"));
+        params.put(AUDIT_AGING_TYPE_KEY, AtlasAuditAgingType.CUSTOM);
+
+        setupMocksForSuccessfulRun();
+        when(typeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("Table", "__AtlasAuditEntry"));
+        atlasEntityTypeMock.when(() -> AtlasEntityType.getEntityTypesAndAllSubTypes(any(), any())).thenReturn(new HashSet<>(Arrays.asList("Table", "__AtlasAuditEntry")));
+
+        AtlasEntityType internalType = mock(AtlasEntityType.class);
+
+        when(internalType.isInternalType()).thenReturn(true);
+        when(typeRegistry.getEntityTypeByName("__AtlasAuditEntry")).thenReturn(internalType);
+
+        invokeCreateAgingTaskMethod(params);
+
+        ArgumentCaptor<SearchParameters> searchParams = ArgumentCaptor.forClass(SearchParameters.class);
+
+        verify(discoveryService).searchGUIDsWithParameters(eq(AtlasAuditAgingType.CUSTOM), any(), searchParams.capture());
+
+        assertEquals(searchParams.getValue().getTypeName(), "Table");
+    }
+
+    @Test
+    public void testOnlyInternalTypesYieldNoAgingTask() throws Exception {
+        Map<String, Object> params = createValidTaskParameters();
+        params.put(AUDIT_AGING_ENTITY_TYPES_KEY, Arrays.asList("__AtlasAuditEntry"));
+        params.put(AUDIT_AGING_TYPE_KEY, AtlasAuditAgingType.SWEEP);
+
+        setupMocksForSuccessfulRun();
+        when(typeRegistry.getAllEntityDefNames()).thenReturn(Arrays.asList("Table", "__AtlasAuditEntry"));
+        atlasEntityTypeMock.when(() -> AtlasEntityType.getEntityTypesAndAllSubTypes(any(), any())).thenReturn(new HashSet<>(Arrays.asList("__AtlasAuditEntry")));
+
+        AtlasEntityType internalType = mock(AtlasEntityType.class);
+
+        when(internalType.isInternalType()).thenReturn(true);
+        when(typeRegistry.getEntityTypeByName("__AtlasAuditEntry")).thenReturn(internalType);
+
+        assertNull(invokeCreateAgingTaskMethod(params));
+        verify(discoveryService, never()).searchGUIDsWithParameters(any(), any(), any());
     }
 
     @Test

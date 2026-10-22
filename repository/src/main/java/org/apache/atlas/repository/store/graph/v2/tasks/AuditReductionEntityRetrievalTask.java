@@ -148,13 +148,29 @@ public class AuditReductionEntityRetrievalTask extends AbstractTask {
                 return null;
             }
 
-            String queryString = String.join(VALUE_DELIMITER, entityTypes);
+            /*
+             * Entity types are selected with a regular (type based) search instead of a free-text query. The free-text
+             * form relied on backend specific query syntax: a leading '!' means NOT only in Solr's edismax handler;
+             * OpenSearch treats it as literal text, which selected the excluded types instead of excluding them, and
+             * a query with many type names also exceeds OpenSearch's max clause count.
+             *
+             * For SWEEP/CUSTOM the (already validated, wildcard-resolved and expanded) types are searched directly,
+             * leaving out internal types (a broad wildcard such as "*" would otherwise match them; the
+             * all-entity-types search used for DEFAULT never returns them either). For DEFAULT all entity types are
+             * searched and the excluded types are filtered out by
+             * EntityDiscoveryService.checkVertexMatchesSearchCriteria().
+             */
+            if (auditAgingType != AtlasAuditAgingType.DEFAULT) {
+                Set<String> typesToSearch = entityTypes.stream().filter(typeName -> !isInternalEntityType(typeName)).collect(Collectors.toSet());
 
-            if (auditAgingType == AtlasAuditAgingType.DEFAULT && StringUtils.isNotEmpty(queryString)) {
-                queryString = "!" + queryString;
+                 if (typesToSearch.isEmpty()) {
+                    LOG.error("All entity type names provided for audit aging type-{} are internal types", auditAgingType);
+
+                    return null;
+                }
+
+                searchEntitiesToReduceAudit.setTypeName(String.join(VALUE_DELIMITER, typesToSearch));
             }
-
-            searchEntitiesToReduceAudit.setQuery(queryString);
         }
 
         LOG.info("Getting GUIDs eligible for Audit aging type-{} with SearchParameters: {}", auditAgingType, searchEntitiesToReduceAudit);
@@ -165,7 +181,7 @@ public class AuditReductionEntityRetrievalTask extends AbstractTask {
 
         AtlasTask ageoutTask = updateVertexWithGuidsAndCreateAgingTask(auditReductionVertex, AGING_TYPE_PROPERTY_KEY_MAP.get(auditAgingType), guids, parameters);
 
-        /** For DEFAULT audit aging, "entityTypes" should be excluded from _ALL_ENTITY_TYPES i.e., negating the queryString
+        /** For DEFAULT audit aging, "entityTypes" should be excluded from _ALL_ENTITY_TYPES
          *  Including AUDIT_AGING_EXCLUDE_ENTITY_TYPES_KEY to indicate the same in AtlasTask response to user
          */
         if (ageoutTask != null) {
@@ -177,6 +193,12 @@ public class AuditReductionEntityRetrievalTask extends AbstractTask {
         }
 
         return ageoutTask;
+    }
+
+    private boolean isInternalEntityType(String typeName) {
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        return entityType != null && entityType.isInternalType();
     }
 
     private boolean validateTypesAndIncludeSubTypes(Set<String> entityTypes, AtlasAuditAgingType auditAgingType, boolean subTypesIncluded) throws AtlasBaseException {
