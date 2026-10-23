@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertNotNull;
 
 public class DebugMetricsWrapperTest {
-    @Mock
     private AtlasDebugMetricsSink debugMetricsRESTSink;
 
     @Mock
@@ -47,6 +46,7 @@ public class DebugMetricsWrapperTest {
     public void setup() throws Exception {
         MockitoAnnotations.initMocks(this);
         debugMetricsWrapper = new DebugMetricsWrapper();
+        debugMetricsRESTSink = new AtlasDebugMetricsSink();
 
         // Inject the mock sink
         Field sinkField = DebugMetricsWrapper.class.getDeclaredField("debugMetricsRESTSink");

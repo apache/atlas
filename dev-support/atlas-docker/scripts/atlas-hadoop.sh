@@ -43,10 +43,13 @@ fi
 su -c "${HADOOP_HOME}/sbin/start-dfs.sh" hdfs
 su -c "${HADOOP_HOME}/sbin/start-yarn.sh" yarn
 
-if [ "${CREATE_HDFS_DIR}" == "true" ]
-then
-  su -c "${ATLAS_SCRIPTS}/atlas-hadoop-mkdir.sh" hdfs
-fi
+# Always ensure HDFS directories exist with correct ownership.
+# atlas-hadoop-mkdir.sh is idempotent — safe to run on every start.
+# This guarantees /hbase is present for HBase even after a Docker reset
+# or manual HDFS cleanup.
+echo "Waiting for NameNode to exit safe mode..."
+su -c "${HADOOP_HOME}/bin/hdfs dfsadmin -safemode wait" hdfs 2>/dev/null || sleep 15
+su -c "${ATLAS_SCRIPTS}/atlas-hadoop-mkdir.sh" hdfs
 
 NAMENODE_PID=`ps -ef  | grep -v grep | grep -i "org.apache.hadoop.hdfs.server.namenode.NameNode" | awk '{print $2}'`
 

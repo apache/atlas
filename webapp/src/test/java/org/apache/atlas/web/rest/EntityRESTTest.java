@@ -34,6 +34,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -216,6 +217,26 @@ public class EntityRESTTest {
         verify(mockEntitiesStore, never()).getEntityHeaderByUniqueAttributes(any(), anyMap());
         assertEquals(exception.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_INVALID);
         assertEquals(exception.getMessage(), AtlasErrorCode.TYPE_NAME_INVALID.getFormattedErrorMessage(TypeCategory.ENTITY.name(), typeName));
+    }
+
+    @Test
+    public void testGetEntityHeaderByUniqueAttributes_TypeStillMissingAfterCatchUp_ThrowsException() throws AtlasBaseException {
+        String typeName = "unknownType";
+        Map<String, String[]> attributes = new HashMap<>();
+        attributes.put(PREFIX_ATTR + "qualifiedName", new String[] {"test@domain.com"});
+
+        TypeRegistryVersionGate gate = mock(TypeRegistryVersionGate.class);
+        when(gate.ensureUpToDate()).thenReturn(true);
+        when(mockTypeRegistry.getEntityTypeByName(typeName)).thenReturn(null);
+
+        entityREST.setTypeRegistryVersionGate(gate);
+
+        AtlasBaseException exception = expectThrows(AtlasBaseException.class,
+                () -> entityREST.getEntityHeaderByUniqueAttributes(typeName, buildAndGetMockServletRequest(attributes)));
+
+        verify(gate).ensureUpToDate();
+        verify(mockEntitiesStore, never()).getEntityHeaderByUniqueAttributes(any(), anyMap());
+        assertEquals(exception.getAtlasErrorCode(), AtlasErrorCode.TYPE_NAME_INVALID);
     }
 
     @Test
@@ -1714,6 +1735,55 @@ public class EntityRESTTest {
         // Assert
         assertEquals(expectedResponse, actualResponse);
         verify(mockEntitiesStore, times(1)).bulkCreateOrUpdateBusinessAttributes(testInputStream, testFileName);
+    }
+
+    @Test
+    public void testGetEntityHeaderByUniqueAttributes_CatchesUpMissingType() throws AtlasBaseException {
+        String typeName = "peer_created_type";
+        Map<String, String[]> attributes = new HashMap<>();
+        attributes.put(PREFIX_ATTR + "qualifiedName", new String[] {"test@domain.com"});
+
+        AtlasEntityHeader expectedResult = new AtlasEntityHeader();
+        AtlasStructDef.AtlasAttributeDef mockAttributeDef = mock(AtlasStructDef.AtlasAttributeDef.class);
+        when(mockAttributeDef.getIsUnique()).thenReturn(true);
+
+        AtlasEntityType mockEntityType = mock(AtlasEntityType.class);
+        when(mockEntityType.getAttributeDef("qualifiedName")).thenReturn(mockAttributeDef);
+
+        TypeRegistryVersionGate gate = mock(TypeRegistryVersionGate.class);
+        when(gate.ensureUpToDate()).thenReturn(true);
+        when(mockTypeRegistry.getEntityTypeByName(typeName)).thenReturn(null, mockEntityType);
+        when(mockEntitiesStore.getEntityHeaderByUniqueAttributes(any(), anyMap())).thenReturn(expectedResult);
+
+        entityREST.setTypeRegistryVersionGate(gate);
+
+        AtlasEntityHeader actualResult = entityREST.getEntityHeaderByUniqueAttributes(typeName,
+                buildAndGetMockServletRequest(attributes));
+
+        assertEquals(actualResult, expectedResult);
+        verify(gate).ensureUpToDate();
+        verify(mockEntitiesStore).getEntityHeaderByUniqueAttributes(any(), anyMap());
+    }
+
+    @Test
+    public void testGetClassification_CatchesUpMissingType() throws AtlasBaseException {
+        String guid = "test-guid";
+        String classificationName = "peer_created_tag";
+        AtlasClassification expectedClassification = new AtlasClassification(classificationName);
+        AtlasClassificationType mockClassificationType = mock(AtlasClassificationType.class);
+        TypeRegistryVersionGate gate = mock(TypeRegistryVersionGate.class);
+
+        when(gate.ensureUpToDate()).thenReturn(true);
+        when(mockTypeRegistry.getClassificationTypeByName(classificationName)).thenReturn(null, mockClassificationType);
+        when(mockEntitiesStore.getClassification(guid, classificationName)).thenReturn(expectedClassification);
+
+        entityREST.setTypeRegistryVersionGate(gate);
+
+        AtlasClassification actualClassification = entityREST.getClassification(guid, classificationName);
+
+        assertEquals(actualClassification, expectedClassification);
+        verify(gate).ensureUpToDate();
+        verify(mockEntitiesStore).getClassification(guid, classificationName);
     }
 
     private Map<String, Object> processAttributes(Map<String, String[]> attributes) {

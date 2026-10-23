@@ -40,11 +40,13 @@ import java.util.List;
  *
  */
 public class JanusColumnDao extends BaseDao<JanusColumn> {
-    private final RdbmsStore store;
+    private final RdbmsTransaction trx;
+    private final RdbmsStore       store;
 
     public JanusColumnDao(RdbmsTransaction trx, RdbmsStore store) {
         super(trx);
 
+        this.trx   = trx;
         this.store = store;
     }
 
@@ -78,13 +80,14 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
         return toColumnList(result);
     }
 
+    // EclipseLink hands back a scrollable cursor only from getSingleResult(); getResultList() fails with EclipseLink-6057.
     public KeyIterator getKeysByColumnRange(long storeId, byte[] startColumn, byte[] endColumn, int limit) {
         ScrollableCursor result = (ScrollableCursor) em.createNamedQuery("JanusColumn.getKeysByStoreIdColumnRange")
                                                        .setParameter("storeId", storeId)
                                                        .setParameter("startName", startColumn)
                                                        .setParameter("endName", endColumn)
                                                        .setHint("eclipselink.cursor.scrollable", true)
-                                                       .getResultList();
+                                                       .getSingleResult();
 
         return toKeyColumns(result, limit);
     }
@@ -123,8 +126,14 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
         final KeyIterator ret;
 
         if (keysResult != null && keysResult.hasNext()) {
+            trx.addCursor(keysResult);
+
             ret = new RdbmsKeyIterator(keysResult, limit);
         } else {
+            if (keysResult != null) {
+                keysResult.close();
+            }
+
             ret = EMPTY_KEY_ITERATOR;
         }
 
@@ -138,6 +147,7 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
         private final Row              nextKey   = new Row();
         private       Long             prevKeyId;
         private       boolean          isClosed;
+        private       boolean          rowsClosed;
 
         public RdbmsKeyIterator(ScrollableCursor rows, int limit) {
             this.rows  = rows;
@@ -149,7 +159,7 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
             ensureOpen();
 
             if (nextKey.keyId == null) {
-                while (rows.hasNext()) {
+                while (hasMoreRows()) {
                     Object[] nextRow = (Object[]) rows.next();
                     Long     keyId   = toLong(nextRow[0]);
 
@@ -163,6 +173,10 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
                 }
             }
 
+            if (nextKey.keyId == null) {
+                closeRows();
+            }
+
             return nextKey.keyId != null;
         }
 
@@ -170,13 +184,13 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
         public StaticBuffer next() {
             ensureOpen();
 
-            prevKeyId = currKey.keyId;
-
             if (nextKey.keyId == null) {
                 hasNext();
             }
 
             currKey.copyFrom(nextKey);
+
+            prevKeyId = currKey.keyId;
 
             nextKey.reset();
 
@@ -196,7 +210,7 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
                     ensureOpen();
 
                     if (currKey.column == null) {
-                        while (rows.hasNext()) {
+                        while (hasMoreRows()) {
                             Object[] nextRow = (Object[]) rows.next();
                             Long     keyId   = toLong(nextRow[0]);
 
@@ -243,7 +257,19 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
         public void close() {
             isClosed = true;
 
-            rows.close();
+            closeRows();
+        }
+
+        private boolean hasMoreRows() {
+            return !rowsClosed && rows.hasNext();
+        }
+
+        private void closeRows() {
+            if (!rowsClosed) {
+                rowsClosed = true;
+
+                rows.close();
+            }
         }
 
         private void ensureOpen() {

@@ -32,8 +32,8 @@ import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -52,6 +52,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_CLASSIFICATION_TYPES;
 import static org.apache.atlas.model.discovery.SearchParameters.ALL_ENTITY_TYPES;
@@ -65,6 +66,9 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasDiscoveryServiceTest extends BasicTestSetup {
+    private static final long SEARCH_ASSERT_TIMEOUT_MS  = TimeUnit.SECONDS.toMillis(15);
+    private static final long SEARCH_ASSERT_RETRY_SLEEP = 200L;
+
     String salesFactGuid;
     String spChar1 = "default.test_dot_name";
     String spChar2 = "default.test_dot_name@db.test_db";
@@ -90,13 +94,18 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     @Inject
     private AtlasDiscoveryService discoveryService;
 
+    @Inject
+    private GraphBackedSearchIndexer indexer;
+
     @BeforeClass
     public void setup() throws Exception {
         super.initialize();
 
         ApplicationProperties.get().setProperty(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, true);
 
+        indexer.instanceIsActive();
         setupTestData();
+        typeDefStore.notifyLoadCompletion();
 
         createDimensionalTaggedEntity("sales");
         createSpecialCharTestEntities();
@@ -1399,12 +1408,16 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     }
 
     private void createDimensionalTaggedEntity(String name) throws AtlasBaseException {
-        EntityMutationResponse  resp         = createDummyEntity(name, HIVE_TABLE_TYPE);
-        AtlasEntityHeader       entityHeader = resp.getCreatedEntities().get(0);
-        String                  guid         = entityHeader.getGuid();
-        HashMap<String, Object> attr         = new HashMap<>();
-        attr.put("attr1", "value1");
-        entityStore.addClassification(Arrays.asList(guid), new AtlasClassification(DIMENSIONAL_CLASSIFICATION, attr));
+        AtlasEntity entity = new AtlasEntity(HIVE_TABLE_TYPE);
+        entity.setAttribute("name", name);
+        entity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        entity.setAttribute("tableType", null);
+
+        HashMap<String, Object> attrs = new HashMap<>();
+        attrs.put("attr1", "value1");
+        entity.setClassifications(Collections.singletonList(new AtlasClassification(DIMENSIONAL_CLASSIFICATION, attrs)));
+
+        entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity)), false);
     }
 
     private void createJapaneseEntityWithDescription() throws AtlasBaseException {
@@ -1432,7 +1445,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
     }
 
     private void assertSearchProcessor(SearchParameters params, int expected, boolean checkMarker) throws AtlasBaseException {
-        AtlasSearchResult       searchResult  = discoveryService.searchWithParameters(params);
+        AtlasSearchResult       searchResult  = awaitSearchResultWithExpectedEntityCount(params, expected);
         List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
 
         assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
@@ -1442,6 +1455,33 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
             assertTrue(StringUtils.isNotEmpty(searchResult.getNextMarker()));
         } else {
             assertTrue(StringUtils.isEmpty(searchResult.getNextMarker()));
+        }
+    }
+
+    private AtlasSearchResult awaitSearchResultWithExpectedEntityCount(SearchParameters params, int expected) throws AtlasBaseException {
+        long              deadline     = System.currentTimeMillis() + SEARCH_ASSERT_TIMEOUT_MS;
+        AtlasSearchResult searchResult = null;
+
+        do {
+            searchResult = discoveryService.searchWithParameters(params);
+
+            List<AtlasEntityHeader> entityHeaders = searchResult != null ? searchResult.getEntities() : null;
+            if (CollectionUtils.isNotEmpty(entityHeaders) && entityHeaders.size() == expected) {
+                return searchResult;
+            }
+
+            sleepForSearchRetry();
+        } while (System.currentTimeMillis() < deadline);
+
+        return searchResult;
+    }
+
+    private void sleepForSearchRetry() {
+        try {
+            Thread.sleep(SEARCH_ASSERT_RETRY_SLEEP);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while waiting for search index visibility", e);
         }
     }
 }

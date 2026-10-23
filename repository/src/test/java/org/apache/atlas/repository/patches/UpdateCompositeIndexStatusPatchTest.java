@@ -29,7 +29,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -101,10 +101,11 @@ public class UpdateCompositeIndexStatusPatchTest {
 
         patch.apply();
 
-        assertEquals(patch.getStatus(), UNKNOWN);
+        assertEquals(patch.getStatus(), APPLIED);
         verify(management, times(1)).updateSchemaStatus();
         verify(management, times(1)).setIsSuccess(true);
         verify(management, times(1)).close();
+        verify(patchRegistry, times(1)).updateStatus("JAVA_PATCH_0000_010", APPLIED);
     }
 
     @Test

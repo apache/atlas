@@ -23,7 +23,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 
 public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UpdateCompositeIndexStatusPatch.class);
@@ -61,7 +61,7 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
             throw (excp instanceof AtlasBaseException) ? (AtlasBaseException) excp : new AtlasBaseException(excp);
         }
 
-        setStatus(UNKNOWN);
+        setStatus(APPLIED);
 
         LOG.info("UpdateCompositeIndexStatusPatch.apply(): patchId={}, status={}", getPatchId(), getStatus());
     }

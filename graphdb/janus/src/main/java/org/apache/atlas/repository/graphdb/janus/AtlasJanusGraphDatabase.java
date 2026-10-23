@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer;
@@ -31,6 +32,7 @@ import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializ
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.ConfigurationConverter;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphException;
@@ -42,6 +44,7 @@ import org.janusgraph.diskstorage.es.ElasticSearch7Index;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.diskstorage.rdbms.RdbmsStoreManager;
 import org.janusgraph.diskstorage.solr.Solr6Index;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.slf4j.Logger;
@@ -56,9 +59,11 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.apache.atlas.ApplicationProperties.DEFAULT_INDEX_RECOVERY;
 import static org.apache.atlas.ApplicationProperties.INDEX_RECOVERY_CONF;
@@ -83,6 +88,20 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     public static final String GRAPH_TX_LOG_TTL_CONF     = "log.tx.ttl";
 
     private static final String OLDER_STORAGE_EXCEPTION = "Storage version is incompatible with current client";
+
+    /**
+     * The first management transaction of the process can open before the stored schema has been
+     * read. Committing that view writes a second, empty schema, and every later lookup follows it.
+     * A restart that can already see {@code vertex_index} commits immediately. One that cannot
+     * waits, and still does not commit, for this long.
+     */
+    private static final int    SCHEMA_VISIBILITY_ATTEMPTS = 30;
+    private static final long   SCHEMA_VISIBILITY_WAIT_MS  = 500L;
+    private static final String VERTEX_INDEX_NAME          = "vertex_index";
+    /** {@code JanusGraphSchemaCategory.GRAPHINDEX.getSchemaName("vertex_index")}. */
+    private static final String VERTEX_INDEX_SCHEMA_NAME   = "gi\u001evertex_index";
+    private static final int    ATLAS_DATA_PROBE_LIMIT     = 100;
+    private static final String TYPEDEF_BOOTSTRAP_KEY_PREFIX = Constants.TYPEDEF_BOOTSTRAP_FILE_KEY.substring(0, Constants.TYPEDEF_BOOTSTRAP_FILE_KEY.lastIndexOf('.') + 1);
 
     private static volatile AtlasJanusGraph atlasGraphInstance;
     private static volatile JanusGraph      graphInstance;
@@ -138,13 +157,15 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                         throw new RuntimeException(e);
                     }
 
-                    configureTxLogBasedIndexRecovery();
-
                     graphInstance      = initJanusGraph(config);
                     atlasGraphInstance = new AtlasJanusGraph();
 
                     me = graphInstance;
 
+                    // Apply tx-log recovery on the graph just opened. Doing this first used to
+                    // open a second JanusGraph (and on rdbms, run EclipseLink schema generation)
+                    // while a peer could already be inside index-init commit.
+                    configureTxLogBasedIndexRecovery();
                     validateIndexBackend(config);
                 }
             }
@@ -245,19 +266,32 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     static void validateIndexBackend(Configuration config) {
         JanusGraphManagement managementSystem = null;
+        boolean               vertexIndexVisible = false;
 
         try {
             managementSystem = getGraphInstance().openManagement();
+            vertexIndexVisible = managementSystem.getGraphIndex(VERTEX_INDEX_NAME) != null;
 
-            String configuredIndexBackend = config.getString(INDEX_BACKEND_CONF);
-            String currentIndexBackend    = managementSystem.get(INDEX_BACKEND_CONF);
+            // This read used to commit unconditionally. Committing a management view that
+            // does not contain vertex_index replaces the stored schema, so a hidden index
+            // is rolled back. The backend comparison runs only once the index is visible.
+            if (vertexIndexVisible) {
+                String configuredIndexBackend = config.getString(INDEX_BACKEND_CONF);
+                String currentIndexBackend    = managementSystem.get(INDEX_BACKEND_CONF);
 
-            if (!configuredIndexBackend.equals(currentIndexBackend)) {
-                throw new RuntimeException("Configured Index Backend " + configuredIndexBackend + " differs from earlier configured Index Backend " + currentIndexBackend + ". Aborting!");
+                if (!configuredIndexBackend.equals(currentIndexBackend)) {
+                    throw new RuntimeException("Configured Index Backend " + configuredIndexBackend + " differs from earlier configured Index Backend " + currentIndexBackend + ". Aborting!");
+                }
+            } else {
+                LOG.warn("vertex_index is not visible while checking the index backend. Not committing.");
             }
         } finally {
-            if (managementSystem != null) {
-                managementSystem.commit();
+            if (managementSystem != null && managementSystem.isOpen()) {
+                if (vertexIndexVisible) {
+                    managementSystem.commit();
+                } else {
+                    managementSystem.rollback();
+                }
             }
         }
     }
@@ -455,29 +489,167 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     private static void updateGlobalConfiguration(Map<String, Object> map) {
-        JanusGraph           graph            = null;
-        JanusGraphManagement managementSystem = null;
+        for (int attempt = 1; attempt <= SCHEMA_VISIBILITY_ATTEMPTS; attempt++) {
+            JanusGraph           graph            = null;
+            JanusGraphManagement managementSystem = null;
+            boolean              openedHere       = false;
 
-        try {
-            graph            = initJanusGraph(getConfiguration());
-            managementSystem = graph.openManagement();
+            try {
+                if (graphInstance != null) {
+                    graph = graphInstance;
+                } else {
+                    graph      = initJanusGraph(getConfiguration());
+                    openedHere = true;
+                }
 
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                managementSystem.set(entry.getKey(), entry.getValue());
+                // Fill the schema cache from storage before opening management. A management
+                // transaction opened against an empty cache, then committed, is what hides the
+                // stored indexes.
+                boolean storedIndex = storedVertexIndexExists(graph);
+                // The probe scans vertices without an index; only a graph with no stored index needs it.
+                boolean hasAtlasData = storedIndex || graphHasAtlasData(graph);
+
+                managementSystem = graph.openManagement();
+
+                if (managementSystem.getGraphIndex(VERTEX_INDEX_NAME) != null) {
+                    applyGlobalConfiguration(managementSystem, map);
+                    managementSystem = null;
+
+                    LOG.info("Global properties updated!: {}", map);
+
+                    return;
+                }
+
+                managementSystem.rollback();
+                managementSystem = null;
+
+                // Commit an empty schema only after a second read also finds no index and no
+                // Atlas data. Claim and typedef-bootstrap records do not count: they exist on a
+                // new graph, including one that was just emptied.
+                if (!storedIndex && !hasAtlasData && attempt > 1) {
+                    managementSystem = graph.openManagement();
+                    applyGlobalConfiguration(managementSystem, map);
+                    managementSystem = null;
+
+                    LOG.info("Global properties updated on a new graph!: {}", map);
+
+                    return;
+                }
+
+                if (!storedIndex && !hasAtlasData) {
+                    LOG.info("No stored vertex_index and no Atlas data yet (attempt {}/{}). Confirming this is a new graph before committing.",
+                            attempt, SCHEMA_VISIBILITY_ATTEMPTS);
+                } else {
+                    LOG.warn("vertex_index is not visible yet (attempt {}/{}, storedIndex={}, hasAtlasData={}). Not committing global configuration.",
+                            attempt, SCHEMA_VISIBILITY_ATTEMPTS, storedIndex, hasAtlasData);
+                }
+            } catch (Exception ex) {
+                LOG.warn("Could not update global configuration (attempt {}/{})", attempt, SCHEMA_VISIBILITY_ATTEMPTS, ex);
+            } finally {
+                if (managementSystem != null && managementSystem.isOpen()) {
+                    managementSystem.rollback();
+                }
+
+                if (openedHere && graph != null) {
+                    graph.close();
+                }
             }
 
-            LOG.info("Global properties updated!: {}", map);
-        } catch (Exception ex) {
-            LOG.error("Error updating global configuration: {}", map, ex);
-        } finally {
-            if (managementSystem != null) {
-                managementSystem.commit();
+            if (attempt == SCHEMA_VISIBILITY_ATTEMPTS) {
+                LOG.error("vertex_index stayed invisible. Leaving global configuration unchanged so the stored schema is kept.");
+
+                return;
             }
 
-            if (graph != null) {
-                graph.close();
+            try {
+                Thread.sleep(SCHEMA_VISIBILITY_WAIT_MS);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+
+                return;
             }
         }
+    }
+
+    private static void applyGlobalConfiguration(JanusGraphManagement managementSystem, Map<String, Object> map) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            managementSystem.set(entry.getKey(), entry.getValue());
+        }
+
+        managementSystem.commit();
+    }
+
+    /**
+     * True when storage already has {@code vertex_index}. A failed read is treated as present so
+     * this method cannot be the reason an empty schema is committed.
+     */
+    private static boolean storedVertexIndexExists(JanusGraph graph) {
+        if (!(graph instanceof StandardJanusGraph)) {
+            return false;
+        }
+
+        try {
+            Long schemaId = ((StandardJanusGraph) graph).getSchemaCache().getSchemaId(VERTEX_INDEX_SCHEMA_NAME);
+
+            return schemaId != null;
+        } catch (RuntimeException exception) {
+            LOG.warn("Could not read the stored vertex index; not committing a management transaction", exception);
+
+            return true;
+        }
+    }
+
+    /**
+     * True when the store holds a vertex other than an Atlas claim or typedef-bootstrap record. Those
+     * are written before indexes exist, so a new or just-emptied graph has them. A failed probe, or a
+     * full page of coordination records, is reported as data present.
+     */
+    private static boolean graphHasAtlasData(JanusGraph graph) {
+        try {
+            int scanned = 0;
+
+            for (Iterator<Vertex> it = graph.traversal().V().limit(ATLAS_DATA_PROBE_LIMIT); it.hasNext(); ) {
+                Vertex vertex = it.next();
+
+                scanned++;
+
+                if (!isCoordinationVertex(vertex)) {
+                    graph.tx().rollback();
+
+                    return true;
+                }
+            }
+
+            graph.tx().rollback();
+
+            return scanned >= ATLAS_DATA_PROBE_LIMIT;
+        } catch (Exception exception) {
+            LOG.warn("Could not tell whether the graph already has Atlas data; treating it as populated", exception);
+
+            try {
+                graph.tx().rollback();
+            } catch (Exception rollbackFailure) {
+                LOG.debug("Rollback after the data probe failed", rollbackFailure);
+            }
+
+            return true;
+        }
+    }
+
+    private static boolean isCoordinationVertex(Vertex vertex) {
+        Set<String> keys = vertex.keys();
+
+        if (keys == null || keys.isEmpty()) {
+            return false;
+        }
+
+        for (String key : keys) {
+            if (!key.startsWith(Constants.CLAIM_KEY) && !key.startsWith(TYPEDEF_BOOTSTRAP_KEY_PREFIX)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static org.apache.commons.configuration2.Configuration createConfiguration2(Configuration conf) {

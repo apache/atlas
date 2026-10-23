@@ -21,10 +21,10 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.discovery.SearchIndexer;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
@@ -45,7 +45,10 @@ import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.tasks.GraphClaim;
+import org.apache.atlas.tasks.GraphClaimable;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -58,6 +61,7 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.util.NodeIdentity;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -79,6 +83,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BIGDECIMAL;
@@ -142,6 +149,9 @@ import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.Constants.TASK_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_BOOTSTRAP_FILE_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_REGISTRY_VERSION_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDEF_REGISTRY_VERSION_MARKER_KEY;
 import static org.apache.atlas.repository.Constants.TYPEDESCRIPTION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPEOPTIONS_PROPERTY_KEY;
@@ -171,9 +181,34 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private static final String         VERTEX_ID_IN_IMPORT_KEY  = "__vIdInImport";
     private static final String         EDGE_ID_IN_IMPORT_KEY    = "__eIdInImport";
+    private static final long           INDEX_INIT_LEASE_MS      = 300000L;
+    private static final long           INDEX_INIT_MAX_RENEW_MS  = 1200000L;
+    private static final int            INDEX_INIT_MAX_CYCLES    = 10;
+    private static final int            INDEX_INIT_RETRIES       = 3;
+    private static final long           INDEX_INIT_RETRY_SLEEP_MS = 5000L;
+    private static final long           INDEX_INIT_WAIT_POLL_MS   = 3000L;
+    private static final String         INDEX_INIT_LEASE_MS_PROPERTY       = "atlas.index.init.lease.ms";
+    private static final String         INDEX_INIT_LEASE_RENEW_MS_PROPERTY = "atlas.index.init.lease.renew.ms";
+    private static final String         INDEX_INIT_MAX_RENEW_MS_PROPERTY   = "atlas.index.init.lease.max.renew.ms";
+    private static final String         INDEX_INIT_MAX_CYCLES_PROPERTY     = "atlas.index.init.max.cycles";
+    private static final int             DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS = 30;
+    private static final long            DEFAULT_SCHEMA_VISIBILITY_WAIT_MS  = 500L;
+    private static volatile int          schemaVisibilityAttempts           = DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS;
+    private static volatile long         schemaVisibilityWaitMs             = DEFAULT_SCHEMA_VISIBILITY_WAIT_MS;
+    private static final int             ATLAS_DATA_PROBE_LIMIT             = 100;
+    private static final String          TYPEDEF_BOOTSTRAP_KEY_PREFIX       = TYPEDEF_BOOTSTRAP_FILE_KEY.substring(0, TYPEDEF_BOOTSTRAP_FILE_KEY.lastIndexOf('.') + 1);
     private static final List<Class<?>> INDEX_EXCLUSION_CLASSES  = new ArrayList<>(Arrays.asList(Boolean.class, BigDecimal.class, BigInteger.class));
     private static final Set<String>    GLOBAL_UNIQUE_INDEX_KEYS = new HashSet<>();
     private static final Set<String>    TYPE_UNIQUE_INDEX_KEYS   = new HashSet<>();
+
+    static {
+        // Keys are normally registered as globally unique while the indexes are being created, which
+        // happens on one node only. The claim marker is how the other nodes stay out of each
+        // other's way, so it has to be enforced on every node regardless of who built the
+        // indexes. Registering the name is safe on its own: uniqueness is kept in a single generic
+        // side table keyed by property name and value, not in a per-key structure.
+        GLOBAL_UNIQUE_INDEX_KEYS.add(Constants.CLAIM_KEY);
+    }
 
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry         typeRegistry;
@@ -188,6 +223,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private Set<String> vertexIndexKeys          = new HashSet<>();
     private Set<String> edgeIndexKeys            = new HashSet<>();
 
+    private final long indexInitLeaseMs;
+    private final long indexInitLeaseRenewMs;
+    private final long indexInitMaxRenewMs;
+    private final int  indexInitMaxCycles;
+
+    private volatile boolean stoodDownFromIndexSetup;
+
+    private enum IndexSetupWaitOutcome { COMPLETED_BY_PEER, OWNERSHIP_ACQUIRED, INTERRUPTED }
+
     @Inject
     public GraphBackedSearchIndexer(AtlasTypeRegistry typeRegistry) throws AtlasException {
         this(new AtlasGraphProvider(), ApplicationProperties.get(), typeRegistry);
@@ -198,12 +242,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         this.provider     = provider;
         this.typeRegistry = typeRegistry;
 
+        this.indexInitLeaseMs      = positiveOrDefault(configuration, INDEX_INIT_LEASE_MS_PROPERTY, INDEX_INIT_LEASE_MS);
+        this.indexInitLeaseRenewMs = positiveOrDefault(configuration, INDEX_INIT_LEASE_RENEW_MS_PROPERTY, indexInitLeaseMs / 3);
+        this.indexInitMaxRenewMs   = positiveOrDefault(configuration, INDEX_INIT_MAX_RENEW_MS_PROPERTY, INDEX_INIT_MAX_RENEW_MS);
+        this.indexInitMaxCycles    = (int) positiveOrDefault(configuration, INDEX_INIT_MAX_CYCLES_PROPERTY, INDEX_INIT_MAX_CYCLES);
+
         //make sure solr index follows graph backed index listener
         addIndexListener(new SolrIndexHelper(typeRegistry));
-
-        if (!HAConfiguration.isHAEnabled(configuration)) {
-            initialize(provider.get());
-        }
 
         notifyInitializationStart();
     }
@@ -249,18 +294,320 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
      */
     @Override
     public void instanceIsActive() throws AtlasException {
-        LOG.info("Reacting to active: initializing index");
+        if (!AtlasRunMode.current().runsIndexSetup()) {
+            LOG.info("GraphBackedSearchIndexer.instanceIsActive(): RUN_MODE={} — skipping index setup",
+                    AtlasRunMode.current());
+
+            stoodDownFromIndexSetup = true;
+
+            return;
+        }
+
+        String ownerId = NodeIdentity.nodeId();
+        IndexRecoveryService.RecoveryInfoManagement claimManager = newClaimManager(provider.get());
+        GraphClaimable<Boolean> claimAction = new GraphClaimable<Boolean>() {
+            @Override
+            public String claimName() {
+                return Constants.CLAIM_INDEX;
+            }
+
+            @Override
+            public Boolean tryClaim() {
+                return claimManager.tryClaimOwnership(ownerId, indexInitLeaseMs);
+            }
+
+            @Override
+            public void recoverStaleClaims() {
+                // taking over an expired lease is part of claiming it
+            }
+        };
 
         try {
-            initialize();
-        } catch (RepositoryException | IndexException e) {
-            throw new AtlasException("Error in reacting to active on initialization", e);
+            claimAction.recoverStaleClaims();
+            boolean ownsIndexSetup = Boolean.TRUE.equals(claimAction.attemptClaim());
+            if (!ownsIndexSetup) {
+                LOG.info("GraphBackedSearchIndexer.instanceIsActive(): index setup already claimed by another node; waiting for completion");
+
+                IndexSetupWaitOutcome waitOutcome = waitForIndexSetupCompletionOrOwnership(claimManager, ownerId);
+                if (waitOutcome == IndexSetupWaitOutcome.INTERRUPTED) {
+                    throw new AtlasException("Interrupted while waiting for index initialization to complete on another node");
+                }
+
+                if (waitOutcome == IndexSetupWaitOutcome.OWNERSHIP_ACQUIRED) {
+                    LOG.info("GraphBackedSearchIndexer.instanceIsActive(): no live index-setup owner found; this node acquired ownership (owner={})", ownerId);
+                    ownsIndexSetup = true;
+                } else {
+                    LOG.info("GraphBackedSearchIndexer.instanceIsActive(): observed index setup completion by another node");
+
+                    standDownFromIndexSetup();
+
+                    return;
+                }
+            }
+
+            LOG.info("Reacting to active: initializing index (owner={})", ownerId);
+
+            try {
+                initializeWithRetries(claimManager, ownerId);
+            } catch (RepositoryException | IndexException e) {
+                throw new AtlasException("Error in reacting to active on initialization", e);
+            } finally {
+                claimManager.releaseOwnership(ownerId);
+            }
+        } catch (AtlasBaseException e) {
+            throw new AtlasException("Error claiming index initialization ownership", e);
         }
     }
 
-    @Override
-    public void instanceIsPassive() {
-        LOG.info("Reacting to passive state: No action right now.");
+    @VisibleForTesting
+    IndexRecoveryService.RecoveryInfoManagement newClaimManager(AtlasGraph graph) {
+        return new IndexRecoveryService.RecoveryInfoManagement(graph);
+    }
+
+    private static long positiveOrDefault(Configuration configuration, String property, long defaultValue) {
+        long value = configuration != null ? configuration.getLong(property, defaultValue) : defaultValue;
+
+        return value > 0 ? value : defaultValue;
+    }
+
+    /**
+     * Marks this node as leaving index setup to a peer. The peer creates the indexes; this node
+     * still needs the field names they map to in order to search on them.
+     */
+    private void standDownFromIndexSetup() {
+        stoodDownFromIndexSetup = true;
+
+        registerCommonIndexFieldNames();
+    }
+
+    /**
+     * Makes AMRA bootstrap lookup indexes usable before typedef loading and GraphClaim queries them.
+     *
+     * <p>On a fresh cluster a composite index created together with its property key is ENABLED
+     * immediately, so this is a cheap status check. When the key already carried data before the
+     * index existed, JanusGraph leaves the composite index REGISTERED (ignored by the query planner,
+     * forcing full vertex scans). {@code __claim} always hits that case: the ATLAS_INDEX lease
+     * vertex is written before indexes are created. Reindex once so later dual-node bootstrap
+     * lookups do not hold RDBMS connections on full-graph scans.
+     */
+    private void ensureBootstrapLookupIndexesUsable() {
+        ensureLookupIndexUsable(TYPEDEF_BOOTSTRAP_FILE_KEY);
+        ensureLookupIndexUsable(Constants.CLAIM_KEY);
+        ensureLookupIndexUsable(Constants.TASK_STATUS);
+        ensureLookupIndexUsable(Constants.TASK_GUID);
+    }
+
+    private void ensureLookupIndexUsable(String indexName) {
+        try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
+            boolean usable = management.ensureCompositeIndexEnabled(indexName);
+
+            if (usable) {
+                LOG.info("GraphBackedSearchIndexer: bootstrap lookup index '{}' is ENABLED", indexName);
+            } else {
+                LOG.warn("GraphBackedSearchIndexer: bootstrap lookup index '{}' is not ENABLED; lookups may fall back to full graph scans", indexName);
+            }
+        } catch (Exception e) {
+            LOG.warn("GraphBackedSearchIndexer: could not verify/enable bootstrap lookup index '{}'", indexName, e);
+        }
+    }
+
+    /**
+     * Runs index setup while this node holds the index lease.
+     *
+     * <p>A node that loses the lease, or keeps losing lock races, gives the lease up and goes back
+     * to waiting for either a peer to finish or the lease to come free. Waiting only for a peer to
+     * finish is not enough: when both nodes end up waiting, neither is building the indexes.
+     *
+     * <p>Contention that is not caused by a peer - a stale store lock, a failing backend - would
+     * cycle forever, so the number of times this node takes the lease back is capped.
+     */
+    private void initializeWithRetries(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) throws RepositoryException, IndexException, AtlasException {
+        for (int cycle = 1; ; cycle++) {
+            Exception contention = null;
+
+            for (int attempt = 1; attempt <= INDEX_INIT_RETRIES; attempt++) {
+                try {
+                    initializeHoldingLease(claimManager, ownerId);
+                    return;
+                } catch (RepositoryException | IndexException e) {
+                    if (!isLockContention(e)) {
+                        throw e;
+                    }
+
+                    contention = e;
+
+                    if (!claimManager.isOwner(ownerId)) {
+                        LOG.warn("GraphBackedSearchIndexer: lost index-init ownership during attempt {}; waiting for peer completion or ownership", attempt);
+                        break;
+                    }
+
+                    if (attempt >= INDEX_INIT_RETRIES) {
+                        LOG.warn("GraphBackedSearchIndexer: lock contention persisted after {} attempts; releasing ownership and waiting for peer completion or ownership", attempt, e);
+                        break;
+                    }
+
+                    LOG.warn("GraphBackedSearchIndexer: lock contention during attempt {}/{}; retrying after {}ms",
+                            attempt, INDEX_INIT_RETRIES, INDEX_INIT_RETRY_SLEEP_MS, e);
+                    sleepQuietly(INDEX_INIT_RETRY_SLEEP_MS);
+                }
+            }
+
+            claimManager.releaseOwnership(ownerId);
+
+            if (cycle >= indexInitMaxCycles) {
+                throw new AtlasException("Index setup did not complete after taking index-init ownership " + cycle + " times", contention);
+            }
+
+            IndexSetupWaitOutcome waitOutcome = waitForIndexSetupCompletionOrOwnership(claimManager, ownerId);
+
+            if (waitOutcome == IndexSetupWaitOutcome.COMPLETED_BY_PEER) {
+                standDownFromIndexSetup();
+
+                return;
+            }
+
+            if (waitOutcome == IndexSetupWaitOutcome.INTERRUPTED) {
+                throw new AtlasException("Interrupted while waiting for index initialization to complete on another node", contention);
+            }
+
+            LOG.info("GraphBackedSearchIndexer: reacquired index-init ownership (owner={}, cycle {}/{}); retrying index setup", ownerId, cycle + 1, indexInitMaxCycles);
+        }
+    }
+
+    /**
+     * Index setup can outlast the lease - a first start against a new index backend creates every
+     * index from scratch - so the lease is renewed while it runs. Otherwise a waiting peer takes
+     * the lapsed lease and both nodes create indexes at once.
+     *
+     * <p>Renewal stops after a fixed total, so a setup that hangs lets its lease lapse and a peer
+     * take over instead of holding the lease forever.
+     *
+     * <p>Enabling the bootstrap lookup indexes waits on JanusGraph index status and can take longer
+     * than creating them, so it runs under the renewed lease too. Only the node that created the
+     * indexes gets here; a node that stood down to a peer must not reindex.
+     */
+    private void initializeHoldingLease(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) throws RepositoryException, IndexException {
+        long                     now        = System.currentTimeMillis();
+        long                     renewUntil = indexInitMaxRenewMs > Long.MAX_VALUE - now ? Long.MAX_VALUE : now + indexInitMaxRenewMs;
+        ScheduledExecutorService renewer    = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "index-init-lease-renewer");
+
+            thread.setDaemon(true);
+
+            return thread;
+        });
+
+        renewer.scheduleWithFixedDelay(() -> renewIndexInitLease(claimManager, ownerId, renewUntil),
+                indexInitLeaseRenewMs, indexInitLeaseRenewMs, TimeUnit.MILLISECONDS);
+
+        try {
+            initialize();
+            ensureBootstrapLookupIndexesUsable();
+        } finally {
+            renewer.shutdownNow();
+        }
+    }
+
+    private void renewIndexInitLease(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId, long renewUntil) {
+        if (System.currentTimeMillis() >= renewUntil) {
+            LOG.warn("GraphBackedSearchIndexer: index setup has run past {}ms; no longer renewing the index-init lease (owner={}) so a peer can take over", indexInitMaxRenewMs, ownerId);
+
+            // a periodic task that throws is not run again
+            throw new IllegalStateException("index-init lease renewal limit reached");
+        }
+
+        try {
+            if (claimManager.isOwner(ownerId) && claimManager.tryClaimOwnership(ownerId, indexInitLeaseMs)) {
+                LOG.info("GraphBackedSearchIndexer: renewed index-init lease for {}ms (owner={})", indexInitLeaseMs, ownerId);
+            } else {
+                LOG.warn("GraphBackedSearchIndexer: could not renew index-init lease (owner={}); a peer may take over index setup", ownerId);
+            }
+        } catch (Exception e) {
+            LOG.warn("GraphBackedSearchIndexer: error renewing index-init lease (owner={})", ownerId, e);
+        }
+    }
+
+    private IndexSetupWaitOutcome waitForIndexSetupCompletionOrOwnership(IndexRecoveryService.RecoveryInfoManagement claimManager, String ownerId) {
+        while (true) {
+            if (isIndexSetupComplete()) {
+                return IndexSetupWaitOutcome.COMPLETED_BY_PEER;
+            }
+
+            if (!peerHoldsIndexClaim()) {
+                try {
+                    GraphClaim.releaseIfNoLiveHolderAndCommit(provider.get(), Constants.CLAIM_INDEX);
+                } catch (Exception e) {
+                    LOG.debug("GraphBackedSearchIndexer: could not clear stale index-init claim before retrying ownership", e);
+                }
+
+                try {
+                    if (claimManager.tryClaimOwnership(ownerId, indexInitLeaseMs)) {
+                        return IndexSetupWaitOutcome.OWNERSHIP_ACQUIRED;
+                    }
+                } catch (Exception e) {
+                    LOG.debug("GraphBackedSearchIndexer: could not re-attempt index-init ownership while waiting", e);
+                }
+            }
+
+            if (!sleepQuietly(INDEX_INIT_WAIT_POLL_MS)) {
+                return IndexSetupWaitOutcome.INTERRUPTED;
+            }
+        }
+    }
+
+    private boolean isIndexSetupComplete() {
+        try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
+            boolean complete = management.getGraphIndex(VERTEX_INDEX) != null
+                    && management.getGraphIndex(EDGE_INDEX) != null
+                    && management.getGraphIndex(FULLTEXT_INDEX) != null
+                    // Guard AMRA bootstrap: the node that waits for a peer must not proceed until
+                    // lookup indexes are not just present but ENABLED. A composite index that exists
+                    // in REGISTERED state (e.g. built over a key that already had data) is ignored by
+                    // the query planner, so bootstrap would fall back to full graph scans.
+                    && management.isCompositeIndexEnabled(TYPEDEF_BOOTSTRAP_FILE_KEY)
+                    && management.isCompositeIndexEnabled(Constants.CLAIM_KEY)
+                    && management.isCompositeIndexEnabled(Constants.TASK_STATUS)
+                    && management.isCompositeIndexEnabled(Constants.TASK_GUID);
+
+            management.setIsSuccess(true);
+
+            return complete;
+        } catch (Exception e) {
+            LOG.debug("GraphBackedSearchIndexer: index setup readiness check failed", e);
+            return false;
+        }
+    }
+
+    private boolean sleepQuietly(long sleepMs) {
+        try {
+            Thread.sleep(sleepMs);
+            return true;
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            LOG.warn("GraphBackedSearchIndexer: sleep interrupted while waiting for index setup completion");
+            return false;
+        }
+    }
+
+    private boolean isLockContention(Throwable t) {
+        Throwable current = t;
+
+        while (current != null) {
+            String className = current.getClass().getName();
+            String message   = current.getMessage();
+
+            if (className.endsWith("TemporaryLockingException")
+                    || className.endsWith("PermanentLockingException")
+                    || (className.endsWith("JanusGraphException")
+                    && message != null
+                    && message.toLowerCase().contains("lock"))) {
+                return true;
+            }
+
+            current = current.getCause();
+        }
+
+        return false;
     }
 
     @Override
@@ -330,7 +677,17 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             management.setIsSuccess(true);
 
             populateUniqueIndexKeys();
-            notifyInitializationCompletion(changedTypeDefs);
+
+            // Index field names for keys such as __typeName reach the type registry through index
+            // setup. A node that stood down from it - a NOTIFICATION_PROCESSOR, or a node that waited
+            // for a peer to finish - would compute an incomplete search weight map and overwrite the
+            // valid Solr configuration published by the node that did the setup.
+            if (stoodDownFromIndexSetup) {
+                LOG.info("GraphBackedSearchIndexer.onLoadCompletion(): this node stood down from index setup (RUN_MODE={}) — leaving the search configuration to the node that ran it",
+                        AtlasRunMode.current());
+            } else {
+                notifyInitializationCompletion(changedTypeDefs);
+            }
         } catch (Exception e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
         } finally {
@@ -466,6 +823,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             if (indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
                 indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
+
+                if (indexFieldName == null) {
+                    // Upgrade-safety: if the property key pre-exists but was never added to the mixed
+                    // index, add it now so lookups don't fall back to full graph scans.
+                    indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField);
+                    LOG.info("Created missing backing index for existing vertex property {} of type {}",
+                            propertyName, propertyClass.getName());
+                }
             }
 
             if (propertyKey != null) {
@@ -521,10 +886,81 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     /**
-     * Initializes the indices for the graph - create indices for Global AtlasVertex and AtlasEdge Keys
+     * Initializes the indices for the graph - create indices for Global AtlasVertex and AtlasEdge Keys.
+     * <p>
+     * A management transaction opened before JanusGraph has finished reading the stored schema sees
+     * no indexes. Committing that view creates a second, empty set of indexes, and every later lookup
+     * (patch registry included) follows the empty ones. When the index is already visible this returns
+     * immediately. When the graph has Atlas data and the index is not visible, startup stops instead of
+     * scanning every vertex. A graph holding only claim and typedef-bootstrap records is new: those are
+     * written before this runs, including on a store that was just emptied.
      */
     private void initialize(AtlasGraph graph) throws RepositoryException, IndexException {
-        try (AtlasGraphManagement management = graph.getManagementSystem()) {
+        for (int attempt = 1; attempt <= schemaVisibilityAttempts; attempt++) {
+            // The probe scans vertices without an index, so it runs only while the index is absent.
+            if (initializeSchemaIfIndexVisible(graph)) {
+                return;
+            }
+
+            // Probe with no management open. A management transaction and a data
+            // transaction cannot be open together, and the probe has to commit first.
+            Boolean hasAtlasData = graphHasAtlasData(graph);
+
+            try (AtlasGraphManagement management = graph.getManagementSystem()) {
+                if (management.getGraphIndex(VERTEX_INDEX) != null) {
+                    initializeSchema(graph, management);
+
+                    return;
+                }
+
+                // One empty read is not a new graph. A second read has to agree before indexes are
+                // created, because creating them over a stored schema replaces it.
+                if (Boolean.FALSE.equals(hasAtlasData) && attempt > 1) {
+                    LOG.info("GraphBackedSearchIndexer: graph has no Atlas data and {} is absent. Creating indexes.", VERTEX_INDEX);
+
+                    initializeSchema(graph, management);
+
+                    return;
+                }
+
+                if (Boolean.FALSE.equals(hasAtlasData)) {
+                    LOG.info("GraphBackedSearchIndexer: no Atlas data and no {} yet (attempt {}/{}). Confirming this is a new graph before creating indexes.",
+                            VERTEX_INDEX, attempt, schemaVisibilityAttempts);
+                } else {
+                    LOG.warn("GraphBackedSearchIndexer: vertex index is not visible but the graph already has Atlas data (attempt {}/{}). Not creating indexes.",
+                            attempt, schemaVisibilityAttempts);
+                }
+            } catch (RepositoryException failure) {
+                throw failure;
+            } catch (Exception failure) {
+                throw new RepositoryException(failure);
+            }
+
+            if (attempt == schemaVisibilityAttempts) {
+                break;
+            }
+
+            if (!sleepQuietly(schemaVisibilityWaitMs)) {
+                throw new RepositoryException("Interrupted while waiting for the graph schema to become visible");
+            }
+        }
+
+        throw new RepositoryException("Graph schema is not visible on a graph that already has data. Refusing to start so existing indexes are not replaced and lookups do not scan the whole graph.");
+    }
+
+    /** Test hook. Production uses {@link #DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS} and a half-second wait. */
+    static void setSchemaVisibilityWindowForTests(int attempts, long waitMs) {
+        schemaVisibilityAttempts = attempts;
+        schemaVisibilityWaitMs   = waitMs;
+    }
+
+    static void resetSchemaVisibilityWindowForTests() {
+        schemaVisibilityAttempts = DEFAULT_SCHEMA_VISIBILITY_ATTEMPTS;
+        schemaVisibilityWaitMs   = DEFAULT_SCHEMA_VISIBILITY_WAIT_MS;
+    }
+
+    private void initializeSchema(AtlasGraph graph, AtlasGraphManagement management) throws RepositoryException {
+        try {
             LOG.info("Creating indexes for graph.");
 
             uniqueKeyHandler = graph.getUniqueKeyHandler();
@@ -548,59 +984,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             }
 
             // create vertex indexes
-            createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, HISTORICAL_GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-
-            createCommonVertexIndex(management, TYPENAME_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TYPESERVICETYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, VERTEX_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, VERTEX_ID_IN_IMPORT_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
-
-            createCommonVertexIndex(management, ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
-            createCommonVertexIndex(management, TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
-            createCommonVertexIndex(management, MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
-            createCommonVertexIndex(management, STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
-            createCommonVertexIndex(management, CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
-            createCommonVertexIndex(management, CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
-            createCommonVertexIndex(management, MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
-            createCommonVertexIndex(management, CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, PROPAGATED_CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, true);
-            createCommonVertexIndex(management, PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, true);
-            createCommonVertexIndex(management, PENDING_TASKS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
-            createCommonVertexIndex(management, IS_INCOMPLETE_PROPERTY_KEY, UniqueKind.NONE, Integer.class, SINGLE, true, true);
-            createCommonVertexIndex(management, CUSTOM_ATTRIBUTES_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, LABELS_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
-
-            createCommonVertexIndex(management, PATCH_ID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, PATCH_DESCRIPTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, PATCH_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-
-            // tasks
-            createCommonVertexIndex(management, TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false);
-
-            // index recovery
-            createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-
-            // audit reduction
-            createCommonVertexIndex(management, PROPERTY_KEY_AUDIT_REDUCTION_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-
-            //metrics
-            createCommonVertexIndex(management, " __AtlasMetricsStat.metricsId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, " __AtlasMetricsStat.__u_metricsId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, " __AtlasMetricsStat.metrics", UniqueKind.NONE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, " __AtlasMetricsStat.collectionTime", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
-            createCommonVertexIndex(management, " __AtlasMetricsStat.timeToLiveMillis", UniqueKind.NONE, String.class, SINGLE, true, false);
-
-            // atlas async import request index
-            createCommonVertexIndex(management, "__AtlasAsyncImportRequest.importId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, true);
+            declareCommonVertexIndexes((propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, isStringField) ->
+                    createCommonVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, isStringField));
 
             // create vertex-centric index
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class, SINGLE);
@@ -632,10 +1017,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createPropertyKey(management, RELATIONSHIPTYPE_LABEL_KEY, String.class, SINGLE);
             createPropertyKey(management, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class, SINGLE);
 
-            // Parallel processing: entity timestamp tracking for temporal entity resolution
-            createCommonVertexIndex(management, ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
-            createCommonVertexIndex(management, ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
-
             // Composite indexes for optimizing parallel processing queries
             createParallelProcessingCompositeIndexes(management);
 
@@ -649,6 +1030,276 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } finally {
             recomputeIndexedKeys = true;
         }
+    }
+
+    private boolean initializeSchemaIfIndexVisible(AtlasGraph graph) throws RepositoryException {
+        try (AtlasGraphManagement management = graph.getManagementSystem()) {
+            if (management.getGraphIndex(VERTEX_INDEX) == null) {
+                return false;
+            }
+
+            initializeSchema(graph, management);
+
+            return true;
+        } catch (RepositoryException failure) {
+            throw failure;
+        } catch (Exception failure) {
+            throw new RepositoryException(failure);
+        }
+    }
+
+    /**
+     * {@code true} when the store holds a vertex other than an Atlas claim or typedef-bootstrap record,
+     * {@code false} when the scan completed and found only those, and {@code null} when the scan itself
+     * failed. Claim and bootstrap records are written before indexes exist, so they are present on a
+     * new graph. A failed scan is not a new graph: creating indexes on that signal hides the stored schema.
+     */
+    private Boolean graphHasAtlasData(AtlasGraph graph) {
+        try {
+            int scanned = 0;
+
+            for (Object element : graph.query().vertices(ATLAS_DATA_PROBE_LIMIT)) {
+                scanned++;
+
+                if (!isCoordinationVertex((AtlasVertex<?, ?>) element)) {
+                    graph.commit();
+
+                    return true;
+                }
+            }
+
+            graph.commit();
+
+            // A full page of coordination records is not what a new graph looks like.
+            return scanned >= ATLAS_DATA_PROBE_LIMIT;
+        } catch (Exception exception) {
+            LOG.warn("GraphBackedSearchIndexer: could not tell whether the graph already has Atlas data; indexes will not be created", exception);
+
+            try {
+                graph.rollback();
+            } catch (Exception rollbackFailure) {
+                LOG.debug("GraphBackedSearchIndexer: rollback after the data probe failed", rollbackFailure);
+            }
+
+            return null;
+        }
+    }
+
+    static boolean isCoordinationVertex(AtlasVertex<?, ?> vertex) {
+        Collection<? extends String> keys = vertex.getPropertyKeys();
+
+        if (keys == null || keys.isEmpty()) {
+            return false;
+        }
+
+        for (String key : keys) {
+            if (!key.startsWith(Constants.CLAIM_KEY) && !key.startsWith(TYPEDEF_BOOTSTRAP_KEY_PREFIX)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The vertex indexes every deployment has, independent of any typedef. Declared to a handler
+     * rather than created here so that a node which creates them and a node which only needs the
+     * index field names they map to are working from one list.
+     */
+    private void declareCommonVertexIndexes(CommonVertexIndexHandler handler) {
+        handler.accept(GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(HISTORICAL_GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+
+        handler.accept(TYPENAME_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(TYPESERVICETYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(VERTEX_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(VERTEX_ID_IN_IMPORT_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+
+        handler.accept(ENTITY_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(SUPER_TYPES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
+        handler.accept(TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
+        handler.accept(MODIFICATION_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, false, false);
+        handler.accept(STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
+        handler.accept(CREATED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+        handler.accept(CLASSIFICATION_TEXT_KEY, UniqueKind.NONE, String.class, SINGLE, false, false);
+        handler.accept(MODIFIED_BY_KEY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+        handler.accept(CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(PROPAGATED_CLASSIFICATION_NAMES_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, true);
+        handler.accept(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, UniqueKind.NONE, String.class, LIST, true, true);
+        handler.accept(PENDING_TASKS_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, true, false);
+        handler.accept(IS_INCOMPLETE_PROPERTY_KEY, UniqueKind.NONE, Integer.class, SINGLE, true, true);
+        handler.accept(CUSTOM_ATTRIBUTES_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(LABELS_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+
+        handler.accept(PATCH_ID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(PATCH_DESCRIPTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(PATCH_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(PATCH_ACTION_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(PATCH_STATE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(TYPEDEF_BOOTSTRAP_FILE_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(TYPEDEF_REGISTRY_VERSION_MARKER_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(TYPEDEF_REGISTRY_VERSION_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+
+        // tasks
+        handler.accept(TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
+        handler.accept(TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false);
+
+        // cluster-wide claim marker shared by all GraphClaimable implementations
+        handler.accept(Constants.CLAIM_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(Constants.CLAIM_OWNER_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(Constants.CLAIM_TIME_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+        handler.accept(Constants.CLAIM_EXPIRY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+        handler.accept(Constants.CLAIM_VERTEX_TYPE_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
+
+        // index recovery
+        handler.accept(PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+
+        // audit reduction
+        handler.accept(PROPERTY_KEY_AUDIT_REDUCTION_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+
+        //metrics
+        handler.accept(" __AtlasMetricsStat.metricsId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(" __AtlasMetricsStat.__u_metricsId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(" __AtlasMetricsStat.metrics", UniqueKind.NONE, String.class, SINGLE, true, false);
+        handler.accept(" __AtlasMetricsStat.collectionTime", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+        handler.accept(" __AtlasMetricsStat.timeToLiveMillis", UniqueKind.NONE, String.class, SINGLE, true, false);
+
+        // atlas async import request index
+        handler.accept("__AtlasAsyncImportRequest.importId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, true);
+
+        // Parallel processing: entity timestamp tracking for temporal entity resolution
+        handler.accept(ENTITY_CREATE_EVENT_TIME_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+        handler.accept(ENTITY_DELETE_EVENT_TIME_PROPERTY_KEY, UniqueKind.NONE, Long.class, SINGLE, true, false);
+    }
+
+    /**
+     * Records the index field name behind each common property - the name Solr knows
+     * {@code __typeName} by, for instance - without creating anything.
+     *
+     * <p>Those names reach the type registry as a side effect of creating the indexes, so a node
+     * that stands down from index setup has none of them, and then has no field name to give Solr
+     * when it builds a facet or a filter on a system property. The names are derived from the
+     * schema the node that did the setup left behind, so a node that creates nothing can still
+     * read them.
+     */
+    private void registerCommonIndexFieldNames() {
+        long deadline = System.currentTimeMillis() + indexInitLeaseMs;
+        int  attempt  = 0;
+
+        while (true) {
+            List<String> unresolved;
+
+            try {
+                unresolved = resolveCommonIndexFieldNames();
+            } catch (Exception excp) {
+                LOG.warn("GraphBackedSearchIndexer: could not read the index field names for the common properties; search on system properties may be degraded on this node", excp);
+
+                return;
+            }
+
+            if (unresolved.isEmpty()) {
+                LOG.info("GraphBackedSearchIndexer: read the index field names for the common properties from the schema");
+
+                return;
+            }
+
+            attempt++;
+
+            // On a cluster coming up for the first time, the peer publishes the three mixed indexes -
+            // all this node waited for - before it creates the property keys underneath them. While it
+            // still holds the claim it is still creating them, so waiting is worthwhile; once nobody
+            // holds it, no one is going to create them and waiting longer will not help.
+            boolean peerStillWorking = System.currentTimeMillis() < deadline && peerHoldsIndexClaim();
+
+            if (!peerStillWorking && attempt >= INDEX_INIT_RETRIES) {
+                LOG.warn("GraphBackedSearchIndexer: {} common properties have no index field name: {}. Search on those properties will be degraded on this node.",
+                        unresolved.size(), unresolved);
+
+                return;
+            }
+
+            if (attempt == 1) {
+                LOG.info("GraphBackedSearchIndexer: {} common properties are not in the schema yet; {}",
+                        unresolved.size(), peerStillWorking ? "waiting for the node running index setup to create them" : "retrying");
+            } else {
+                LOG.debug("GraphBackedSearchIndexer: {} common properties still missing after {} attempts", unresolved.size(), attempt);
+            }
+
+            if (!sleepQuietly(peerStillWorking ? INDEX_INIT_WAIT_POLL_MS : INDEX_INIT_RETRY_SLEEP_MS)) {
+                return;
+            }
+        }
+    }
+
+    /**
+     * Reads the index field name for every common property, returning the names of those the schema
+     * does not carry yet.
+     */
+    private List<String> resolveCommonIndexFieldNames() throws Exception {
+        List<String> unresolved = new ArrayList<>();
+
+        try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
+            declareCommonVertexIndexes((propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, isStringField) -> {
+                String resolved = registerCommonIndexFieldName(management, propertyName, propertyClass, cardinality, isStringField);
+
+                if (resolved == null) {
+                    unresolved.add(propertyName);
+                }
+            });
+
+            management.setIsSuccess(true);
+        }
+
+        return unresolved;
+    }
+
+    private boolean peerHoldsIndexClaim() {
+        AtlasGraph graph = null;
+
+        try {
+            graph = provider.get();
+
+            return GraphClaim.hasLiveHolder(graph, Constants.CLAIM_INDEX);
+        } catch (Exception excp) {
+            LOG.debug("GraphBackedSearchIndexer: could not tell whether a peer still holds the index claim", excp);
+
+            return false;
+        } finally {
+            if (graph != null) {
+                graph.commit();
+            }
+        }
+    }
+
+    private String registerCommonIndexFieldName(AtlasGraphManagement management, String propertyName, Class<?> propertyClass, AtlasCardinality cardinality, boolean isStringField) {
+        if (isStringField && String.class.equals(propertyClass)) {
+            propertyName = AtlasAttribute.VERTEX_PROPERTY_PREFIX_STRING_INDEX_TYPE + propertyName;
+        }
+
+        if (!isIndexApplicable(propertyClass, cardinality)) {
+            // never had an index field name to begin with
+            return propertyName;
+        }
+
+        AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+
+        if (propertyKey == null) {
+            return null;
+        }
+
+        String indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField);
+
+        if (indexFieldName == null) {
+            return null;
+        }
+
+        typeRegistry.addIndexFieldName(propertyName, indexFieldName);
+
+        return indexFieldName;
     }
 
     private void resolveIndexFieldNames(AtlasGraphManagement managementSystem, ChangedTypeDefs changedTypeDefs) {
@@ -719,10 +1370,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (Exception excp) {
             LOG.warn("resolveIndexFieldName(attribute={}) failed.", attribute.getQualifiedName(), excp);
         }
-    }
-
-    private void createCommonVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes) {
-        createCommonVertexIndex(management, propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, false);
     }
 
     private void createCommonVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField) {
@@ -1277,4 +1924,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     }
 
     public enum UniqueKind { NONE, GLOBAL_UNIQUE, PER_TYPE_UNIQUE }
+
+    /** Receives the common vertex index declarations from {@link #declareCommonVertexIndexes}. */
+    private interface CommonVertexIndexHandler {
+        void accept(String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField);
+
+        default void accept(String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes) {
+            accept(propertyName, uniqueKind, propertyClass, cardinality, createCompositeIndex, createCompositeIndexWithTypeAndSuperTypes, false);
+        }
+    }
 }
