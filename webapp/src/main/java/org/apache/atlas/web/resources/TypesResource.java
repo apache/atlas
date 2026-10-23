@@ -18,8 +18,6 @@
 
 package org.apache.atlas.web.resources;
 
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.core.ResourceContext;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
@@ -78,9 +76,6 @@ public class TypesResource {
     private final TypesREST         typesREST;
     private final AtlasTypeDefStore typeDefStore;
 
-    @Context
-    private ResourceContext resourceContext;
-
     @Inject
     public TypesResource(AtlasTypeRegistry typeRegistry, TypesREST typesREST, AtlasTypeDefStore typeDefStore) {
         TypesResource.typeRegistry = typeRegistry;
@@ -124,7 +119,7 @@ public class TypesResource {
             response.put(AtlasClient.REQUEST_ID, Servlets.getRequestId());
             response.put(AtlasClient.TYPES, typesResponse);
 
-            return Response.status(ClientResponse.Status.CREATED).entity(AtlasJson.toV1Json(response)).build();
+            return Response.status(Response.Status.CREATED).entity(AtlasJson.toV1Json(response)).build();
         } catch (AtlasBaseException e) {
             LOG.error("Type creation failed", e);
 
