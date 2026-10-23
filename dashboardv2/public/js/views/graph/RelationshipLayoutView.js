@@ -256,9 +256,6 @@ define([
                     listString = "",
                     data = this.selectedNodeData,
                     typeName = this.selectedNodeType,
-                    activeEntityColor = "#1976d2",
-                    deletedEntityColor = "#BB5838",
-                    defaultEntityColor = "#e0e0e0",
                     normalizeEntity = function(entity) {
                         if (!entity) {
                             return entity;
@@ -270,68 +267,9 @@ define([
                             return _.extend({}, entity, this.referredEntities[entity.guid]);
                         }
                         return entity;
-                    }.bind(this),
-                    getdefault = function(options) {
-                        return "<pre class='entity-type-name' style='color:" + options.color + "'>" + options.name + "</pre>";
-                    },
-                    getWithButton = function(options) {
-                        var name = options.name,
-                            guid = options.options.guid,
-                            entityTypeButton = "";
-                        if (guid) {
-                            if (options.entity) {
-                                entityTypeButton = "<a href='#!/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
-                            } else if (options.relationship) {
-                                entityTypeButton = "<a href='#/relationshipDetailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
-                            } else {
-                                entityTypeButton = "<a href='#!/detailPage/" + guid + "' class='entity-type-name' style='color:" + options.color + "'>" + name + "</a>";
-                            }
-                        } else {
-                            entityTypeButton = "<pre class='entity-type-name' style='color:" + options.color + "'>" + name + "</pre>";
-                        }
-                        return entityTypeButton;
-                    },
-                    getEntityTypelist = function(options) {
-                        var name = options.entityName ? options.entityName : Utils.getName(options, "displayText"),
-                            entityTypeHtml = "";
-                        if (options.entityStatus == "ACTIVE" || options.status == "ACTIVE") {
-                            if (options.relationshipStatus == "ACTIVE") {
-                                entityTypeHtml = getWithButton({
-                                    color: activeEntityColor,
-                                    options: options,
-                                    name: name
-                                });
-                            } else if (options.relationshipStatus == "DELETED") {
-                                entityTypeHtml = getWithButton({
-                                    color: activeEntityColor,
-                                    options: options,
-                                    name: name,
-                                    relationship: true
-                                });
-                            }
-                        } else if (options.entityStatus == "DELETED") {
-                            entityTypeHtml = getWithButton({
-                                color: deletedEntityColor,
-                                options: options,
-                                name: name,
-                                entity: true
-                            });
-                        } else {
-                            entityTypeHtml = getdefault({
-                                color: activeEntityColor,
-                                options: options,
-                                name: name
-                            });
-                        }
-                        return entityTypeHtml + "</pre>";
-                    };
+                    }.bind(this);
                 this.ui.searchNode.hide();
                 this.$("[data-id='typeName']").text(typeName);
-                var getElement = function(options) {
-                    var name = options.entityName ? options.entityName : Utils.getName(options, "displayText");
-                    var entityTypeButton = getEntityTypelist(options);
-                    return entityTypeButton;
-                };
                 var buildEntityObj = function(item) {
                     var normalized = normalizeEntity(item);
                     var ref = normalized && normalized.guid ? this.referredEntities && this.referredEntities[normalized.guid] : null;
@@ -353,10 +291,10 @@ define([
                     var displayLabel = typeName ? name + " (" + typeName + ")" : name;
                     var href = item.guid ? "#!/detailPage/" + item.guid + "?tabActive=relationship" : "";
                     var isDeleted = (item.entityStatus || item.status) == "DELETED";
-                    var color = isDeleted ? deletedEntityColor : activeEntityColor;
+                    var colorClass = isDeleted ? "deleted" : "active";
                     var content = href
-                        ? "<a href='" + href + "' class='entity-type-name' style='color:" + color + "'>" + _.escape(displayLabel) + "</a>"
-                        : "<span class='entity-type-name' style='color:" + color + "'>" + _.escape(displayLabel) + "</span>";
+                        ? "<a href='" + href + "' class='entity-type-name " + colorClass + "' title='" + _.escape(displayLabel) + "'>" + _.escape(displayLabel) + "</a>"
+                        : "<span class='entity-type-name " + colorClass + "' title='" + _.escape(displayLabel) + "'>" + _.escape(displayLabel) + "</span>";
                     return "<li class='entity-list-item'>" + content + "</li>";
                 };
                 if (_.isArray(data)) {
@@ -383,7 +321,17 @@ define([
                     data = buildEntityObj(data);
                     listString += buildListItem(data);
                 }
+                if ($.fn.tooltip) {
+                    this.$("[data-id='entityList']").find('[title]').tooltip('destroy');
+                }
                 this.$("[data-id='entityList']").html(listString);
+                if ($.fn.tooltip) {
+                    this.$("[data-id='entityList']").find('[title]').tooltip({
+                        placement: 'bottom',
+                        container: 'body',
+                        template: '<div class="tooltip relationship-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+                    });
+                }
             },
             createGraph: function(data) {
                 //Ref - http://bl.ocks.org/fancellu/2c782394602a93921faff74e594d1bb1
@@ -737,6 +685,9 @@ define([
             },
             
             onDestroy: function() {
+                if ($.fn.tooltip && this.$el) {
+                    this.$el.find('[title]').tooltip('destroy');
+                }
                 this.cardsViewLoadInProgress = false;
                 if (this.relationshipCardsViewInstance) {
                     this.relationshipCardsViewInstance.destroy();
