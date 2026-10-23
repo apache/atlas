@@ -21,11 +21,12 @@
  */
 
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
 	CustomButton,
 	LightTooltip,
+	OverflowTooltip,
 	LinkTab,
 	Accordion,
 	AccordionSummary,
@@ -67,6 +68,150 @@ describe('muiComponents', () => {
 		)
 
 		expect(screen.getByText('Tooltip Child')).toBeTruthy()
+	})
+
+	describe('OverflowTooltip', () => {
+		let triggerResize: ResizeObserverCallback | undefined
+		const mockDisconnect = jest.fn()
+		const mockObserve = jest.fn()
+		const originalResizeObserver = global.ResizeObserver
+
+		beforeAll(() => {
+			global.ResizeObserver = class {
+				constructor(callback: ResizeObserverCallback) {
+					triggerResize = callback
+				}
+				observe = mockObserve
+				unobserve = jest.fn()
+				disconnect = mockDisconnect
+			} as unknown as typeof ResizeObserver
+		})
+
+		beforeEach(() => {
+			mockDisconnect.mockClear()
+			mockObserve.mockClear()
+		})
+
+		afterAll(() => {
+			global.ResizeObserver = originalResizeObserver
+		})
+
+		it('renders OverflowTooltip children', () => {
+			render(
+				<OverflowTooltip title="overflow tip">
+					<span>Overflow Child</span>
+				</OverflowTooltip>
+			)
+			expect(screen.getByText('Overflow Child')).toBeTruthy()
+		})
+
+		it('disables tooltip when not overflowed', async () => {
+			render(
+				<OverflowTooltip title="overflow tip">
+					<span data-testid="short-text">Short</span>
+				</OverflowTooltip>
+			)
+			const span = screen.getByTestId('short-text').parentElement!
+			
+			// Mock no overflow
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 100 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			
+			act(() => {
+				if (triggerResize) triggerResize([], {} as ResizeObserver)
+			})
+
+			fireEvent.mouseOver(span)
+			
+			// Tooltip should not be in the document
+			expect(screen.queryByText('overflow tip')).not.toBeInTheDocument()
+		})
+
+		it('enables tooltip on resize if overflow occurs', async () => {
+			render(
+				<OverflowTooltip title="overflow tip">
+					<span data-testid="resize-text">Will be long</span>
+				</OverflowTooltip>
+			)
+			const span = screen.getByTestId('resize-text').parentElement!
+			
+			// Mock overflow condition
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 200 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			
+			// Trigger resize observer callback
+			act(() => {
+				if (triggerResize) triggerResize([], {} as ResizeObserver)
+			})
+			
+			fireEvent.mouseOver(span)
+			
+			// Tooltip should appear
+			expect(await screen.findByText('overflow tip')).toBeInTheDocument()
+		})
+
+		it('enables tooltip for subpixel overflow where clientWidth matches scrollWidth', async () => {
+			render(
+				<OverflowTooltip title="subpixel tip">
+					<span data-testid="subpixel-text">Subpixel</span>
+				</OverflowTooltip>
+			)
+			const span = screen.getByTestId('subpixel-text').parentElement!
+
+			// Mock subpixel overflow condition (scrollWidth matches clientWidth, but rect is smaller)
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 100 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			span.getBoundingClientRect = jest.fn(() => ({ width: 99.5 } as DOMRect))
+
+			// Trigger hover to fire the onMouseEnter checkOverflow logic
+			fireEvent.mouseEnter(span)
+			fireEvent.mouseOver(span)
+
+			expect(await screen.findByText('subpixel tip')).toBeInTheDocument()
+		})
+
+		it('disconnects ResizeObserver on unmount', () => {
+			const { unmount } = render(
+				<OverflowTooltip title="tip">
+					<span>Text</span>
+				</OverflowTooltip>
+			)
+			expect(mockObserve).toHaveBeenCalled()
+			unmount()
+			expect(mockDisconnect).toHaveBeenCalled()
+		})
+
+		it('applies wrapperClassName to the wrapper', () => {
+			render(
+				<OverflowTooltip title="tip" wrapperClassName="custom-wrapper-class">
+					<span data-testid="child-text">Text</span>
+				</OverflowTooltip>
+			)
+			const wrapper = screen.getByTestId('child-text').parentElement
+			expect(wrapper).toHaveClass('custom-wrapper-class')
+		})
+
+		it('updates overflow state when title prop changes', async () => {
+			const { rerender } = render(
+				<OverflowTooltip title="initial tip">
+					<span data-testid="title-change">Text</span>
+				</OverflowTooltip>
+			)
+			
+			const span = screen.getByTestId('title-change').parentElement!
+			Object.defineProperty(span, 'scrollWidth', { configurable: true, value: 200 })
+			Object.defineProperty(span, 'clientWidth', { configurable: true, value: 100 })
+			
+			// Change title which triggers useEffect
+			rerender(
+				<OverflowTooltip title="new tip">
+					<span data-testid="title-change">Text</span>
+				</OverflowTooltip>
+			)
+			
+			fireEvent.mouseOver(span)
+			expect(await screen.findByText('new tip')).toBeInTheDocument()
+		})
 	})
 
 	it('prevents default navigation in LinkTab', async () => {
