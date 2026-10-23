@@ -57,8 +57,9 @@ import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
 
 public class EntitySearchProcessor extends SearchProcessor {
-    private static final Logger LOG      = LoggerFactory.getLogger(EntitySearchProcessor.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
+    private static final Logger LOG              = LoggerFactory.getLogger(EntitySearchProcessor.class);
+    private static final Logger PERF_LOG         = AtlasPerfTracer.getPerfLogger("EntitySearchProcessor");
+    private static final int    COUNT_BATCH_SIZE = 1000;
 
     private final AtlasIndexQuery indexQuery;
     private final AtlasGraphQuery graphQuery;
@@ -316,13 +317,91 @@ public class EntitySearchProcessor extends SearchProcessor {
 
     @Override
     public long getResultCount() {
-        if (indexQuery != null) {
+        if (isEntityRootType()) {                     //when `typeName` is `_ALL_ENTITY_TYPES` (`isEntityRootType()`
+            return getFilteredResultCount();
+        } else if (indexQuery != null) {              //specific types like `hive_table`
             return indexQuery.vertexTotals();
         } else if (graphQuery != null) {
             return StreamSupport.stream(graphQuery.vertexIds().spliterator(), false).count();
         } else {
             return -1L;
         }
+    }
+
+    private long getFilteredResultCount() {
+        if (indexQuery != null) {
+            return countFilteredIndexResults();
+        } else if (graphQuery != null) {
+            return countFilteredGraphResults();
+        }
+
+        return -1L;
+    }
+
+    private long countFilteredIndexResults() {
+        long                                count                 = 0;
+        int                                 qryOffset             = 0;
+        LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
+
+        while (true) {
+            offsetEntityVertexMap.clear();
+
+            if (context.terminateSearch()) {
+                break;
+            }
+
+            Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, COUNT_BATCH_SIZE);
+
+            offsetEntityVertexMap = getVerticesFromIndexQueryResult(idxQueryResult, offsetEntityVertexMap, qryOffset);
+
+            boolean isLastResultPage = offsetEntityVertexMap.size() < COUNT_BATCH_SIZE;
+
+            offsetEntityVertexMap = applyCountFilters(offsetEntityVertexMap);
+            count += offsetEntityVertexMap.size();
+
+            if (isLastResultPage) {
+                break;
+            }
+
+            qryOffset += COUNT_BATCH_SIZE;
+        }
+
+        return count;
+    }
+
+    private long countFilteredGraphResults() {
+        long count     = 0;
+        int  qryOffset = 0;
+
+        while (true) {
+            LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap = new LinkedHashMap<>();
+            Iterator<AtlasVertex>               queryResult             = graphQuery.vertices(qryOffset, COUNT_BATCH_SIZE).iterator();
+
+            offsetEntityVertexMap = getVertices(queryResult, offsetEntityVertexMap, qryOffset);
+
+            boolean isLastResultPage = offsetEntityVertexMap.size() < COUNT_BATCH_SIZE;
+
+            offsetEntityVertexMap = applyCountFilters(offsetEntityVertexMap);
+            count += offsetEntityVertexMap.size();
+
+            if (isLastResultPage) {
+                break;
+            }
+
+            qryOffset += COUNT_BATCH_SIZE;
+        }
+
+        return count;
+    }
+
+    private LinkedHashMap<Integer, AtlasVertex> applyCountFilters(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
+        offsetEntityVertexMap = super.filter(offsetEntityVertexMap, inMemoryPredicate);
+
+        if (graphQueryPredicate != null) {
+            offsetEntityVertexMap = super.filter(offsetEntityVertexMap, graphQueryPredicate);
+        }
+
+        return super.filter(offsetEntityVertexMap);
     }
 
     @Override
