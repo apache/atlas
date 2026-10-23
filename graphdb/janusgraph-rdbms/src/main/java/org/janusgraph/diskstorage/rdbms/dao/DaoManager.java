@@ -33,6 +33,9 @@ import javax.persistence.spi.PersistenceProviderResolver;
 import javax.persistence.spi.PersistenceProviderResolverHolder;
 import javax.sql.DataSource;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -103,6 +106,7 @@ public class DaoManager {
 
         config.put(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML, "META-INF/janus-persistence.xml");
         config.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, dataSource);
+        suppressSchemaGenerationIfSchemaExists(dataSource, config);
 
         PersistenceProviderResolver resolver = PersistenceProviderResolverHolder.getPersistenceProviderResolver();
         EntityManagerFactory        emf      = null;
@@ -129,6 +133,44 @@ public class DaoManager {
 
         if (this.emFactory.isOpen()) {
             this.emFactory.close();
+        }
+    }
+
+    /**
+     * EclipseLink {@code schema-generation.database.action=create} runs {@code CREATE UNIQUE INDEX}
+     * on every graph open, even when the tables already exist. {@code IF NOT EXISTS} still takes a
+     * {@code ShareLock} on {@code janus_column}. A peer in the middle of index-init commit holds
+     * uncommitted {@code INSERT}s on that table, so the create-index waits, and the peer's later
+     * {@code DELETE} (JanusGraph lock cleanup) waits on the create-index: a hang Postgres will not
+     * abort, because the INSERT session is idle in its transaction rather than waiting.
+     */
+    static void suppressSchemaGenerationIfSchemaExists(DataSource dataSource, Map<String, Object> config) {
+        if (!janusSchemaExists(dataSource)) {
+            return;
+        }
+
+        Object previous = config.put(PersistenceUnitProperties.SCHEMA_GENERATION_DATABASE_ACTION, "none");
+
+        config.remove(PersistenceUnitProperties.SCHEMA_GENERATION_CREATE_DATABASE_SCHEMAS);
+        config.remove(PersistenceUnitProperties.SCHEMA_GENERATION_CREATE_SOURCE);
+        config.remove(PersistenceUnitProperties.SCHEMA_GENERATION_CREATE_SCRIPT_SOURCE);
+
+        LOG.info("Janus RDBMS schema already exists; skipping EclipseLink schema generation (was {})", previous);
+    }
+
+    static boolean janusSchemaExists(DataSource dataSource) {
+        try (Connection connection = dataSource.getConnection()) {
+            return tableExists(connection, "janus_column") || tableExists(connection, "JANUS_COLUMN");
+        } catch (SQLException exception) {
+            LOG.warn("Could not check whether the Janus RDBMS schema exists; leaving schema generation as configured", exception);
+
+            return false;
+        }
+    }
+
+    private static boolean tableExists(Connection connection, String tableName) throws SQLException {
+        try (ResultSet tables = connection.getMetaData().getTables(null, null, tableName, new String[] {"TABLE"})) {
+            return tables.next();
         }
     }
 }

@@ -157,13 +157,15 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                         throw new RuntimeException(e);
                     }
 
-                    configureTxLogBasedIndexRecovery();
-
                     graphInstance      = initJanusGraph(config);
                     atlasGraphInstance = new AtlasJanusGraph();
 
                     me = graphInstance;
 
+                    // Apply tx-log recovery on the graph just opened. Doing this first used to
+                    // open a second JanusGraph (and on rdbms, run EclipseLink schema generation)
+                    // while a peer could already be inside index-init commit.
+                    configureTxLogBasedIndexRecovery();
                     validateIndexBackend(config);
                 }
             }
@@ -490,9 +492,15 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         for (int attempt = 1; attempt <= SCHEMA_VISIBILITY_ATTEMPTS; attempt++) {
             JanusGraph           graph            = null;
             JanusGraphManagement managementSystem = null;
+            boolean              openedHere       = false;
 
             try {
-                graph = initJanusGraph(getConfiguration());
+                if (graphInstance != null) {
+                    graph = graphInstance;
+                } else {
+                    graph      = initJanusGraph(getConfiguration());
+                    openedHere = true;
+                }
 
                 // Fill the schema cache from storage before opening management. A management
                 // transaction opened against an empty cache, then committed, is what hides the
@@ -542,7 +550,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                     managementSystem.rollback();
                 }
 
-                if (graph != null) {
+                if (openedHere && graph != null) {
                     graph.close();
                 }
             }
