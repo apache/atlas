@@ -93,6 +93,40 @@ Regular Build Process
     mvn clean package -Pdist
    ```
 
+#### Slim server packaging (ATLAS-5220)
+
+Atlas can be built with only the graph storage, search index, and audit backends you need. Combine `-Pdist` with optional profiles (always include `-Pdist` for packaging):
+
+| Profile | Purpose |
+|---------|---------|
+| `storage-hbase` | HBase graph storage (default) |
+| `storage-cassandra` | Cassandra/CQL graph storage |
+| `storage-berkeleyje` | BerkeleyJE local graph storage |
+| `storage-rdbms` | RDBMS graph storage |
+| `index-solr` | Solr search index (default with `-Pdist`) |
+| `index-elasticsearch` | Elasticsearch search index |
+| `audit-hbase` | HBase entity audit (default) |
+| `audit-inmemory` | In-memory audit (no audit JAR in WAR) |
+| `audit-rdbms` | RDBMS entity audit |
+| `audit-cassandra` | Cassandra entity audit |
+| `audit-noop` | Disabled audit |
+| `embedded-hbase-solr` | Bundled HBase+Solr for local dev (downloads at build time) |
+
+Examples:
+
+```bash
+# Default slim server (external HBase + Solr): HBase storage, Solr index, HBase audit
+mvn clean package -DskipTests -Pdist,storage-hbase,index-solr,audit-hbase
+
+# RDBMS storage + RDBMS audit
+mvn clean package -DskipTests -Pdist,storage-rdbms,index-solr,audit-rdbms
+
+# Local dev tarball with embedded HBase and Solr
+mvn clean package -DskipTests -Pdist,storage-hbase,audit-hbase,embedded-hbase-solr
+```
+
+`-Pdist` alone sets default backend properties but does **not** download embedded HBase/Solr; use `embedded-hbase-solr` for a ready-to-run local tarball. See also `docs/src/documents/Setup/BuildInstruction.md`.
+
 3. After above build commands successfully complete, you should see the following files
    ```
    distro/target/apache-atlas-<version>-bin.tar.gz

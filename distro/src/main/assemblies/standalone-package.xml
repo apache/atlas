@@ -65,6 +65,13 @@
         </fileSet>
 
         <fileSet>
+            <directory>src/main/hbase-conf</directory>
+            <outputDirectory>hbase/conf</outputDirectory>
+            <fileMode>0644</fileMode>
+            <directoryMode>0755</directoryMode>
+        </fileSet>
+
+        <fileSet>
             <directory>target/hbase</directory>
             <outputDirectory>hbase</outputDirectory>
             <fileMode>0755</fileMode>

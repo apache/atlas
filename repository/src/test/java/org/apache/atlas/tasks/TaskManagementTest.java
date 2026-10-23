@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -55,8 +56,27 @@ public class TaskManagementTest extends BaseTaskFixture {
 
         taskManagement.addAll(Arrays.asList(spyTask, spyTaskError));
 
-        TimeUnit.SECONDS.sleep(5);
+        // Wait until both tasks have actually been executed (and the completed add-task
+        // vertex removed) instead of relying on a fixed sleep. The fixed Thread.sleep(5s)
+        // was flaky on slower runners (e.g. JDK 8 CI with the berkeleyje backend): the
+        // tasks had not finished within the window, so getErrorTask() was still null and
+        // the assertion threw a NullPointerException. Polling until done is deterministic.
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(30);
 
+        while (System.currentTimeMillis() < deadline) {
+            boolean addPerformed   = spyingFactory.getAddTask() != null && spyingFactory.getAddTask().taskPerformed();
+            boolean errorPerformed = spyingFactory.getErrorTask() != null && spyingFactory.getErrorTask().taskPerformed();
+            boolean addTaskRemoved = taskManagement.getByGuid(spyTask.getGuid()) == null;
+
+            if (addPerformed && errorPerformed && addTaskRemoved) {
+                break;
+            }
+
+            TimeUnit.MILLISECONDS.sleep(100);
+        }
+
+        assertNotNull(spyingFactory.getAddTask());
+        assertNotNull(spyingFactory.getErrorTask());
         assertTrue(spyingFactory.getAddTask().taskPerformed());
         assertTrue(spyingFactory.getErrorTask().taskPerformed());
 
