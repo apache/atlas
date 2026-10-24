@@ -1,7 +1,8 @@
 # Python Sample App
 
 This is a Python sample app to showcase basic functionality of Atlas. We are using Python client
-to call Atlas APIs. Make sure to install Atlas Python client first before trying to run this project. Currently, compatible with Python 3.5+
+to call Atlas APIs. Make sure to install Atlas Python client first before trying to run this project.
+Requires Python 3.13 or later (see `apache-atlas` 0.0.16+ on PyPI).
 
 ## Installation
 
