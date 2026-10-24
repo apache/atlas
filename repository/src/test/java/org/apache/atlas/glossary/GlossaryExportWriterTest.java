@@ -53,6 +53,8 @@ public class GlossaryExportWriterTest {
         assertTrue(csv.contains("BankBranch"));
         assertTrue(csv.contains("testBankingGlossary"));
         assertTrue(csv.contains("Record Type"));
+        assertTrue(!csv.contains("Related Categories / Parent"));
+
     }
 
     @Test
@@ -71,6 +73,9 @@ public class GlossaryExportWriterTest {
             Row data    = sheet.getRow(1);
 
             assertEquals(header.getCell(0).getStringCellValue(), "Record Type");
+            assertEquals(header.getCell(8).getStringCellValue(), "Qualified Name");
+            assertEquals(header.getCell(9).getStringCellValue(), "GUID");
+            assertEquals(header.getLastCellNum(), (short) 10);
             assertEquals(data.getCell(1).getStringCellValue(), "BankBranch");
             assertEquals(data.getCell(2).getStringCellValue(), "testBankingGlossary");
         }
