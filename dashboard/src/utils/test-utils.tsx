@@ -20,6 +20,7 @@
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import '@testing-library/jest-dom';
 
 // Custom render function with providers
 interface AllTheProvidersProps {

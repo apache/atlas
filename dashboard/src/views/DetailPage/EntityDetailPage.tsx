@@ -23,7 +23,7 @@ import {
   extractKeyValueFromEntity,
   getNestedSuperTypes,
   getTagObj,
-  isEmpty
+  isEmpty,
 } from "@utils/Utils";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { entityStateReadOnly, globalSessionData } from "@utils/Enum";
@@ -48,18 +48,18 @@ import ShowMoreView from "@components/ShowMore/ShowMoreView";
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
 
 const PropertiesTab = lazy(
-  () => import("./EntityDetailTabs/PropertiesTab/PropertiesTab")
+  () => import("./EntityDetailTabs/PropertiesTab/PropertiesTab"),
 );
 const RelationshipsTab = lazy(
-  () => import("./EntityDetailTabs/RelationshipsTab")
+  () => import("./EntityDetailTabs/RelationshipsTab"),
 );
 const ClassificationsTab = lazy(
-  () => import("./EntityDetailTabs/ClassificationsTab")
+  () => import("./EntityDetailTabs/ClassificationsTab"),
 );
 const AuditsTab = lazy(() => import("./EntityDetailTabs/AuditsTab"));
 const SchemaTab = lazy(() => import("./EntityDetailTabs/SchemaTab"));
 const ReplicationAuditTable = lazy(
-  () => import("./EntityDetailTabs/ReplicationAuditTab")
+  () => import("./EntityDetailTabs/ReplicationAuditTab"),
 );
 const ProfileTab = lazy(() => import("./EntityDetailTabs/ProfileTab"));
 const TaskTab = lazy(() => import("./EntityDetailTabs/TaskTab"));
@@ -80,10 +80,10 @@ const EntityDetailPage: React.FC = () => {
   const { taskTabEnabled = {}, uiTaskTabEnabled } = globalSessionData || {};
   const activeTab: string | undefined | null = searchParams.get("tabActive");
   const { detailPageData, loading }: any = useAppSelector(
-    (state: any) => state.detailPage
+    (state: any) => state.detailPage,
   );
   const { entityData, loading: _loader } = useSelector(
-    (state: EntityState) => state.entity
+    (state: EntityState) => state.entity,
   );
 
   const [openAddTagModal, setOpenAddTagModal] = useState<boolean>(false);
@@ -108,7 +108,9 @@ const EntityDetailPage: React.FC = () => {
   const { meanings = [] } = relationshipAttributes || {};
   const { glossaryData }: any = useAppSelector((state: any) => state.glossary);
   const hasAnyGlossaryTerms = Array.isArray(glossaryData)
-    ? glossaryData.some((g: any) => Array.isArray(g?.terms) && g.terms.length > 0)
+    ? glossaryData.some(
+        (g: any) => Array.isArray(g?.terms) && g.terms.length > 0,
+      )
     : false;
 
   const { name }: { name: string; found: boolean; key: any } =
@@ -117,14 +119,14 @@ const EntityDetailPage: React.FC = () => {
   let entityObj =
     !isEmpty(entityDefObj) && !isEmpty(entity)
       ? entityDefObj.find((obj: { name: string }) => {
-        return obj.name == entity.typeName;
-      })
+          return obj.name == entity.typeName;
+        })
       : {};
   let superTypes = !isEmpty(entityDefObj)
     ? getNestedSuperTypes({
-      data: entityObj,
-      collection: entityDefObj
-    })
+        data: entityObj,
+        collection: entityDefObj,
+      })
     : [];
   let isLineageRender: boolean | null = superTypes.find((type) => {
     if (type === "DataSet" || type === "Process") {
@@ -144,15 +146,16 @@ const EntityDetailPage: React.FC = () => {
 
   let schemaOptions = entityObj?.options;
   let schemaElementsAttribute = schemaOptions?.schemaElementsAttribute;
-  const schemaRelationNames =
-    normalizeSchemaElementsAttribute(schemaElementsAttribute);
+  const schemaRelationNames = normalizeSchemaElementsAttribute(
+    schemaElementsAttribute,
+  );
 
   let allTabs = [
     "properties",
     "relationship",
     "classification",
     "audit",
-    "pendingTask"
+    "pendingTask",
   ];
   let tabsName = [...allTabs];
 
@@ -201,7 +204,7 @@ const EntityDetailPage: React.FC = () => {
   }
 
   const [value, setValue] = useState(
-    !isEmpty(activeTab) ? tabsName.findIndex((val) => val === activeTab) : 0
+    !isEmpty(activeTab) ? tabsName.findIndex((val) => val === activeTab) : 0,
   );
 
   let tagObj = getTagObj(entity, classifications);
@@ -211,7 +214,7 @@ const EntityDetailPage: React.FC = () => {
       event.type !== "click" ||
       (event.type === "click" &&
         samePageLinkNavigation(
-          event as React.MouseEvent<HTMLAnchorElement, MouseEvent>
+          event as React.MouseEvent<HTMLAnchorElement, MouseEvent>,
         ))
     ) {
       let currentTabName = tabsName[newValue];
@@ -224,7 +227,7 @@ const EntityDetailPage: React.FC = () => {
       searchParams.set("tabActive", currentTabName);
       navigate({
         pathname: `/detailPage/${guid}`,
-        search: searchParams.toString()
+        search: searchParams.toString(),
       });
       setValue(newValue);
     }
@@ -350,7 +353,7 @@ const EntityDetailPage: React.FC = () => {
           <Stack spacing={2} direction="row" alignItems="center">
             {!isEmpty(entity) && (
               <DisplayImage
-                entity={entity}
+                entity={{ ...entity, serviceType: entityObj?.serviceType }}
                 width={56}
                 height={50}
                 avatarDisplay={true}
@@ -385,7 +388,7 @@ const EntityDetailPage: React.FC = () => {
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
             gridGap: "1rem 2rem",
-            marginBottom: "0.75rem"
+            marginBottom: "0.75rem",
           }}
         >
           <Stack>
@@ -422,7 +425,10 @@ const EntityDetailPage: React.FC = () => {
                           setOpenAddTagModal(true);
                         }}
                       >
-                        <AddCircleOutlineIcon className="mr-0" fontSize="small" />{" "}
+                        <AddCircleOutlineIcon
+                          className="mr-0"
+                          fontSize="small"
+                        />{" "}
                       </IconButton>
                     </LightTooltip>
                   )}
@@ -473,30 +479,31 @@ const EntityDetailPage: React.FC = () => {
                     >
                       Terms
                     </Typography>
-                    {!loading && isEntityModificationAllowed(entity?.status) && (
-                      <LightTooltip title="Add Term">
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            if (!hasAnyGlossaryTerms) {
-                              toast.dismiss();
-                              toast.info("There are no available terms");
-                              return;
-                            }
-                            setOpenAddTermModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />
-                        </IconButton>
-                      </LightTooltip>
-                    )}
+                    {!loading &&
+                      isEntityModificationAllowed(entity?.status) && (
+                        <LightTooltip title="Add Term">
+                          <IconButton
+                            component="label"
+                            role={undefined}
+                            tabIndex={-1}
+                            size="small"
+                            color="primary"
+                            onClick={() => {
+                              if (!hasAnyGlossaryTerms) {
+                                toast.dismiss();
+                                toast.info("There are no available terms");
+                                return;
+                              }
+                              setOpenAddTermModal(true);
+                            }}
+                          >
+                            <AddCircleOutlineIcon
+                              className="mr-0"
+                              fontSize="small"
+                            />
+                          </IconButton>
+                        </LightTooltip>
+                      )}
                   </Stack>
 
                   <Stack
@@ -595,7 +602,7 @@ const EntityDetailPage: React.FC = () => {
                 <LinkTab
                   label={
                     entity.typeName == "hive_db" ||
-                      entity.typeName == "hbase_namespace"
+                    entity.typeName == "hbase_namespace"
                       ? "Tables"
                       : "Table"
                   }
