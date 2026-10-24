@@ -48,6 +48,7 @@
         <module>addons/impala-bridge-shim</module>
         <module>addons/impala-hook-api</module>
         <module>addons/kafka-bridge</module>
+        <module>addons/nutch-bridge</module>
         <module>addons/sqoop-bridge</module>
         <module>addons/sqoop-bridge-shim</module>
         <module>addons/storm-bridge</module>
