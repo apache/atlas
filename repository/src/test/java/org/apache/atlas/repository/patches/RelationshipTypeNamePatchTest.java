@@ -25,6 +25,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -39,6 +40,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.lenient;
@@ -59,6 +61,9 @@ public class RelationshipTypeNamePatchTest {
 
     @Mock
     private AtlasGraph graph;
+
+    @Mock
+    private AtlasGraphQuery graphQuery;
 
     @Mock
     private AtlasTypeRegistry typeRegistry;
@@ -120,7 +125,7 @@ public class RelationshipTypeNamePatchTest {
     public void testApplyWhenRelationshipSearchDisabled() throws AtlasBaseException {
         patch.apply();
 
-        verify(graph, never()).getEdges();
+        verify(graph, never()).query();
     }
 
     @Test
@@ -141,7 +146,11 @@ public class RelationshipTypeNamePatchTest {
 
     @Test
     public void testSubmitEdgesToUpdateWithNoEdges() {
-        when(graph.getEdges()).thenReturn(Collections.emptyList());
+        when(typeRegistry.getAllRelationshipTypes()).thenReturn(Collections.singletonList(relationshipType));
+        when(relationshipType.getTypeName()).thenReturn("relationship_type_1");
+        when(graph.query()).thenReturn(graphQuery);
+        when(graphQuery.has(any(), any())).thenReturn(graphQuery);
+        when(graphQuery.edges(anyInt(), anyInt())).thenReturn(Collections.emptyList());
 
         RelationshipTypeNamePatch.RelationshipTypeNamePatchProcessor processor = new RelationshipTypeNamePatch.RelationshipTypeNamePatchProcessor(patchContext);
 
@@ -152,7 +161,11 @@ public class RelationshipTypeNamePatchTest {
 
     @Test
     public void testSubmitEdgesToUpdateWithEdgesHavingTypeName() {
-        when(graph.getEdges()).thenReturn(Arrays.asList(edge1, edge2, edge3));
+        when(typeRegistry.getAllRelationshipTypes()).thenReturn(Collections.singletonList(relationshipType));
+        when(relationshipType.getTypeName()).thenReturn("relationship_type_1");
+        when(graph.query()).thenReturn(graphQuery);
+        when(graphQuery.has(any(), any())).thenReturn(graphQuery);
+        when(graphQuery.edges(anyInt(), anyInt())).thenReturn(Arrays.asList(edge1, edge2, edge3));
 
         when(edge1.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn("relationship_type_1");
         when(edge2.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn("relationship_type_2");
@@ -173,7 +186,11 @@ public class RelationshipTypeNamePatchTest {
 
     @Test
     public void testSubmitEdgesToUpdateWithAllEdgesHavingNullTypeName() {
-        when(graph.getEdges()).thenReturn(Arrays.asList(edge1, edge2, edge3));
+        when(typeRegistry.getAllRelationshipTypes()).thenReturn(Collections.singletonList(relationshipType));
+        when(relationshipType.getTypeName()).thenReturn("relationship_type_1");
+        when(graph.query()).thenReturn(graphQuery);
+        when(graphQuery.has(any(), any())).thenReturn(graphQuery);
+        when(graphQuery.edges(anyInt(), anyInt())).thenReturn(Arrays.asList(edge1, edge2, edge3));
 
         when(edge1.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn(null);
         when(edge2.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn(null);

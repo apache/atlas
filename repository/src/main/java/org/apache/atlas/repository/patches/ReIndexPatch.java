@@ -119,10 +119,36 @@ public class ReIndexPatch extends AtlasPatchHandler {
         }
 
         private static void edges(WorkItemManager manager, AtlasGraph graph) {
-            Iterable<AtlasEdge> iterable = graph.getEdges();
+            int offset    = 0;
+            int batchSize = ConcurrentPatchProcessor.BATCH_SIZE;
 
-            for (AtlasEdge atlasEdge : iterable) {
-                manager.checkProduce(atlasEdge);
+            while (true) {
+                Iterable<AtlasEdge> iterable;
+                try {
+                    iterable = graph.query().edges(offset, batchSize);
+                } catch (Exception ex) {
+                    LOG.warn("ReIndexPatch.edges(offset={}): scan failed, stopping edge repair for this run", offset, ex);
+
+                    break;
+                }
+
+                int pageCount = 0;
+
+                for (AtlasEdge atlasEdge : iterable) {
+                    pageCount++;
+
+                    try {
+                        manager.checkProduce(atlasEdge);
+                    } catch (Exception edgeEx) {
+                        LOG.warn("ReIndexPatch.edges: skipping edge {}", atlasEdge.getId(), edgeEx);
+                    }
+                }
+
+                if (pageCount < batchSize) {
+                    break;
+                }
+
+                offset += batchSize;
             }
         }
 

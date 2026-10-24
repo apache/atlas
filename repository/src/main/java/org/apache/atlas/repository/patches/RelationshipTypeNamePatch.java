@@ -21,13 +21,11 @@ import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
 
 public class RelationshipTypeNamePatch extends AtlasPatchHandler {
@@ -75,21 +73,7 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void submitEdgesToUpdate(WorkItemManager manager) {
-            AtlasGraph          graph    = getGraph();
-            Iterable<AtlasEdge> iterable = graph.getEdges();
-            int                 count    = 0;
-
-            for (AtlasEdge edge : iterable) {
-                if (edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class) != null) {
-                    String edgeId = edge.getId().toString();
-
-                    manager.checkProduce(edgeId);
-
-                    count++;
-                }
-            }
-
-            LOG.info("found {} edges with typeName != null", count);
+            EdgePatchScanner.submitRelationshipEdgesWithEntityType(getGraph(), getTypeRegistry(), manager);
         }
 
         @Override

@@ -151,27 +151,29 @@ public abstract class EdgePatchProcessor {
         protected void processItem(String edgeId) {
             counter.incrementAndGet();
 
-            AtlasEdge edge = graph.getEdge(edgeId);
-
-            if (edge == null) {
-                LOG.warn("processItem(edgeId={}): AtlasEdge not found!", edgeId);
-
-                return;
-            }
-
-            String                typeName         = edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
-            AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(typeName);
-
-            if (relationshipType == null) {
-                return;
-            }
-
             try {
+                AtlasEdge edge = graph.getEdge(edgeId);
+
+                if (edge == null) {
+                    LOG.warn("processItem(edgeId={}): AtlasEdge not found!", edgeId);
+
+                    return;
+                }
+
+                String                typeName         = edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+                AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(typeName);
+
+                if (relationshipType == null) {
+                    return;
+                }
+
                 individualItemProcessor.processEdgesItem(edgeId, edge, typeName, relationshipType);
 
                 doCommit();
             } catch (AtlasBaseException e) {
                 LOG.error("Error processing: edgeId={}", edgeId, e);
+            } catch (RuntimeException e) {
+                LOG.error("Error processing edgeId={} (skipping, possible oversized graph row): {}", edgeId, e.getMessage(), e);
             }
         }
 
