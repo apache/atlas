@@ -151,6 +151,19 @@ atlas.client.ha.retries=4
 atlas.client.ha.sleep.interval.ms=5000`}
 </SyntaxHighlighter>
 
+## Entity audit filters
+
+Administrators can define rules to accept or discard entity audit events before they are persisted. This feature is disabled by default. See [Entity Audit Filters](#/EntityAuditFilters) for rule syntax, REST APIs, and evaluation behavior.
+
+<SyntaxHighlighter wrapLines={true} language="bash" style={theme.dark}>
+{`# Enable entity audit filter rules (default: false). Requires Atlas restart.
+atlas.entity.audit.filter.enabled=false
+
+# Default action when no rule matches or rule evaluation falls back (default: ACCEPT)
+# Valid values: ACCEPT | DISCARD
+atlas.entity.audit.filter.default.action=ACCEPT`}
+</SyntaxHighlighter>
+
 ## Server Properties
 <SyntaxHighlighter wrapLines={true} language="bash" style={theme.dark}>
 {`# Set the following property to true, to enable the setup steps to run on each server start. Default = false.

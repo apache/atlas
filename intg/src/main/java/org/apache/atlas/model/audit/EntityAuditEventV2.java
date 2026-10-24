@@ -61,6 +61,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private String              eventKey;
     private AtlasEntity         entity;
     private EntityAuditType     type;
+    private boolean             isDiscarded;
 
     public EntityAuditEventV2() {
     }
@@ -178,6 +179,16 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.entity = AtlasType.fromJson(entityDefinition, AtlasEntity.class);
     }
 
+    @JsonIgnore
+    public boolean isDiscarded() {
+        return isDiscarded;
+    }
+
+    @JsonIgnore
+    public void setDiscarded(boolean discarded) {
+        isDiscarded = discarded;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(entityId, timestamp, user, action, details, eventKey, entity, type);
@@ -213,6 +224,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
                 ", eventKey='" + eventKey + '\'' +
                 ", entity=" + entity +
                 ", type=" + type +
+                ", isDiscarded=" + isDiscarded +
                 '}';
     }
 
@@ -231,14 +243,15 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     @JsonIgnore
     @Override
     public void clear() {
-        entityId  = null;
-        timestamp = 0L;
-        user      = null;
-        action    = null;
-        details   = null;
-        eventKey  = null;
-        entity    = null;
-        type      = null;
+        entityId    = null;
+        timestamp   = 0L;
+        user        = null;
+        action      = null;
+        details     = null;
+        eventKey    = null;
+        entity      = null;
+        type        = null;
+        isDiscarded = false;
     }
 
     private String getJsonPartFromDetails() {
