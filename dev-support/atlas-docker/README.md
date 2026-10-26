@@ -326,10 +326,10 @@ Then start with the desired backend script (`hbase` or `postgres`).
 Metadata and monolithic containers enable header-based authentication at startup:
 
 ```text
-atlas.authn.header.enabled=true
-atlas.authn.header.username=x-awc-username
-atlas.authn.header.roles=x-awc-roles
-atlas.authn.header.requestid=x-awc-requestid
+atlas.authentication.method.header.enabled=true
+atlas.authentication.method.header.username=x-awc-username
+atlas.authentication.method.header.roles=x-awc-roles
+atlas.authentication.method.header.requestid=x-awc-requestid
 atlas.rest-csrf.enabled=false
 ```
 

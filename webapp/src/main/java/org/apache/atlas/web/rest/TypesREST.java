@@ -468,6 +468,8 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ", force=" + forceDelete + ")");
             }
 
+            typeRegistryVersionGate.ensureUpToDate();
+
             typeDefStore.deleteTypesDef(typesDef, forceDelete);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -500,6 +502,8 @@ public class TypesREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ", force=" + forceDelete + ")");
             }
+
+            typeRegistryVersionGate.ensureUpToDate();
 
             typeDefStore.deleteTypeByName(typeName, forceDelete);
         } finally {

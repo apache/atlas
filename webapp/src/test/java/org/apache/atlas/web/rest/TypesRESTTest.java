@@ -35,6 +35,7 @@ import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -53,6 +54,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -713,6 +715,36 @@ public class TypesRESTTest {
 
             // Verify
             verify(typeDefStore).deleteTypeByName(typeName, true);
+        }
+    }
+
+    @Test
+    public void testDeleteAtlasTypeByName_RefreshesTypeRegistryBeforeDelete() throws AtlasBaseException {
+        String typeName = "type_created_on_peer";
+
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+
+            typesREST.deleteAtlasTypeByName(typeName, false);
+
+            InOrder inOrder = inOrder(typeRegistryVersionGate, typeDefStore);
+
+            inOrder.verify(typeRegistryVersionGate).ensureUpToDate();
+            inOrder.verify(typeDefStore).deleteTypeByName(typeName, false);
+        }
+    }
+
+    @Test
+    public void testDeleteAtlasTypeDefs_RefreshesTypeRegistryBeforeDelete() throws AtlasBaseException {
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+
+            typesREST.deleteAtlasTypeDefs(mockTypesDef, false);
+
+            InOrder inOrder = inOrder(typeRegistryVersionGate, typeDefStore);
+
+            inOrder.verify(typeRegistryVersionGate).ensureUpToDate();
+            inOrder.verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
         }
     }
 

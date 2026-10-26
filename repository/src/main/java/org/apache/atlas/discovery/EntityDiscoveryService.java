@@ -261,8 +261,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     @GraphTransaction
     public AtlasSearchResult searchUsingBasicQuery(String query, String typeName, String classification, String attrName, String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException {
-        ensureTypeRegistryCurrent();
+        return withTypeCatchUp(() -> searchUsingBasicQueryInternal(query, typeName, classification, attrName, attrValuePrefix, excludeDeletedEntities, limit, offset));
+    }
 
+    private AtlasSearchResult searchUsingBasicQueryInternal(String query, String typeName, String classification, String attrName, String attrValuePrefix, boolean excludeDeletedEntities, int limit, int offset) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult(AtlasQueryType.BASIC);
 
         LOG.debug("Executing basic search query: {} with type: {} and classification: {}", query, typeName, classification);

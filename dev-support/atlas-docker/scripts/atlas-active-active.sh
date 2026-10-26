@@ -113,10 +113,10 @@ fi
 # The client passes x-awc-username/x-awc-roles/x-awc-requestid headers
 # and Atlas trusts them directly without maintaining server-side sessions.
 if [ "${RUN_MODE}" = "METADATA_SERVER" ] || [ "${RUN_MODE}" = "MONOLITHIC" ]; then
-    ensure_prop "atlas.authn.header.enabled" "true"
-    ensure_prop "atlas.authn.header.username" "x-awc-username"
-    ensure_prop "atlas.authn.header.roles" "x-awc-roles"
-    ensure_prop "atlas.authn.header.requestid" "x-awc-requestid"
+    ensure_prop "atlas.authentication.method.header.enabled" "true"
+    ensure_prop "atlas.authentication.method.header.username" "x-awc-username"
+    ensure_prop "atlas.authentication.method.header.roles" "x-awc-roles"
+    ensure_prop "atlas.authentication.method.header.requestid" "x-awc-requestid"
     # Active-active round-robin uses stateless auth headers; disable CSRF token
     # enforcement to avoid session-bound token mismatches across replicas.
     ensure_prop "atlas.rest-csrf.enabled" "false"

@@ -1786,6 +1786,36 @@ public class EntityRESTTest {
         verify(mockEntitiesStore).getClassification(guid, classificationName);
     }
 
+    @Test
+    public void testGetEntityHeaderByUniqueAttributes_ForceRefreshWhenWatermarkStale() throws AtlasBaseException {
+        String typeName = "peer_created_type";
+        Map<String, String[]> attributes = new HashMap<>();
+        attributes.put(PREFIX_ATTR + "qualifiedName", new String[] {"test@domain.com"});
+
+        AtlasEntityHeader expectedResult = new AtlasEntityHeader();
+        AtlasStructDef.AtlasAttributeDef mockAttributeDef = mock(AtlasStructDef.AtlasAttributeDef.class);
+        when(mockAttributeDef.getIsUnique()).thenReturn(true);
+
+        AtlasEntityType mockEntityType = mock(AtlasEntityType.class);
+        when(mockEntityType.getAttributeDef("qualifiedName")).thenReturn(mockAttributeDef);
+
+        TypeRegistryVersionGate gate = mock(TypeRegistryVersionGate.class);
+        when(gate.ensureUpToDate()).thenReturn(false);
+        when(gate.forceRefresh()).thenReturn(true);
+        when(mockTypeRegistry.getEntityTypeByName(typeName)).thenReturn(null, null, mockEntityType);
+        when(mockEntitiesStore.getEntityHeaderByUniqueAttributes(any(), anyMap())).thenReturn(expectedResult);
+
+        entityREST.setTypeRegistryVersionGate(gate);
+
+        AtlasEntityHeader actualResult = entityREST.getEntityHeaderByUniqueAttributes(typeName,
+                buildAndGetMockServletRequest(attributes));
+
+        assertEquals(actualResult, expectedResult);
+        verify(gate).ensureUpToDate();
+        verify(gate).forceRefresh();
+        verify(mockEntitiesStore).getEntityHeaderByUniqueAttributes(any(), anyMap());
+    }
+
     private Map<String, Object> processAttributes(Map<String, String[]> attributes) {
         Map<String, Object> processedAttributes = attributes.entrySet().stream()
                 .filter(entry -> entry.getKey() != null && entry.getKey().startsWith(PREFIX_ATTR))
