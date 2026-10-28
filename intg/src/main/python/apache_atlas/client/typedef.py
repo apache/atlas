@@ -80,7 +80,7 @@ class TypeDefClient:
         return self.__get_typedef_by_name(name, AtlasEnumDef)
 
     def get_enumdef_by_guid(self, guid):
-        return self.__get_typedef_by_guid(guid, AtlasEntityDef)
+        return self.__get_typedef_by_guid(guid, AtlasEnumDef)
 
     def get_structdef_by_name(self, name):
         return self.__get_typedef_by_name(name, AtlasStructDef)
@@ -119,7 +119,7 @@ class TypeDefClient:
         return self.client.call_api(TypeDefClient.UPDATE_TYPE_DEFS, AtlasTypesDef, None, types_def)
 
     def delete_atlas_typedefs(self, types_def):
-        return self.client.call_api(TypeDefClient.DELETE_TYPE_DEFS, None, types_def)
+        return self.client.call_api(TypeDefClient.DELETE_TYPE_DEFS, None, None, types_def)
 
     def delete_type_by_name(self, type_name):
         return self.client.call_api(TypeDefClient.DELETE_TYPE_DEF_BY_NAME.format_path_with_params(type_name))
@@ -137,17 +137,19 @@ class TypeDefClient:
         return self.client.call_api(api.format_path({'path_type': path_type, 'guid': guid}), typedef_class)
 
     def __get_path_for_type(self, typedef_class):
-        if issubclass(AtlasEnumDef, typedef_class):
+        # Entity, classification, relationship and business-metadata defs extend AtlasStructDef,
+        # so they are matched before it.
+        if issubclass(typedef_class, AtlasEnumDef):
             return "enumdef"
-        if issubclass(AtlasEntityDef, typedef_class):
+        if issubclass(typedef_class, AtlasEntityDef):
             return "entitydef"
-        if issubclass(AtlasClassificationDef, typedef_class):
+        if issubclass(typedef_class, AtlasClassificationDef):
             return "classificationdef"
-        if issubclass(AtlasStructDef, typedef_class):
-            return "structdef"
-        if issubclass(AtlasRelationshipDef, typedef_class):
+        if issubclass(typedef_class, AtlasRelationshipDef):
             return "relationshipdef"
-        if issubclass(AtlasBusinessMetadataDef, typedef_class):
+        if issubclass(typedef_class, AtlasBusinessMetadataDef):
             return "businessmetadatadef"
+        if issubclass(typedef_class, AtlasStructDef):
+            return "structdef"
 
         return ""

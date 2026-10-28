@@ -82,6 +82,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
+import javax.inject.Inject;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -179,9 +181,24 @@ public class TestModules {
             bind(TaskManagement.class).asEagerSingleton();
             bind(ClassificationPropagateTaskFactory.class).asEagerSingleton();
 
+            // Ensure index activation lifecycle runs deterministically before test data load.
+            bind(TestIndexActivationBootstrap.class).asEagerSingleton();
+
             final GraphTransactionInterceptor graphTransactionInterceptor = new GraphTransactionInterceptor(new AtlasGraphProvider().get(), null);
             requestInjection(graphTransactionInterceptor);
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
+        }
+
+        @Singleton
+        static class TestIndexActivationBootstrap {
+            @Inject
+            TestIndexActivationBootstrap(GraphBackedSearchIndexer indexer) {
+                try {
+                    indexer.instanceIsActive();
+                } catch (AtlasException e) {
+                    throw new RuntimeException("Failed to initialize graph indexes in test bootstrap", e);
+                }
+            }
         }
 
         protected void bindAuditRepository(Binder binder) {

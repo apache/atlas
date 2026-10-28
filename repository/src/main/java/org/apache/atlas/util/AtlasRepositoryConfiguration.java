@@ -52,7 +52,14 @@ public class AtlasRepositoryConfiguration {
      * with the optimizer in production systems.
      */
     public static final  String  GREMLIN_OPTIMIZER_ENABLED_PROPERTY                = "atlas.query.gremlinOptimizerEnabled";
-    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = 15;
+    // In active-active, AMRA typedef-sync uses AtlasTypeDefGraphStore.refreshFromStore() (a delta)
+    // rather than a full init(). Startup and the empty-index fallback still call init(), which
+    // holds the type-update write lock for ~30s on a populated cluster. A concurrent local type
+    // create must wait that out; the fair lock (see AtlasTypeRegistry) guarantees it is served
+    // next, but only if it waits long enough. The old 15s default expired mid-reload and surfaced
+    // as ATLAS-500 "Failed to get the lock". 90s covers an in-flight rebuild with margin. Only
+    // matters under contention (single-node Atlas never waits).
+    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = 90;
     private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
     private static final String  JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS         = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;

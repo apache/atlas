@@ -1,0 +1,275 @@
+# =============================================================================
+# Atlas Active-Active Multi-Instance Docker Compose
+# =============================================================================
+#
+# Based on docker-compose.atlas.yml (single-node reference).
+# Adds INITIALIZER + METADATA_SERVER + NOTIFICATION_PROCESSOR roles driven
+# by the RUN_MODE environment variable.
+#
+# Startup order (enforced by depends_on conditions):
+#
+#   [1] Infrastructure  atlas-zk (*), atlas-kafka, atlas-solr, atlas-backend
+#                       atlas-hadoop (required by HBase/HDFS)
+#
+#   (*) atlas-zk is NOT used by Atlas itself — Atlas has no ZooKeeper or
+#       leader-election dependency (CuratorFactory/ActiveInstanceElectorService
+#       were removed).  ZooKeeper is required only by:
+#         • HBase — for its own distributed coordination
+#         • Kafka  — the bundled image runs in ZK mode (server.properties).
+#           ↓
+#   [2] INITIALIZER     RUN_MODE=INITIALIZER  (x1, exits 0 when done)
+#       Sets up JanusGraph indices, bootstraps type-defs, applies patches.
+#       Container exits with code 0. Docker marks it "completed_successfully".
+#           ↓  (service_completed_successfully gate)
+#   [3a] METADATA_SERVER   RUN_MODE=METADATA_SERVER  (default x2)
+#        REST API, search, entity CRUD, import/export, task workers.
+#        No hook-message consumers.
+#
+#   [3b] NOTIFICATION_PROC  RUN_MODE=NOTIFICATION_PROCESSOR  (default x2)
+#        Hook Kafka consumer only. Writes entities to the graph.
+#        No REST server, no patches.
+#
+#   [4]  LOAD BALANCER  Nginx — round-robins across all metadata-server replicas.
+#
+# ---------------------------------------------------------------------------
+# Changing replica counts:
+#
+#   1. Edit .env  → METADATA_SERVER_REPLICAS=3  then:  docker compose up -d
+#   2. --scale flag:
+#        docker compose -f docker-compose.atlas-active-active.yml up -d \
+#          --scale atlas-metadata-server=3 \
+#          --scale atlas-notification-proc=2
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Shared Atlas build/image fragment — mirrors docker-compose.atlas.yml exactly
+# for the build section, adding only command and network.
+# NOTE: YAML merge (<<:) does NOT deep-merge nested maps so depends_on is
+#       declared explicitly on each service.
+# ---------------------------------------------------------------------------
+x-atlas-build: &atlas-build
+  build:
+    context: .
+    dockerfile: Dockerfile.atlas
+    args:
+      - ATLAS_BACKEND=${ATLAS_BACKEND}
+      - ATLAS_SERVER_JAVA_VERSION=${ATLAS_SERVER_JAVA_VERSION}
+      - ATLAS_VERSION=${ATLAS_VERSION}
+  image: atlas:latest
+  stdin_open: true
+  tty: true
+  networks:
+    - atlas
+  volumes:
+    - ./data:/home/atlas/data
+  # Use entrypoint (not command) because Dockerfile.atlas uses ENTRYPOINT which
+  # is NOT overridden by compose 'command' — 'command' only replaces CMD.
+  entrypoint:
+    - /home/atlas/scripts/atlas-active-active.sh
+
+# ---------------------------------------------------------------------------
+services:
+
+  # ==========================================================================
+  # [1] Infrastructure  — identical to docker-compose.atlas.yml + atlas-hadoop
+  # ==========================================================================
+
+  # Hadoop (HDFS) — required by HBase as its storage layer.
+  # Run alongside docker-compose.atlas.yml with -f docker-compose.atlas-hadoop.yml
+  # is the pattern in the README; here we include it directly.
+  atlas-hadoop:
+    extends:
+      service: atlas-hadoop
+      file: docker-compose.atlas-hadoop.yml
+
+  # Backend selected by ATLAS_BACKEND (hbase or postgres), matching
+  # docker-compose.atlas.yml behavior.
+  atlas-backend:
+    extends:
+      service: ${ATLAS_BACKEND}
+      file: docker-compose.atlas-backend.yml
+    container_name: atlas-backend
+
+  atlas-kafka:
+    extends:
+      service: atlas-kafka
+      file: docker-compose.atlas-common.yml
+
+  # --------------------------------------------------------------------------
+  # Optional: Hive + Postgres (start on demand to test Atlas Hive hook)
+  #   docker compose -f docker-compose.atlas-active-active.yml up -d atlas-db atlas-hive
+  # --------------------------------------------------------------------------
+
+  # Postgres service:
+  # - always used by Hive metastore
+  # - used by Atlas graph/audit too when ATLAS_BACKEND=postgres
+  atlas-db:
+    extends:
+      service: atlas-db
+      file: docker-compose.atlas-common.yml
+
+  # Hive — Hive DDL operations send hook messages to Kafka which are
+  # consumed by NOTIFICATION_PROCESSOR replicas and loaded into Atlas.
+  atlas-hive:
+    extends:
+      service: atlas-hive
+      file: docker-compose.atlas-hive.yml
+
+  atlas-solr:
+    extends:
+      service: atlas-solr
+      file: docker-compose.atlas-common.yml
+
+  atlas-zk:
+    extends:
+      service: atlas-zk
+      file: docker-compose.atlas-common.yml
+
+  # ==========================================================================
+  # [2] INITIALIZER — runs once, initialises the store, exits 0
+  # ==========================================================================
+  atlas-initializer:
+    <<: *atlas-build
+    container_name: atlas-initializer
+    hostname: atlas-initializer.example.com
+    environment:
+      - ATLAS_BACKEND
+      - ATLAS_SERVER_JAVA_VERSION
+      - ATLAS_VERSION
+      - ATLAS_REBUILD_INDEX
+      - ATLAS_UPDATE_COMPOSITE_INDEX_STATUS
+      - RUN_MODE=INITIALIZER
+    volumes:
+      - ./data:/home/atlas/data
+      - atlas-initializer-home:/opt/atlas/data
+      - ./config/atlas/active-active/common/atlas-application.properties:/opt/atlas/conf/atlas-application-common.properties:ro
+      - ./config/atlas/active-active/${ATLAS_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application-backend.properties:ro
+      - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties
+    depends_on:
+      atlas-backend:
+        condition: service_healthy
+      atlas-db:
+        condition: service_healthy
+      atlas-kafka:
+        condition: service_started
+      atlas-solr:
+        condition: service_started
+      atlas-zk:
+        condition: service_started
+    restart: "no"
+
+  # ==========================================================================
+  # [3a] METADATA_SERVER — starts after initializer exits 0
+  # Scale:  --scale atlas-metadata-server=N   or   METADATA_SERVER_REPLICAS=N
+  # ==========================================================================
+  atlas-metadata-server:
+    <<: *atlas-build
+    # Keep default per-container hostname for scaled replicas so Atlas node IDs
+    # and typedef-sync consumer groups are unique on each instance.
+    environment:
+      - ATLAS_BACKEND
+      - ATLAS_SERVER_JAVA_VERSION
+      - ATLAS_VERSION
+      - ATLAS_REBUILD_INDEX
+      - ATLAS_UPDATE_COMPOSITE_INDEX_STATUS
+      - ATLAS_INDEX_RECOVERY_ENABLE
+      - RUN_MODE=METADATA_SERVER
+    volumes:
+      - ./data:/home/atlas/data
+      - atlas-metadata-server-home:/opt/atlas/data
+      - ./config/atlas/active-active/common/atlas-application.properties:/opt/atlas/conf/atlas-application-common.properties:ro
+      - ./config/atlas/active-active/${ATLAS_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application-backend.properties:ro
+      - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties
+    depends_on:
+      atlas-backend:
+        condition: service_healthy
+      atlas-db:
+        condition: service_healthy
+      atlas-kafka:
+        condition: service_started
+      atlas-solr:
+        condition: service_started
+      atlas-zk:
+        condition: service_started
+      atlas-initializer:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - >
+          wget -qO-
+          http://localhost:21000/api/atlas/admin/status
+          2>/dev/null | grep -q '"Status":"ACTIVE"'
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+    restart: unless-stopped
+    deploy:
+      replicas: ${METADATA_SERVER_REPLICAS:-2}
+
+  # ==========================================================================
+  # [3b] NOTIFICATION_PROCESSOR — starts after initializer exits 0
+  # Scale:  --scale atlas-notification-proc=N   or   NOTIFICATION_PROC_REPLICAS=N
+  # ==========================================================================
+  atlas-notification-proc:
+    <<: *atlas-build
+    # Keep default per-container hostname for scaled replicas so Atlas node IDs
+    # and consumer groups are unique on each instance.
+    environment:
+      - ATLAS_BACKEND
+      - ATLAS_SERVER_JAVA_VERSION
+      - ATLAS_VERSION
+      - ATLAS_REBUILD_INDEX
+      - ATLAS_UPDATE_COMPOSITE_INDEX_STATUS
+      - RUN_MODE=NOTIFICATION_PROCESSOR
+    volumes:
+      - ./data:/home/atlas/data
+      - atlas-notification-proc-home:/opt/atlas/data
+      - ./config/atlas/active-active/common/atlas-application.properties:/opt/atlas/conf/atlas-application-common.properties:ro
+      - ./config/atlas/active-active/${ATLAS_BACKEND}/atlas-application.properties:/opt/atlas/conf/atlas-application-backend.properties:ro
+      - ./config/atlas/users-credentials.properties:/opt/atlas/conf/users-credentials.properties
+    depends_on:
+      atlas-backend:
+        condition: service_healthy
+      atlas-db:
+        condition: service_healthy
+      atlas-kafka:
+        condition: service_started
+      atlas-solr:
+        condition: service_started
+      atlas-zk:
+        condition: service_started
+      atlas-initializer:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    deploy:
+      replicas: ${NOTIFICATION_PROC_REPLICAS:-2}
+
+  # ==========================================================================
+  # [4] LOAD BALANCER — single entry point, round-robins to metadata-server
+  # ==========================================================================
+  atlas-lb:
+    image: nginx:1.27-alpine
+    container_name: atlas-lb
+    hostname: atlas.example.com
+    networks:
+      - atlas
+    ports:
+      - "${ATLAS_LB_PORT:-21000}:80"
+    volumes:
+      - ./config/nginx-active-active.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      atlas-metadata-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ---------------------------------------------------------------------------
+volumes:
+  atlas-initializer-home:
+  atlas-metadata-server-home:
+  atlas-notification-proc-home:
+
+networks:
+  atlas:
+    name: atlasnw
