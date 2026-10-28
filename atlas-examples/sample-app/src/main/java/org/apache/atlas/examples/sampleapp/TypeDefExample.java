@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.examples.sampleapp;
 
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.SearchFilter;
@@ -32,6 +31,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 
 import java.util.Arrays;
@@ -122,7 +122,7 @@ public class TypeDefExample {
 
     public void printTypeDefinitions() throws AtlasServiceException {
         for (String typeName : SAMPLE_APP_TYPES) {
-            MultivaluedMap<String, String> searchParams = new MultivaluedMapImpl();
+            MultivaluedMap<String, String> searchParams = new MultivaluedHashMap();
 
             searchParams.add(SearchFilter.PARAM_NAME, typeName);
 

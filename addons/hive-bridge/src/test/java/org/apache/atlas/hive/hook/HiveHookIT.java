@@ -21,7 +21,6 @@ package org.apache.atlas.hive.hook;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Joiner;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasServiceException;
@@ -58,6 +57,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.core.Response;
 import java.text.ParseException;
 import java.util.*;
 
@@ -298,7 +298,7 @@ public class HiveHookIT extends HiveITBase {
         try {
             atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_TABLE.getName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, tableQualifiedName));
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return;
             }
         }
@@ -2101,7 +2101,7 @@ public class HiveHookIT extends HiveITBase {
         try {
             atlasClientV2.getEntityByAttribute(HiveDataTypes.HIVE_DB.getName(), Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, dbQualifiedName));
         } catch (AtlasServiceException e) {
-            if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return;
             }
         }
