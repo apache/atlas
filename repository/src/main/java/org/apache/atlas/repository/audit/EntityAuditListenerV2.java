@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.audit;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
@@ -31,23 +32,28 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.rulesengine.AtlasEntityAuditFilterService;
+import org.apache.atlas.rulesengine.AtlasRulesEngine;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
+import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.utils.FixedBufferList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -74,22 +80,34 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.TERM_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.TERM_DELETE;
+import static org.apache.atlas.rulesengine.AtlasEntityAuditFilterService.ATLAS_RULE_ENTITY_NAME;
+import static org.apache.atlas.rulesengine.AtlasEntityAuditFilterService.ATTR_OPERATION_TYPE;
+import static org.apache.atlas.type.AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME;
 
 @Component
 public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListenerV2.class);
+    private static final Logger LOG      = LoggerFactory.getLogger(EntityAuditListenerV2.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("EntityChangeListenerV2");
 
     private static final ThreadLocal<FixedBufferList<EntityAuditEventV2>> AUDIT_EVENTS_BUFFER = ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class, AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
-    private final EntityAuditRepository  auditRepository;
-    private final AtlasTypeRegistry      typeRegistry;
-    private final AtlasInstanceConverter instanceConverter;
+    private final EntityAuditRepository         auditRepository;
+    private final AtlasTypeRegistry             typeRegistry;
+    private final AtlasInstanceConverter        instanceConverter;
+    private       AtlasEntityAuditFilterService auditFilterService;
+    private       AtlasRulesEngine              rulesEngine;
 
     @Inject
     public EntityAuditListenerV2(EntityAuditRepository auditRepository, AtlasTypeRegistry typeRegistry, AtlasInstanceConverter instanceConverter) {
         this.auditRepository   = auditRepository;
         this.typeRegistry      = typeRegistry;
         this.instanceConverter = instanceConverter;
+    }
+
+    @Autowired
+    public void setAuditFilterService(AtlasEntityAuditFilterService auditFilterService) throws AtlasBaseException {
+        this.auditFilterService = auditFilterService;
+        LOG.info("AtlasEntityAuditFilterService injected into EntityAuditListenerV2");
     }
 
     @Override
@@ -102,7 +120,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
         }
 
-        auditRepository.putEventsV2(entitiesAdded.toList());
+        putAuditEvents(entitiesAdded.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -138,7 +156,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(updatedEvents.next(), entity, action);
         }
 
-        auditRepository.putEventsV2(updatedEvents.toList());
+        putAuditEvents(updatedEvents.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -153,7 +171,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
         }
 
-        auditRepository.putEventsV2(deletedEntities.toList());
+        putAuditEvents(deletedEntities.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -168,7 +186,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             createEvent(eventsPurged.next(), entity, ENTITY_PURGE);
         }
 
-        auditRepository.putEventsV2(eventsPurged.toList());
+        putAuditEvents(eventsPurged.toList());
 
         RequestContext.get().endMetricRecord(metric);
     }
@@ -188,7 +206,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(classificationsAdded.toList());
+            putAuditEvents(classificationsAdded.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -210,7 +228,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -238,7 +256,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -259,7 +277,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -281,7 +299,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -302,7 +320,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -323,7 +341,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 }
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -360,7 +378,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             createEvent(events.next(), entity, LABEL_ADD, "Added labels: " + addedLabels);
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -377,7 +395,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             createEvent(events.next(), entity, LABEL_DELETE, "Deleted labels: " + deletedLabels);
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -398,7 +416,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                 createEvent(events.next(), entity, BUSINESS_ATTRIBUTE_UPDATE, "Updated business attributes: " + details);
             }
 
-            auditRepository.putEventsV2(events.toList());
+            putAuditEvents(events.toList());
 
             RequestContext.get().endMetricRecord(metric);
         }
@@ -411,8 +429,57 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         entityAuditEventV2.setAction(action);
         entityAuditEventV2.setDetails(details);
         entityAuditEventV2.setEntity(entity);
-
+        if (auditFilterService != null && auditFilterService.isEntityAuditCustomFilterEnabled()) {
+            entityAuditEventV2.setDiscarded(auditFilterService.isDiscardByDefault());
+            applyRules(entity, entityAuditEventV2);
+        } else {
+            entityAuditEventV2.setDiscarded(false);
+        }
         return entityAuditEventV2;
+    }
+
+    private void applyRules(AtlasEntity entity, EntityAuditEventV2 entityAuditEventV2) {
+        AtlasPerfTracer perf = null;
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.applyRules");
+        }
+
+        if (ATLAS_RULE_ENTITY_NAME.equals(entity.getTypeName())) {
+            return;
+        }
+
+        Map<String, Object> dataObj = prepareDataObject(entity, entityAuditEventV2);
+
+        try {
+            boolean accept = getRulesEngine().accept(dataObj);
+
+            entityAuditEventV2.setDiscarded(!accept);
+
+            LOG.debug("Entity audit for type: {} qualifiedName: {} is {}",
+                    entity.getTypeName(),
+                    entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME),
+                    accept ? "accepted" : "discarded");
+        } catch (Exception e) {
+            LOG.warn("Failed to apply rules for entity type={}, guid={}. Using default audit filter action (discarded={})",
+                    entity.getTypeName(), entity.getGuid(), entityAuditEventV2.isDiscarded(), e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    private AtlasRulesEngine getRulesEngine() {
+        if (rulesEngine == null) {
+            rulesEngine = new AtlasRulesEngine(auditFilterService);
+        }
+        return rulesEngine;
+    }
+
+    private Map<String, Object> prepareDataObject(AtlasEntity entity, EntityAuditEventV2 entityAuditEventV2) {
+        ObjectMapper        oMapper         = new ObjectMapper();
+        Map<String, Object> preparedDataObj = oMapper.convertValue(entity, Map.class);
+        preparedDataObj.put(ATTR_OPERATION_TYPE, entityAuditEventV2.getAction().name());
+        return preparedDataObj;
     }
 
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 event, AtlasEntity entity, EntityAuditActionV2 action) {
@@ -648,6 +715,40 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         ret.reset();
 
         return ret;
+    }
+
+    private void putAuditEvents(List<EntityAuditEventV2> events) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(events)) {
+            return;
+        }
+
+        boolean hasDiscarded = false;
+
+        for (EntityAuditEventV2 event : events) {
+            if (event.isDiscarded()) {
+                hasDiscarded = true;
+                break;
+            }
+        }
+
+        if (!hasDiscarded) {
+            auditRepository.putEventsV2(events);
+            return;
+        }
+
+        List<EntityAuditEventV2> eventsToPersist = new ArrayList<>(events.size());
+
+        for (EntityAuditEventV2 event : events) {
+            if (event.isDiscarded()) {
+                LOG.debug("Discarding entity audit event {}", event);
+            } else {
+                eventsToPersist.add(event);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(eventsToPersist)) {
+            auditRepository.putEventsV2(eventsToPersist);
+        }
     }
 
     private boolean isShellEntity(AtlasEntity entity) {
