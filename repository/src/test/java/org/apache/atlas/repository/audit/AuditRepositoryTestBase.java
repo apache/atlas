@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
@@ -243,6 +244,63 @@ public class AuditRepositoryTestBase {
         List<EntityAuditEventV2> remainingEventsByTTL = allEvents.stream().filter(x -> !deletedEventsByTTL.contains(x)).collect(Collectors.toList());
         assertEquals(remainingEventsByTTL.size(), 1);
         assertEquals(latestEvent, remainingEventsByTTL.get(0));
+    }
+
+    @Test
+    public void testGetEntitiesWithTagChanges() throws Exception {
+        String      entityId1 = "tagChangeEntity1-" + rand();
+        String      entityId2 = "tagChangeEntity2-" + rand();
+        String      entityId3 = "tagChangeEntity3-" + rand();
+        AtlasEntity entity    = new AtlasEntity(rand());
+        long        ts        = System.currentTimeMillis();
+
+        eventRepository.putEventsV2(new EntityAuditEventV2(entityId1, ts + 1, "user1",
+                EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD, "added PII", entity));
+        eventRepository.putEventsV2(new EntityAuditEventV2(entityId2, ts + 2, "user1",
+                EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE, "deleted PII", entity));
+        eventRepository.putEventsV2(new EntityAuditEventV2(entityId3, ts + 3, "user1",
+                EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE, "updated PII", entity));
+
+        Set<String> result = eventRepository.getEntitiesWithTagChanges(ts, ts + 10);
+
+        assertNotNull(result);
+        assertTrue(result.contains(entityId1), "Expected CLASSIFICATION_ADD entity in result");
+        assertTrue(result.contains(entityId2), "Expected CLASSIFICATION_DELETE entity in result");
+        assertTrue(result.contains(entityId3), "Expected CLASSIFICATION_UPDATE entity in result");
+    }
+
+    @Test
+    public void testGetEntitiesWithTagChanges_emptyForNoMatchingTimeRange() throws Exception {
+        String      entityId = "tagChangeNoMatch-" + rand();
+        AtlasEntity entity   = new AtlasEntity(rand());
+        long        ts       = System.currentTimeMillis();
+
+        eventRepository.putEventsV2(new EntityAuditEventV2(entityId, ts + 100, "user1",
+                EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD, "added PII", entity));
+
+        Set<String> result = eventRepository.getEntitiesWithTagChanges(ts, ts + 10);
+
+        assertNotNull(result);
+        assertFalse(result.contains(entityId), "Entity outside time range should not be in result");
+    }
+
+    @Test
+    public void testGetEntitiesWithTagChanges_deduplicatesEntities() throws Exception {
+        String      entityId = "tagChangeDuplicate-" + rand();
+        AtlasEntity entity   = new AtlasEntity(rand());
+        long        ts       = System.currentTimeMillis();
+
+        eventRepository.putEventsV2(new EntityAuditEventV2(entityId, ts + 1, "user1",
+                EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD, "added PII", entity));
+        eventRepository.putEventsV2(new EntityAuditEventV2(entityId, ts + 2, "user1",
+                EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE, "updated PII", entity));
+
+        Set<String> result = eventRepository.getEntitiesWithTagChanges(ts, ts + 10);
+
+        assertNotNull(result);
+        assertTrue(result.contains(entityId));
+        long count = result.stream().filter(id -> id.equals(entityId)).count();
+        assertEquals(count, 1, "Entity should appear only once in the result set");
     }
 
     protected void assertEventV1Equals(EntityAuditEvent actual, EntityAuditEvent expected) {

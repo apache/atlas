@@ -103,7 +103,7 @@ See also [OpenSearch session context](../opensearch-docker/OPENSEARCH_SESSION_CO
       docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml up -d --wait
       ```
 
-   5. To install and start Atlas using **HBase + OpenSearch** (recommended for OpenSearch backend validation):
+   5.1. To install and start Atlas using **HBase + OpenSearch** (recommended for OpenSearch backend validation):
 
       ```shell
       export ATLAS_BACKEND=hbase
@@ -115,7 +115,7 @@ See also [OpenSearch session context](../opensearch-docker/OPENSEARCH_SESSION_CO
       docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml up -d --wait
       ```
 
-   6. To install and start Atlas using **Postgres + OpenSearch**:
+   5.2. To install and start Atlas using **Postgres + OpenSearch**:
 
       ```shell
       export ATLAS_BACKEND=postgres
@@ -127,27 +127,41 @@ See also [OpenSearch session context](../opensearch-docker/OPENSEARCH_SESSION_CO
       docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml up -d --wait
       ```
 
-   **Verify OpenSearch + Atlas:**
+     **Verify OpenSearch + Atlas:**
 
-   ```shell
-   curl -s http://localhost:9200/
-   curl -s http://localhost:15601/api/status
-   curl -u admin:atlasR0cks! http://localhost:21000/api/atlas/admin/version
-   curl -u admin:atlasR0cks! "http://localhost:21000/api/atlas/v2/search/quick?query=*&limit=1"
-   ```
+       ```shell
+       curl -s http://localhost:9200/
+       curl -s http://localhost:15601/api/status
+       curl -u admin:atlasR0cks! http://localhost:21000/api/atlas/admin/version
+       curl -u admin:atlasR0cks! "http://localhost:21000/api/atlas/v2/search/quick?query=*&limit=1"
+       ```
 
-   OpenSearch Dashboards UI: http://localhost:15601 (no login when security plugin is disabled)
+       OpenSearch Dashboards UI: http://localhost:15601 (no login when security plugin is disabled)
+      
+   6. To build and start the Atlas REST notification server (`atlas-rest`), execute following commands after
+      Atlas is running from step 3 or 4 (Kafka and ZooKeeper from the Atlas stack must be up):
 
-   If Dashboards fails to load in Chrome with `[I18n] A locale must be a non-empty string`, clear site
-   data for the Dashboards URL (Chrome → Settings → Privacy → Site settings → View all → localhost),
-   use a private window, or recreate the container after pulling the updated compose port mapping.
+      ```shell
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-rest.yml up -d --build --wait atlas-rest
+      ```
 
-   If Docker Compose hangs on `Pulling` for locally built images, use:
+      If Atlas was started with a backend overlay, include the same compose files so services share one project:
 
-   ```shell
-   export COMPOSE_PULL_POLICY=never
-   ```
+      ```shell
+      export ATLAS_BACKEND=postgres
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml -f docker-compose.atlas-rest.yml up -d --build --wait atlas-rest
+      ```
 
-   Apache Atlas will be installed at `/opt/atlas/`, and logs are at `/var/log/atlas` directory.
+      ```shell
+      export ATLAS_BACKEND=hbase
+      docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-rest.yml up -d --build --wait atlas-rest
+      ```
+
+      The REST server package is produced by the atlas-build step
+      (`dist/apache-atlas-${ATLAS_VERSION}-rest-server.tar.gz`). Hook notifications are posted to port **41000**
+      (for example `http://localhost:41000/rest/api/atlas/v2/notification/topic/{topicName}`). Use the same
+      admin credentials as Atlas (`admin` / `atlasR0cks!`).
+
+   Apache Atlas will be installed at /opt/atlas/, and logs are at /var/log/atlas directory.
 
 7. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)
