@@ -26,7 +26,6 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
@@ -458,9 +457,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public void start() throws AtlasException {
-        Configuration configuration = ApplicationProperties.get();
-
-        startInternal(configuration, getHBaseConfiguration(configuration));
+        // activation is handled exclusively by instanceIsActive()
     }
 
     @Override
@@ -470,13 +467,13 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public void instanceIsActive() throws AtlasException {
-        LOG.info("Reacting to active: Creating HBase table for Audit if required.");
-        createTableIfNotExists();
-    }
+        Configuration configuration = ApplicationProperties.get();
 
-    @Override
-    public void instanceIsPassive() {
-        LOG.info("Reacting to passive: No action for now.");
+        startInternal(configuration, getHBaseConfiguration(configuration));
+
+        LOG.info("Reacting to active: Creating HBase table for Audit if required.");
+
+        createTableIfNotExists();
     }
 
     @Override
@@ -658,12 +655,6 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             connection = createConnection(hbaseConf);
         } catch (IOException e) {
             throw new AtlasException(e);
-        }
-
-        if (!HAConfiguration.isHAEnabled(atlasConf)) {
-            LOG.info("HA is disabled. Hence creating table on startup.");
-
-            createTableIfNotExists();
         }
     }
 

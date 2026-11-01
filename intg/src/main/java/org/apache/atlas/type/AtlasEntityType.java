@@ -33,7 +33,6 @@ import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.curator.shaded.com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,6 +147,17 @@ public class AtlasEntityType extends AtlasStructType {
     }
 
     /**
+     * Bind {@code _ALL_ENTITY_TYPES} to the registry readers should search.
+     * A transient update copy must not stay bound after the lock is released:
+     * its business-metadata attributes are unresolved when the lock commits nothing.
+     */
+    static void usePublishedTypeRegistry(AtlasTypeRegistry typeRegistry) {
+        if (typeRegistry != null && ENTITY_ROOT instanceof AtlasRootEntityType) {
+            ((AtlasRootEntityType) ENTITY_ROOT).typeRegistry = typeRegistry;
+        }
+    }
+
+    /**
      * Takes a set of entityType names and a registry and returns a set of the entitytype names and the names of all their subTypes.
      *
      * @param entityTypes
@@ -246,7 +256,6 @@ public class AtlasEntityType extends AtlasStructType {
         return dynAttributes;
     }
 
-    @VisibleForTesting
     public void setDynEvalAttributes(List<AtlasAttribute> dynAttributes) {
         this.dynAttributes = dynAttributes;
     }
@@ -255,7 +264,6 @@ public class AtlasEntityType extends AtlasStructType {
         return dynEvalTriggerAttributes;
     }
 
-    @VisibleForTesting
     public void setDynEvalTriggerAttributes(List<AtlasAttribute> dynEvalTriggerAttributes) {
         this.dynEvalTriggerAttributes = dynEvalTriggerAttributes;
     }

@@ -17,6 +17,7 @@
  */
 package org.janusgraph.diskstorage.rdbms;
 
+import org.eclipse.persistence.queries.ScrollableCursor;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
 import org.janusgraph.diskstorage.rdbms.dao.DaoManager;
@@ -42,8 +43,9 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
     private static final ThreadLocal<List<RdbmsTransaction>> ACTIVE_TRANSACTIONS = ThreadLocal.withInitial(ArrayList::new);
     private static final ThreadLocal<AtomicLong>             TRANSACTION_COUNTS  = ThreadLocal.withInitial(AtomicLong::new);
 
-    private final EntityManager     em;
-    private final EntityTransaction trx;
+    private final EntityManager          em;
+    private final EntityTransaction      trx;
+    private final List<ScrollableCursor> openCursors = new ArrayList<>();
 
     public RdbmsTransaction(BaseTransactionConfig trxConfig, DaoManager daoManager) {
         super(trxConfig);
@@ -66,9 +68,23 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
         return em;
     }
 
+    /**
+     * Ties a scan cursor to this transaction, so that it is closed when the transaction ends.
+     *
+     * <p>A scrollable cursor holds a pooled connection until it is closed, and closing the entity
+     * manager does not close it.  JanusGraph does not close the key iterator of a full vertex scan,
+     * so each such scan would otherwise keep a connection out of the pool for good; a handful of them
+     * on one thread is enough to drain it.
+     */
+    public void addCursor(ScrollableCursor cursor) {
+        openCursors.add(cursor);
+    }
+
     @Override
     public void commit() {
         LOG.trace("==> RdbmsTransaction.commit()");
+
+        closeCursors();
 
         try {
             if (trx.isActive()) {
@@ -76,7 +92,7 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
             }
         } finally {
             removeFromActiveTransactions();
-            em.close();
+            closeEntityManager();
         }
 
         LOG.trace("<== RdbmsTransaction.commit()");
@@ -86,13 +102,15 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
     public void rollback() {
         LOG.trace("==> RdbmsTransaction.rollback()");
 
+        closeCursors();
+
         try {
-            if (trx.isActive()) {
+            if (em.isOpen() && trx.isActive()) {
                 trx.rollback();
             }
         } finally {
             removeFromActiveTransactions();
-            em.close();
+            closeEntityManager();
         }
 
         LOG.trace("<== RdbmsTransaction.rollback()");
@@ -103,6 +121,8 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
         LOG.trace("==> RdbmsTransaction.close()");
 
         IOException ret = null;
+
+        closeCursors();
 
         if (trx.isActive()) {
             try {
@@ -116,7 +136,7 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
             try {
                 em.close();
             } catch (Exception excp) {
-                if (ret != null) {
+                if (ret == null) {
                     ret = new IOException(excp);
                 }
             }
@@ -129,6 +149,32 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
         }
 
         LOG.trace("<== RdbmsTransaction.close()");
+    }
+
+    /**
+     * Closes the entity manager, if a previous ending of this transaction has not closed it already.
+     *
+     * <p>A transaction is given back after its commit fails, and the commit has closed the entity
+     * manager by then; closing it a second time throws.  That exception took the place of the one
+     * that failed the commit, so a lock conflict the caller could have retried arrived as an
+     * {@code IllegalStateException} about a closed entity manager, which nothing recognises.
+     */
+    private void closeEntityManager() {
+        if (em.isOpen()) {
+            em.close();
+        }
+    }
+
+    private void closeCursors() {
+        for (ScrollableCursor cursor : openCursors) {
+            try {
+                cursor.close();
+            } catch (Exception excp) {
+                LOG.debug("failed to close a scan cursor", excp);
+            }
+        }
+
+        openCursors.clear();
     }
 
     static RdbmsTransaction getActiveTransaction() {

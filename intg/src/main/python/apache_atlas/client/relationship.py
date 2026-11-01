@@ -50,7 +50,7 @@ class RelationshipClient:
         return self.client.call_api(RelationshipClient.CREATE_RELATIONSHIP, AtlasRelationship, None, relationship)
 
     def update_relationship(self, relationship):
-        return self.client.call_api(RelationshipClient.UPDATE_RELATIONSHIP, AtlasRelationship, relationship)
+        return self.client.call_api(RelationshipClient.UPDATE_RELATIONSHIP, AtlasRelationship, None, relationship)
 
     def delete_relationship_by_guid(self, guid):
         return self.client.call_api(RelationshipClient.DELETE_RELATIONSHIP_BY_GUID.format_path_with_params(guid))

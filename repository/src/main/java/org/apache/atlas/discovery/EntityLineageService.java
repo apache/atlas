@@ -38,6 +38,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
@@ -96,6 +97,7 @@ public class EntityLineageService implements AtlasLineageService {
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever      entityRetriever;
     private final AtlasTypeRegistry         atlasTypeRegistry;
+    private       TypeRegistryVersionGate   typeRegistryVersionGate;
 
     @Inject
     EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
@@ -103,6 +105,11 @@ public class EntityLineageService implements AtlasLineageService {
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.getInstance();
         this.entityRetriever      = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry    = typeRegistry;
+    }
+
+    @Inject
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     @Override
@@ -199,11 +206,29 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private boolean validateEntityTypeAndCheckIfDataSet(String guid) throws AtlasBaseException {
-        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
+
+        AtlasEntityHeader entity;
+
+        try {
+            entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        } catch (AtlasBaseException e) {
+            if (typeRegistryVersionGate == null || !typeRegistryVersionGate.forceRefresh()) {
+                throw e;
+            }
+
+            entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(atlasTypeRegistry, AtlasPrivilege.ENTITY_READ, entity), "read entity lineage: guid=", guid);
 
         AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        if (entityType == null && typeRegistryVersionGate != null && typeRegistryVersionGate.forceRefresh()) {
+            entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
+        }
 
         if (entityType == null) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());

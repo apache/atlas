@@ -21,9 +21,10 @@ import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.net.ServerSocket;
+import java.io.File;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.UUID;
 
 import static org.testng.AssertJUnit.assertFalse;
 
@@ -34,12 +35,22 @@ public class TestHBaseTestingUtilSpinup {
     private final HBaseTestingUtility hBaseTestingUtility = new HBaseTestingUtility();
 
     public TestHBaseTestingUtilSpinup() throws Exception {
-        hBaseTestingUtility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(getFreePort()));
-        hBaseTestingUtility.getConfiguration().set("hbase.master.port", String.valueOf(getFreePort()));
-        hBaseTestingUtility.getConfiguration().set("hbase.master.info.port", String.valueOf(getFreePort()));
-        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.port", String.valueOf(getFreePort()));
-        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
-        hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
+        String runId = UUID.randomUUID().toString();
+        File   baseDir = Files.createTempDirectory("atlas-hbase-test-" + runId).toFile();
+
+        // Keep each test run isolated from stale local state and avoid fixed-port races.
+        hBaseTestingUtility.getConfiguration().set("hadoop.tmp.dir", new File(baseDir, "hadoop-tmp").getAbsolutePath());
+        hBaseTestingUtility.getConfiguration().set("hbase.rootdir", new File(baseDir, "hbase-root").toURI().toString());
+        hBaseTestingUtility.getConfiguration().set("hbase.zookeeper.property.dataDir", new File(baseDir, "zk-data").getAbsolutePath());
+        hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure-" + runId);
+        hBaseTestingUtility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", "0");
+        hBaseTestingUtility.getConfiguration().set("hbase.master.port", "0");
+        hBaseTestingUtility.getConfiguration().set("hbase.master.info.port", "0");
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.port", "0");
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", "0");
+        hBaseTestingUtility.getConfiguration().set("hbase.master.hostname", "localhost");
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.hostname", "localhost");
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.hostname.seen.by.master", "localhost");
         hBaseTestingUtility.getConfiguration().set("hbase.table.sanity.checks", "false");
     }
 
@@ -56,14 +67,5 @@ public class TestHBaseTestingUtilSpinup {
         } finally {
             hBaseTestingUtility.shutdownMiniCluster();
         }
-    }
-
-    private static int getFreePort() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(0);
-        int          port         = serverSocket.getLocalPort();
-
-        serverSocket.close();
-
-        return port;
     }
 }

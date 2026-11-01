@@ -180,7 +180,7 @@ class GlossaryClient:
                                     glossary_category)
 
     def create_glossary_categories(self, glossary_categories):
-        return self.client.call_api(GlossaryClient.CREATE_GLOSSARY_CATEGORIES, list, glossary_categories)
+        return self.client.call_api(GlossaryClient.CREATE_GLOSSARY_CATEGORIES, list, None, glossary_categories)
 
     def update_glossary_by_guid(self, glossary_guid, updated_glossary):
         return self.client.call_api(
@@ -190,7 +190,7 @@ class GlossaryClient:
     def partial_update_glossary_by_guid(self, glossary_guid, attributes):
         return self.client.call_api(
             GlossaryClient.UPDATE_PARTIAL_GLOSSARY.format_path({'glossary_guid': glossary_guid}),
-            AtlasGlossary, attributes)
+            AtlasGlossary, None, attributes)
 
     def update_glossary_term_by_guid(self, term_guid, glossary_term):
         return self.client.call_api(GlossaryClient.UPDATE_GLOSSARY_TERM.format_path({'term_guid': term_guid}),
@@ -198,12 +198,12 @@ class GlossaryClient:
 
     def partial_update_term_by_guid(self, term_guid, attributes):
         return self.client.call_api(GlossaryClient.UPDATE_PARTIAL_TERM.format_path({'term_guid': term_guid}),
-                                    AtlasGlossaryTerm, attributes)
+                                    AtlasGlossaryTerm, None, attributes)
 
     def update_glossary_category_by_guid(self, category_guid, glossary_category):
         return self.client.call_api(
             GlossaryClient.UPDATE_CATEGORY_BY_GUID.format_path({'category_guid': category_guid}),
-            AtlasGlossaryCategory, glossary_category)
+            AtlasGlossaryCategory, None, glossary_category)
 
     def partial_update_category_by_guid(self, category_guid, attributes):
         return self.client.call_api(

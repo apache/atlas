@@ -30,6 +30,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -69,11 +70,17 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.QU
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private final AtlasTypeRegistry                              typeRegistry;
     private final EntityNotificationSender<EntityNotificationV2> notificationSender;
+    private       TypeRegistryVersionGate                        typeRegistryVersionGate;
 
     @Inject
     public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry, NotificationInterface notificationInterface, Configuration configuration) {
         this.typeRegistry       = typeRegistry;
         this.notificationSender = new EntityNotificationSender<>(notificationInterface, configuration);
+    }
+
+    @Inject
+    public void setTypeRegistryVersionGate(TypeRegistryVersionGate typeRegistryVersionGate) {
+        this.typeRegistryVersionGate = typeRegistryVersionGate;
     }
 
     @Override
@@ -278,7 +285,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
         if (CollectionUtils.isNotEmpty(classifications)) {
             for (AtlasClassification classification : classifications) {
-                AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(classification.getTypeName());
+                AtlasClassificationType classificationType = classificationType(classification.getTypeName());
                 Set<String>             superTypeNames     = classificationType != null ? classificationType.getAllSuperTypes() : null;
 
                 ret.add(classification);
@@ -291,7 +298,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
                         superTypeClassification.setPropagate(classification.isPropagate());
 
                         if (MapUtils.isNotEmpty(classification.getAttributes())) {
-                            AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
+                            AtlasClassificationType superType = classificationType(superTypeName);
 
                             if (superType != null && MapUtils.isNotEmpty(superType.getAllAttributes())) {
                                 Map<String, Object> superTypeClassificationAttributes = new HashMap<>();
@@ -315,5 +322,13 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
+    }
+
+    private AtlasClassificationType classificationType(String typeName) {
+        if (typeRegistryVersionGate != null) {
+            typeRegistryVersionGate.ensureUpToDate();
+        }
+
+        return typeRegistry.getClassificationTypeByName(typeName);
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.atlas.discovery;
 
 import com.google.common.collect.Sets;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.SortOrder;
@@ -28,6 +29,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -65,13 +67,19 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     @Inject
     private EntityGraphRetriever entityRetriever;
 
+    @Inject
+    private GraphBackedSearchIndexer indexer;
+
     private String entityGUID;
 
     @BeforeClass
     public void setup() throws Exception {
         super.initialize();
 
+        ApplicationProperties.get().setProperty(ApplicationProperties.ENABLE_FREETEXT_SEARCH_CONF, true);
+        indexer.instanceIsActive();
         setupTestData();
+        typeDefStore.notifyLoadCompletion();
         createEntityWithQualifiedName();
     }
 
@@ -86,9 +94,10 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
 
         SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
+        List<AtlasVertex>       vertices  = processor.execute();
 
         assertEquals(processor.getResultCount(), 3);
-        assertEquals(processor.execute().size(), 3);
+        assertEquals(vertices.size(), 3);
     }
 
     @Test

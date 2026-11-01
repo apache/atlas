@@ -18,6 +18,8 @@
 
 package org.apache.atlas.server.common.service;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -28,41 +30,40 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import static com.google.common.base.Preconditions.checkState;
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
 /**
- * A class that maintains the state of this instance.
+ * Tracks the lifecycle state of this Atlas node.
  *
- * The states are maintained at a granular level, including in-transition states. The transitions are
- * directed by {@link ActiveInstanceElectorService}.
+ * <p>In active-active peer mode the only runtime states are:
+ * <ul>
+ *   <li>{@link ServiceStateValue#BECOMING_ACTIVE} — node is starting up, not yet ready</li>
+ *   <li>{@link ServiceStateValue#ACTIVE}          — node is fully active and serving requests</li>
+ *   <li>{@link ServiceStateValue#MIGRATING}       — node is running a data migration</li>
+ * </ul>
+ *
+ * <p>There are no leader, follower, or passive states.
+ * Transitions are directed by {@code AtlasActivationService}.
  */
 @Singleton
 @Component
 public class ServiceState implements ServiceStateProvider {
     private static final Logger LOG = LoggerFactory.getLogger(ServiceState.class);
 
-    public enum ServiceStateValue {
-        ACTIVE,
-        PASSIVE,
-        BECOMING_ACTIVE,
-        BECOMING_PASSIVE,
-        MIGRATING
+    private volatile ServiceStateValue state;
+
+    public ServiceState() throws AtlasException {
+        this(ApplicationProperties.get());
     }
 
-    private Configuration configuration;
-    private volatile ServiceStateValue state;
-    private final HighAvailability highAvailability;
-
     @Inject
-    public ServiceState(Configuration configuration, HighAvailability highAvailability) {
-        this.configuration    = configuration;
-        this.highAvailability = highAvailability;
-
-        state = !highAvailability.isHAEnabled(configuration) ? ServiceStateValue.ACTIVE : ServiceStateValue.PASSIVE;
-
+    public ServiceState(Configuration configuration) {
         if (!StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME, ""))) {
             state = ServiceStateValue.MIGRATING;
+            LOG.info("ServiceState: migration mode detected — initial state is MIGRATING");
+        } else {
+            state = ServiceStateValue.BECOMING_ACTIVE;
+            LOG.info("ServiceState: initial state is BECOMING_ACTIVE");
         }
     }
 
@@ -71,56 +72,46 @@ public class ServiceState implements ServiceStateProvider {
     }
 
     public void becomingActive() {
-        LOG.warn("Instance becoming active from {}", state);
-        setState(ServiceStateValue.BECOMING_ACTIVE);
+        LOG.info("ServiceState: transitioning to BECOMING_ACTIVE from {}", state);
+        state = ServiceStateValue.BECOMING_ACTIVE;
     }
 
     public void setActive() {
-        LOG.warn("Instance is active from {}", state);
-        setState(ServiceStateValue.ACTIVE);
-    }
-
-    public void becomingPassive() {
-        LOG.warn("Instance becoming passive from {}", state);
-        setState(ServiceStateValue.BECOMING_PASSIVE);
-    }
-
-    public void setPassive() {
-        LOG.warn("Instance is passive from {}", state);
-        setState(ServiceStateValue.PASSIVE);
-    }
-
-    @Override
-    public boolean isInstanceInTransition() {
-        ServiceStateValue state = getState();
-        return state == ServiceStateValue.BECOMING_ACTIVE
-                || state == ServiceStateValue.BECOMING_PASSIVE;
+        LOG.info("ServiceState: transitioning to ACTIVE from {}", state);
+        state = ServiceStateValue.ACTIVE;
     }
 
     public void setMigration() {
-        LOG.warn("Instance in {}", state);
-        setState(ServiceStateValue.MIGRATING);
-    }
-
-    @Override
-    public boolean isInstanceInMigration() {
-        return getState() == ServiceStateValue.MIGRATING;
+        LOG.info("ServiceState: transitioning to MIGRATING from {}", state);
+        state = ServiceStateValue.MIGRATING;
     }
 
     @Override
     public boolean isActive() {
-        return getState() == ServiceStateValue.ACTIVE;
+        return state == ServiceStateValue.ACTIVE;
+    }
+
+    @Override
+    public boolean isInstanceInTransition() {
+        return state == ServiceStateValue.BECOMING_ACTIVE;
+    }
+
+    @Override
+    public boolean isInstanceInMigration() {
+        return state == ServiceStateValue.MIGRATING;
     }
 
     @Override
     public String getStateName() {
-        return getState().toString();
+        return state.toString();
     }
 
-    private void setState(ServiceStateValue newState) {
-        checkState(highAvailability.isHAEnabled(configuration),
-                "Cannot change state as requested, as HA is not enabled for this instance.");
-
-        state = newState;
+    public enum ServiceStateValue {
+        /** Node is starting up — activation handlers are being called. */
+        BECOMING_ACTIVE,
+        /** Node is fully active and serving requests. */
+        ACTIVE,
+        /** Node is running a data migration. */
+        MIGRATING
     }
 }

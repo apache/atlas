@@ -28,6 +28,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
@@ -103,6 +104,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private static final Parameter<?>[] EMPTY_PARAMETER_ARRAY = new Parameter[0];
 
     private static Configuration applicationProperties;
+
+    private volatile boolean claimIndexUsable;
 
     private final ConvertGremlinValueFunction gremlinValueConversionFunction = new ConvertGremlinValueFunction();
     private final Set<String>                 multiProperties                = new HashSet<>();
@@ -289,6 +292,41 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     @Override
     public AtlasGraphManagement getManagementSystem() {
         return new AtlasJanusGraphManagement(this, getGraph().openManagement());
+    }
+
+    @Override
+    public void expireCachedSchemaElement(String schemaName) {
+        if (schemaName == null || schemaName.isEmpty()) {
+            return;
+        }
+
+        try {
+            JanusGraph current = getGraph();
+
+            if (!(current instanceof StandardJanusGraph)) {
+                return;
+            }
+
+            StandardJanusGraph standardGraph = (StandardJanusGraph) current;
+            Long               schemaId      = standardGraph.getSchemaCache().getSchemaId(schemaName);
+
+            if (schemaId == null) {
+                return;
+            }
+
+            standardGraph.getSchemaCache().expireSchemaElement(schemaId);
+            LOG.info("Expired cached schema element '{}' so the next transaction reads it from storage", schemaName);
+        } catch (Exception exception) {
+            LOG.debug("Could not expire cached schema element '{}'", schemaName, exception);
+        }
+    }
+
+    @Override
+    public void ensureTransaction() {
+        // readWrite opens the thread-bound transaction when it is closed, and leaves an open one
+        // alone.  Opening it starts the backend transaction, which on rdbms is the Postgres
+        // transaction later commit() and rollback() finish.
+        getGraph().tx().readWrite();
     }
 
     @Override
@@ -485,6 +523,29 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
 
         return new AtlasJanusIndexQuery(this, query);
+    }
+
+    @Override
+    public boolean isClaimIndexUsable() {
+        if (claimIndexUsable) {
+            return true;
+        }
+
+        try (AtlasGraphManagement management = getManagementSystem()) {
+            boolean enabled = management.isCompositeIndexEnabled(Constants.CLAIM_KEY);
+
+            management.setIsSuccess(true);
+
+            if (enabled) {
+                claimIndexUsable = true;
+            }
+
+            return enabled;
+        } catch (Exception e) {
+            LOG.debug("isClaimIndexUsable: status check failed", e);
+
+            return false;
+        }
     }
 
     private String getIndexQueryPrefix() {

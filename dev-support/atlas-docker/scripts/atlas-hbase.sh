@@ -18,6 +18,11 @@
 
 service ssh start
 
+# Give SSH daemon time to fully bind before HBase tries to use it.
+# On first run the key-generation/setup loop acts as a natural delay;
+# on subsequent runs (setupDone exists) we need an explicit wait.
+sleep 5
+
 if [ ! -e ${HBASE_HOME}/.setupDone ]
 then
   su -c "ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa" hbase
@@ -31,7 +36,38 @@ then
   touch ${HBASE_HOME}/.setupDone
 fi
 
-su -c "${HBASE_HOME}/bin/start-hbase.sh" hbase
+# Wait for ZooKeeper to be fully accepting connections before starting HBase.
+# depends_on: service_started only means the ZK container is up — not that ZK
+# is ready.  HBase master aborts if ZK is not yet accepting connections.
+# Uses bash built-in /dev/tcp (no netcat required in the image).
+echo "Waiting for ZooKeeper to be ready..."
+ZK_WAIT=0
+until bash -c "echo >/dev/tcp/atlas-zk.example.com/2181" 2>/dev/null; do
+    sleep 2
+    ZK_WAIT=$((ZK_WAIT + 2))
+    echo "  ...ZooKeeper not ready yet (${ZK_WAIT}s)"
+    if [ $ZK_WAIT -ge 120 ]; then
+        echo "ERROR: ZooKeeper did not become ready after 120s" >&2
+        exit 1
+    fi
+done
+echo "ZooKeeper is ready (${ZK_WAIT}s)"
+
+# Debug: verify Java is reachable for the hbase user
+echo "[debug] JAVA_HOME=${JAVA_HOME}"
+su -c "java -version" hbase 2>&1 || echo "[debug] java not found for hbase user"
+echo "[debug] HBase logs dir: ${HBASE_HOME}/logs/"
+ls -la ${HBASE_HOME}/logs/ 2>/dev/null || true
+
+# Run HBase master in the foreground so all output goes directly to docker logs.
+# This replaces the SSH/daemon approach which silently fails in Docker.
+echo "Starting HBase Master in foreground..."
+su -c "${HBASE_HOME}/bin/hbase master start" hbase &
+HBASE_BG_PID=$!
+
+# Also start the regionserver in background
+sleep 10
+su -c "${HBASE_HOME}/bin/hbase-daemon.sh start regionserver" hbase
 
 echo "Waiting for HBase Master and RegionServer (up to 180s)..."
 READY=false

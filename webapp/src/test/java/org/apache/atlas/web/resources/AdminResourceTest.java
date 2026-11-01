@@ -168,7 +168,6 @@ public class AdminResourceTest {
     @Mock
     private TaskManagement taskManagement;
 
-    @Mock
     private AtlasDebugMetricsSink debugMetricsRESTSink;
 
     @Mock
@@ -204,6 +203,7 @@ public class AdminResourceTest {
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.initMocks(this);
+        debugMetricsRESTSink = new AtlasDebugMetricsSink();
     }
 
     @Test
@@ -222,7 +222,7 @@ public class AdminResourceTest {
 
     @Test
     public void testResourceGetsValueFromServiceState() throws IOException {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.BECOMING_ACTIVE);
 
         AdminResource adminResource = new AdminResource(serviceState, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         Response      response      = adminResource.getStatus();
@@ -231,7 +231,7 @@ public class AdminResourceTest {
 
         JsonNode entity = AtlasJson.parseToV1JsonNode((String) response.getEntity());
 
-        assertEquals(entity.get("Status").asText(), "PASSIVE");
+        assertEquals(entity.get("Status").asText(), "BECOMING_ACTIVE");
     }
 
     // Helper method to create AdminResource with all mocked dependencies
@@ -752,11 +752,8 @@ public class AdminResourceTest {
 
     @Test
     public void testGetDebugMetrics() {
-        Map<String, DebugMetrics> mockMetrics = new HashMap<>();
-        DebugMetrics mockDebugMetrics = mock(DebugMetrics.class);
-        mockMetrics.put("test", mockDebugMetrics);
-
-        when(debugMetricsRESTSink.getMetrics()).thenReturn((HashMap<String, DebugMetrics>) mockMetrics);
+        HashMap<String, DebugMetrics> sinkMetrics = debugMetricsRESTSink.getMetrics();
+        sinkMetrics.put("test", new DebugMetrics("test"));
 
         AdminResource adminResource = createAdminResource();
 
@@ -766,7 +763,7 @@ public class AdminResourceTest {
 
                 assertNotNull(result);
                 assertFalse(result.isEmpty());
-                verify(debugMetricsRESTSink).getMetrics();
+                assertTrue(result.containsKey("test"));
             } catch (AtlasBaseException e) {
                 throw new RuntimeException(e);
             }
@@ -801,7 +798,7 @@ public class AdminResourceTest {
 
     @Test
     public void testServiceLivelinessWhenNotActive() {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.BECOMING_ACTIVE);
 
         AdminResource adminResource = createAdminResource();
 
@@ -865,7 +862,7 @@ public class AdminResourceTest {
 
     @Test
     public void testServiceReadinessWhenServiceNotActive() {
-        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.BECOMING_ACTIVE);
         when(atlasMetricsUtil.isIndexStoreActive()).thenReturn(true);
         when(atlasMetricsUtil.isBackendStoreActive()).thenReturn(true);
 

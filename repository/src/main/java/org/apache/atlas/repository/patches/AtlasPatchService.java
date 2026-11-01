@@ -19,10 +19,9 @@
 package org.apache.atlas.repository.patches;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.ha.HAConfiguration;
+import org.apache.atlas.AtlasRunMode;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.service.Service;
-import org.apache.commons.configuration2.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
@@ -35,26 +34,16 @@ import javax.inject.Inject;
 public class AtlasPatchService implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPatchService.class);
 
-    private final Configuration     configuration;
     private final AtlasPatchManager patchManager;
 
     @Inject
-    public AtlasPatchService(Configuration configuration, AtlasPatchManager patchManager) {
-        this.configuration = configuration;
+    public AtlasPatchService(AtlasPatchManager patchManager) {
         this.patchManager  = patchManager;
     }
 
     @Override
     public void start() throws AtlasException {
-        LOG.info("==> AtlasPatchService.start()");
-
-        if (!HAConfiguration.isHAEnabled(configuration)) {
-            startInternal();
-        } else {
-            LOG.info("AtlasPatchService.start(): deferring patches until instance activation");
-        }
-
-        LOG.info("<== AtlasPatchService.start()");
+        // activation is handled exclusively by instanceIsActive()
     }
 
     @Override
@@ -66,14 +55,18 @@ public class AtlasPatchService implements Service, ActiveStateChangeHandler {
     public void instanceIsActive() {
         LOG.info("==> AtlasPatchService.instanceIsActive()");
 
+        // MONOLITHIC/INITIALIZER apply full patch set.
+        // Other RUN_MODEs execute only failed/stale recovery via shared CAS.
+        if (!AtlasRunMode.current().runsInitialization()) {
+            LOG.info("AtlasPatchService.instanceIsActive(): RUN_MODE={} — running patch recovery-only pass",
+                    AtlasRunMode.current());
+            startRecoveryOnly();
+            return;
+        }
+
         startInternal();
 
         LOG.info("<== AtlasPatchService.instanceIsActive()");
-    }
-
-    @Override
-    public void instanceIsPassive() {
-        LOG.info("AtlasPatchService.instanceIsPassive(): no action needed");
     }
 
     @Override
@@ -88,6 +81,15 @@ public class AtlasPatchService implements Service, ActiveStateChangeHandler {
             patchManager.applyAll();
         } catch (Exception ex) {
             LOG.error("AtlasPatchService: failed in applying patches", ex);
+        }
+    }
+
+    void startRecoveryOnly() {
+        try {
+            LOG.info("AtlasPatchService: running patch recovery-only pass...");
+            patchManager.recoverFailedOrInProgress();
+        } catch (Exception ex) {
+            LOG.error("AtlasPatchService: recovery-only pass failed", ex);
         }
     }
 }

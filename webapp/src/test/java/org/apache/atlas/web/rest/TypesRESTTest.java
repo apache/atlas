@@ -29,11 +29,13 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.store.graph.TypeRegistryVersionGate;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasPerfTracer;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -44,6 +46,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +54,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,6 +65,9 @@ import static org.testng.Assert.expectThrows;
 public class TypesRESTTest {
     @Mock
     private AtlasTypeDefStore typeDefStore;
+
+    @Mock
+    private TypeRegistryVersionGate typeRegistryVersionGate;
 
     @Mock
     private AtlasBaseTypeDef mockBaseTypeDef;
@@ -99,7 +106,7 @@ public class TypesRESTTest {
         MockitoAnnotations.openMocks(this);
 
         // Manually create the TypesREST instance with mocked dependencies
-        typesREST = new TypesREST(typeDefStore);
+        typesREST = new TypesREST(typeDefStore, typeRegistryVersionGate);
     }
 
     @Test
@@ -445,6 +452,36 @@ public class TypesRESTTest {
     }
 
     @Test
+    public void testCreateAtlasTypeDefs_CatchesUpReferencedTypes() throws AtlasBaseException {
+        // A child classification names a parent that a peer may have created moments ago; an entity
+        // def names a supertype. Both must be resolved against the shared store before validation,
+        // otherwise the create is rejected as referencing an unknown type while this node catches up.
+        AtlasClassificationDef childTag = new AtlasClassificationDef("child_tag");
+        childTag.setSuperTypes(new HashSet<>(Collections.singletonList("parent_tag")));
+        childTag.setEntityTypes(new HashSet<>(Collections.singletonList("hive_table")));
+
+        AtlasEntityDef childEntity = new AtlasEntityDef("child_entity");
+        childEntity.setSuperTypes(new HashSet<>(Collections.singletonList("parent_entity")));
+
+        AtlasTypesDef typesDef = new AtlasTypesDef();
+        typesDef.getClassificationDefs().add(childTag);
+        typesDef.getEntityDefs().add(childEntity);
+
+        when(typeDefStore.createTypesDef(typesDef)).thenReturn(typesDef);
+
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class);
+                MockedStatic<AtlasTypeUtil> mockedAtlasTypeUtil = mockStatic(AtlasTypeUtil.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+            mockedAtlasTypeUtil.when(() -> AtlasTypeUtil.toDebugString(any(AtlasTypesDef.class))).thenReturn("debug_string");
+
+            typesREST.createAtlasTypeDefs(typesDef);
+
+            verify(typeRegistryVersionGate).ensureUpToDate();
+            verify(typeDefStore).createTypesDef(typesDef);
+        }
+    }
+
+    @Test
     public void testCreateAtlasTypeDefs_WithException() throws AtlasBaseException {
         // Setup
         AtlasBaseException exception = new AtlasBaseException("Create failed");
@@ -678,6 +715,36 @@ public class TypesRESTTest {
 
             // Verify
             verify(typeDefStore).deleteTypeByName(typeName, true);
+        }
+    }
+
+    @Test
+    public void testDeleteAtlasTypeByName_RefreshesTypeRegistryBeforeDelete() throws AtlasBaseException {
+        String typeName = "type_created_on_peer";
+
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+
+            typesREST.deleteAtlasTypeByName(typeName, false);
+
+            InOrder inOrder = inOrder(typeRegistryVersionGate, typeDefStore);
+
+            inOrder.verify(typeRegistryVersionGate).ensureUpToDate();
+            inOrder.verify(typeDefStore).deleteTypeByName(typeName, false);
+        }
+    }
+
+    @Test
+    public void testDeleteAtlasTypeDefs_RefreshesTypeRegistryBeforeDelete() throws AtlasBaseException {
+        try (MockedStatic<AtlasPerfTracer> mockedPerfTracer = mockStatic(AtlasPerfTracer.class)) {
+            mockedPerfTracer.when(() -> AtlasPerfTracer.isPerfTraceEnabled(any())).thenReturn(false);
+
+            typesREST.deleteAtlasTypeDefs(mockTypesDef, false);
+
+            InOrder inOrder = inOrder(typeRegistryVersionGate, typeDefStore);
+
+            inOrder.verify(typeRegistryVersionGate).ensureUpToDate();
+            inOrder.verify(typeDefStore).deleteTypesDef(mockTypesDef, false);
         }
     }
 

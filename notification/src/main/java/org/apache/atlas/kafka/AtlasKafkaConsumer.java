@@ -31,9 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -42,24 +44,39 @@ import java.util.Set;
  * @param <T> the notification type returned by this consumer
  */
 public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasKafkaConsumer.class);
+    private static final Logger   LOG           = LoggerFactory.getLogger(AtlasKafkaConsumer.class);
+    private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(5);
 
-    private final KafkaConsumer kafkaConsumer;
-    private final boolean       autoCommitEnabled;
-    private final long          pollTimeoutMilliSeconds;
-    private final Duration      duration;
+    private volatile KafkaConsumer kafkaConsumer;
+    private final    boolean       autoCommitEnabled;
+    private final    long          pollTimeoutMilliSeconds;
+    private final    Duration      duration;
+    private final    Properties    consumerProperties;
+    private final    List<String>  topics;
 
     public AtlasKafkaConsumer(NotificationInterface.NotificationType notificationType, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
-        this(notificationType.getDeserializer(), kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds);
+        this(notificationType.getDeserializer(), kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds, null, null);
+    }
+
+    public AtlasKafkaConsumer(NotificationInterface.NotificationType notificationType, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds,
+            Properties consumerProperties, Collection<String> topics) {
+        this(notificationType.getDeserializer(), kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds, consumerProperties, topics);
     }
 
     public AtlasKafkaConsumer(AtlasNotificationMessageDeserializer<T> deserializer, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
+        this(deserializer, kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds, null, null);
+    }
+
+    public AtlasKafkaConsumer(AtlasNotificationMessageDeserializer<T> deserializer, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds,
+            Properties consumerProperties, Collection<String> topics) {
         super(deserializer);
 
         this.autoCommitEnabled       = autoCommitEnabled;
         this.kafkaConsumer           = kafkaConsumer;
         this.pollTimeoutMilliSeconds = pollTimeoutMilliSeconds;
         this.duration                = Duration.ofMillis(pollTimeoutMilliSeconds);
+        this.consumerProperties      = consumerProperties;
+        this.topics                  = topics == null ? Collections.emptyList() : new ArrayList<>(topics);
     }
 
     @Override
@@ -83,21 +100,54 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
     @Override
     public void close() {
-        if (kafkaConsumer != null) {
-            kafkaConsumer.close();
+        KafkaConsumer consumer = kafkaConsumer;
+
+        if (consumer != null) {
+            consumer.close();
         }
     }
 
     @Override
     public void wakeup() {
-        if (kafkaConsumer != null) {
-            kafkaConsumer.wakeup();
+        KafkaConsumer consumer = kafkaConsumer;
+
+        if (consumer != null) {
+            consumer.wakeup();
         }
     }
 
     @Override
     public void poll() {
-        this.kafkaConsumer.poll(this.duration);
+        KafkaConsumer consumer = this.kafkaConsumer;
+
+        if (consumer != null) {
+            consumer.poll(this.duration);
+        }
+    }
+
+    @Override
+    public synchronized void recover() {
+        if (consumerProperties == null || topics.isEmpty()) {
+            LOG.warn("Cannot recreate Kafka consumer: missing properties or subscribed topics");
+            return;
+        }
+
+        LOG.warn("Recreating Kafka consumer for topics {}", topics);
+
+        KafkaConsumer previous = this.kafkaConsumer;
+
+        if (previous != null) {
+            try {
+                previous.close(CLOSE_TIMEOUT);
+            } catch (Exception e) {
+                LOG.warn("Failed to close Kafka consumer during recover", e);
+            }
+        }
+
+        KafkaConsumer created = new KafkaConsumer(consumerProperties);
+
+        created.subscribe(topics);
+        this.kafkaConsumer = created;
     }
 
     public List<AtlasKafkaMessage<T>> receive() {

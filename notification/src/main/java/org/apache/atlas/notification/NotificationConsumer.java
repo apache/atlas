@@ -75,4 +75,11 @@ public interface NotificationConsumer<T> {
     Set<TopicPartition> getTopicPartition();
 
     Set<String> subscription();
+
+    /**
+     * Recreate the underlying Kafka client after a broker outage or fatal client error.
+     * Default is a no-op for consumers that do not wrap a Kafka client.
+     */
+    default void recover() {
+    }
 }

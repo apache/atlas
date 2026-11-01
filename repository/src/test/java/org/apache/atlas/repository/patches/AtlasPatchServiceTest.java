@@ -21,7 +21,6 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
-import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
@@ -31,19 +30,14 @@ import org.testng.annotations.Test;
 
 import java.lang.reflect.Method;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 
 public class AtlasPatchServiceTest {
-    @Mock
-    private Configuration configuration;
-
     @Mock
     private AtlasPatchManager patchManager;
 
@@ -53,7 +47,7 @@ public class AtlasPatchServiceTest {
     @BeforeMethod
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        atlasPatchService = new AtlasPatchService(configuration, patchManager);
+        atlasPatchService = new AtlasPatchService(patchManager);
         haConfigurationMock = mockStatic(HAConfiguration.class);
     }
 
@@ -65,22 +59,10 @@ public class AtlasPatchServiceTest {
     }
 
     @Test
-    public void testStartWhenHANotEnabled() throws AtlasException {
-        haConfigurationMock.when(() -> HAConfiguration.isHAEnabled(any(Configuration.class))).thenReturn(false);
-        doNothing().when(patchManager).applyAll();
-
+    public void testStartIsNoOp() throws AtlasException {
         atlasPatchService.start();
 
-        verify(patchManager, times(1)).applyAll();
-    }
-
-    @Test
-    public void testStartWhenHAEnabled() throws AtlasException {
-        haConfigurationMock.when(() -> HAConfiguration.isHAEnabled(any(Configuration.class))).thenReturn(true);
-
-        atlasPatchService.start();
-
-        verify(patchManager, never()).applyAll();
+        verify(patchManager, org.mockito.Mockito.never()).applyAll();
     }
 
     @Test
@@ -118,12 +100,6 @@ public class AtlasPatchServiceTest {
         atlasPatchService.instanceIsActive();
 
         verify(patchManager, times(1)).applyAll();
-    }
-
-    @Test
-    public void testInstanceIsPassive() {
-        // Test instanceIsPassive method - it just logs, no exception should be thrown
-        atlasPatchService.instanceIsPassive();
     }
 
     @Test

@@ -34,6 +34,32 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 public interface AtlasTypeDefStore {
     void init() throws AtlasBaseException;
 
+    /**
+     * AMRA typedef-sync only. Applies the store-vs-registry delta (added / updated / deleted
+     * types) instead of rebuilding the whole catalog. Called from {@code TypeRegistryVersionGate}
+     * for Kafka {@code TypeDefSyncConsumer} and REST catch-up. Startup and other callers keep
+     * using {@link #init()}.
+     */
+    void refreshFromStore() throws AtlasBaseException;
+
+    /**
+     * Loads one classification into this node's registry from its graph vertex.
+     * Used when a peer has just created the type and the category scan has not
+     * published it yet. Returns false when the store has no such classification.
+     */
+    default boolean installClassificationFromGraph(String name) throws AtlasBaseException {
+        return false;
+    }
+
+    /**
+     * Loads one business-metadata definition into this node's registry from its graph vertex.
+     * Used when a peer has just created the type and the category scan has not published it yet.
+     * Returns false when the store has no such business-metadata definition.
+     */
+    default boolean installBusinessMetadataFromGraph(String name) throws AtlasBaseException {
+        return false;
+    }
+
     /* EnumDef operations */
 
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;
