@@ -149,6 +149,7 @@ public class NotificationHookConsumerTest {
         AtlasEntitiesWithExtInfo mockEntity = new AtlasEntitiesWithExtInfo(mock(AtlasEntity.class));
 
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
+        when(typeRegistry.getEntityTypeByName(any())).thenReturn(mock(AtlasEntityType.class));
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
 
         EntityMutationResponse mutationResponse = mock(EntityMutationResponse.class);
@@ -221,6 +222,79 @@ public class NotificationHookConsumerTest {
 
         // After max retries, the offset is committed so the consumer can move past the failed message
         verify(consumer, times(1)).commit(any(TopicPartition.class), anyLong());
+    }
+
+    @Test
+    public void testUnknownTypeNameInPartialUpdateIsNotRetried() throws Exception {
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
+        AtlasObjectId entityId = new AtlasObjectId("trino_table", "qualifiedName", "db.tbl@cl1");
+        AtlasEntity entity = new AtlasEntity("trino_table");
+        HookNotification.EntityPartialUpdateRequestV2 message = new HookNotification.EntityPartialUpdateRequestV2("user", entityId, new AtlasEntity.AtlasEntityWithExtInfo(entity));
+
+        when(typeRegistry.getEntityTypeByName("trino_table")).thenReturn(null);
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(atlasEntityStore, never()).updateEntity(any(AtlasObjectId.class), any(AtlasEntity.AtlasEntityWithExtInfo.class), anyBoolean());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testUnknownReferredEntityTypeNameInCreateIsNotRetried() throws Exception {
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
+        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(new AtlasEntity("hive_table"));
+
+        entities.addReferredEntity(new AtlasEntity("unknown_type"));
+
+        when(typeRegistry.getEntityTypeByName("unknown_type")).thenReturn(null);
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityCreateRequestV2("user", entities), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(atlasEntityStore, never()).createOrUpdate(any(EntityStream.class), anyBoolean());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testUnknownTypeNameInV1PartialUpdateIsNotRetried() throws Exception {
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
+        HookNotificationV1.EntityPartialUpdateRequest message = new HookNotificationV1.EntityPartialUpdateRequest("user", "trino_table", "qualifiedName", "db.tbl@cl1", new Referenceable("trino_table"));
+
+        when(typeRegistry.getEntityTypeByName("trino_table")).thenReturn(null);
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(instanceConverter, never()).toAtlasEntity(any(Referenceable.class));
+        verify(atlasEntityStore, never()).createOrUpdate(any(EntityStream.class), anyBoolean());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testUnknownTypeNameInDeleteV2IsNotRetried() throws Exception {
+        Configuration config = buildFailedMsgCacheConfig(10);
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
+                notificationHookConsumer, consumer, createEntityProcessor(config));
+        List<AtlasObjectId> objectIds = Arrays.asList(new AtlasObjectId("hive_table", "qualifiedName", "db.t1@cl1"), new AtlasObjectId("unknown_type", "qualifiedName", "x@cl1"));
+
+        when(typeRegistry.getEntityTypeByName("unknown_type")).thenReturn(null);
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityDeleteRequestV2("user", objectIds), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(atlasEntityStore, never()).deleteByUniqueAttributes(any(AtlasEntityType.class), any());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
     }
 
     @Test
