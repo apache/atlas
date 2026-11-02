@@ -26,6 +26,7 @@ import { customSortBy, customSortByObjectKeys, isEmpty } from "./Utils";
 
 export type QuickSearchScope =
 	| "default"
+	| "semantic"
 	| "entity"
 	| "classification"
 	| "glossary"

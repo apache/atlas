@@ -409,6 +409,7 @@ public class AdminResource {
         responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName(), isOnDemandLineageEnabled);
         responseData.put(AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getPropertyName(), defaultLineageNodeCount);
         responseData.put(AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName(), isRelationshipSearchEnabled);
+        responseData.put(AtlasConfiguration.SEMANTIC_ENABLED.getPropertyName(), AtlasConfiguration.SEMANTIC_ENABLED.getBoolean());
 
         if (AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt() != -1) {
             responseData.put(AtlasConfiguration.SESSION_TIMEOUT_SECS.getPropertyName(), AtlasConfiguration.SESSION_TIMEOUT_SECS.getInt());

@@ -1,0 +1,25 @@
+{
+  "name": "Atlas OpenAI embedding connector",
+  "description": "Example connector for OpenAI embedding models (copy and set openAI_key)",
+  "version": 1,
+  "protocol": "http",
+  "parameters": {
+    "model": "text-embedding-3-small"
+  },
+  "credential": {
+    "openAI_key": "REPLACE_WITH_OPENAI_API_KEY"
+  },
+  "actions": [
+    {
+      "action_type": "predict",
+      "method": "POST",
+      "url": "https://api.openai.com/v1/embeddings",
+      "headers": {
+        "Authorization": "Bearer ${credential.openAI_key}"
+      },
+      "request_body": "{ \"input\": ${parameters.input}, \"model\": \"${parameters.model}\" }",
+      "pre_process_function": "connector.pre_process.openai.embedding",
+      "post_process_function": "connector.post_process.openai.embedding"
+    }
+  ]
+}

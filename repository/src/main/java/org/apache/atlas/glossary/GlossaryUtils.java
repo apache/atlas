@@ -47,9 +47,9 @@ public abstract class GlossaryUtils {
     protected static final String TERM_RELATION_ATTR_SOURCE      = "source";
     protected static final String TERM_RELATION_ATTR_STATUS      = "status";
 
-    static final String ATLAS_GLOSSARY_TYPENAME          = "AtlasGlossary";
-    static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
-    static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
+    public static final String ATLAS_GLOSSARY_TYPENAME          = "AtlasGlossary";
+    public static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
+    public static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
 
     // Relation name constants
     protected static final String ATLAS_GLOSSARY_PREFIX = ATLAS_GLOSSARY_TYPENAME;
@@ -57,7 +57,7 @@ public abstract class GlossaryUtils {
     protected static final String CATEGORY_ANCHOR       = ATLAS_GLOSSARY_PREFIX + "CategoryAnchor";
     protected static final String CATEGORY_HIERARCHY    = ATLAS_GLOSSARY_PREFIX + "CategoryHierarchyLink";
     protected static final String TERM_CATEGORIZATION   = ATLAS_GLOSSARY_PREFIX + "TermCategorization";
-    protected static final String TERM_ASSIGNMENT       = ATLAS_GLOSSARY_PREFIX + "SemanticAssignment";
+    public static final String TERM_ASSIGNMENT          = ATLAS_GLOSSARY_PREFIX + "SemanticAssignment";
 
     protected final AtlasRelationshipStore relationshipStore;
     protected final AtlasTypeRegistry      typeRegistry;

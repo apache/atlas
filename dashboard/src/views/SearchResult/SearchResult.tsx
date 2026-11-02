@@ -17,7 +17,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { getBasicSearchResult } from "../../api/apiMethods/searchApiMethod";
+import {
+  getBasicSearchResult,
+  getSemanticSearchResult
+} from "../../api/apiMethods/searchApiMethod";
 import { useSearchParams } from "react-router-dom";
 import { FormControlLabel, FormGroup, IconButton, Stack } from "@mui/material";
 import { useSelector } from "react-redux";
@@ -146,6 +149,66 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     async ({ pagination }: { pagination?: any }) => {
       setLoader(true);
       const { pageSize, pageIndex } = pagination || {};
+
+      if (searchParams.get("searchType") === "semantic") {
+        const query = searchParams.get("query");
+        if (!query) {
+          setIsEmptyData(true);
+          setSearchData({ entities: [] });
+          setTotalCount(0);
+          setPageCount(0);
+          setLoader(false);
+          return;
+        }
+
+        try {
+          const body: Record<string, unknown> = {
+            query,
+            excludeDeletedEntities: searchParams.get("includeDE") !== "true",
+            includeSubTypes: searchParams.get("excludeST") !== "true"
+          };
+          const typeName = searchParams.get("type");
+          if (typeName) {
+            body.typeName = typeName;
+          }
+          if (!isEmpty(entityFilterParams)) {
+            body.entityFilters = searchParamsAPiQuery(entityFilterParams);
+          }
+
+          const searchResp = await getSemanticSearchResult({ data: body });
+          const { data = {} } = searchResp || {};
+          const scoredResults = (data as any).fullTextResult || [];
+          const entities = scoredResults.map(({ entity, score }: any) => ({
+            ...entity,
+            attributes: {
+              ...(entity.attributes || {}),
+              _similarityScore: score ?? null
+            }
+          }));
+
+          if (!entities.length) {
+            setIsEmptyData(true);
+            setSearchData({ entities: [], referredEntities: {} });
+            setTotalCount(0);
+            setPageCount(0);
+          } else {
+            setIsEmptyData(false);
+            setSearchData({ ...(data as any), entities });
+            setTotalCount(entities.length);
+            setPageCount(1);
+          }
+          setLoader(false);
+        } catch (error: any) {
+          console.error(
+            "Error fetching semantic search:",
+            error?.response?.data?.errorMessage
+          );
+          toast.dismiss(toastId.current);
+          serverError(error, toastId);
+          setLoader(false);
+        }
+        return;
+      }
 
       let params: Params | any = {
         excludeDeletedEntities: !isEmpty(searchParams.get("includeDE"))
@@ -947,6 +1010,25 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   );
 
   const isDslSearchMode = searchParams.get("searchType") === "dsl";
+  const isSemanticSearchMode = searchParams.get("searchType") === "semantic";
+
+  const semanticScoreColumn = isSemanticSearchMode
+    ? [
+        {
+          accessorFn: (row: any) => row.attributes?._similarityScore,
+          accessorKey: "_similarityScore",
+          header: "Similarity",
+          cell: (info: any) => {
+            const score = info.getValue();
+            return (
+              <span>{score != null ? Number(score).toFixed(4) : "—"}</span>
+            );
+          },
+          sortingFn: "basic",
+          show: true
+        }
+      ]
+    : [];
   const getDslAttributeNames = () => {
     const src: any = Array.isArray(searchData) ? searchData[0] : searchData;
     if (!src) return [] as string[];
@@ -977,6 +1059,12 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   let allColumns =
     isDslSearchMode && dslColumns.length > 0
       ? dslColumns
+      : isSemanticSearchMode
+      ? removeDuplicateObjects([
+          ...defaultColumns,
+          ...semanticScoreColumn,
+          ...dynamicColumns
+        ])
       : isEmpty(searchParams.get("type")) &&
         isEmpty(searchParams.get("tag")) &&
         !isEmpty(searchParams.get("term"))
@@ -1019,6 +1107,9 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
     if (isDslAggregate) {
       return [] as any[]; // no default sorting for DSL aggregates
     }
+    if (isSemanticSearchMode && isEmpty(latestEntitiesSortBy)) {
+      return [{ id: "_similarityScore", desc: true }];
+    }
     if (
       latestEntitiesSortBy === "__timestamp" &&
       latestEntitiesSortOrder === "DESCENDING"
@@ -1026,7 +1117,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
       return [{ id: "__timestamp", desc: true }];
     }
     return [{ id: "name", desc: false }];
-  }, [isDslAggregate, latestEntitiesSortBy, latestEntitiesSortOrder]);
+  }, [isDslAggregate, isSemanticSearchMode, latestEntitiesSortBy, latestEntitiesSortOrder]);
 
   return (
     <Stack position="relative" gap={"1rem"}>

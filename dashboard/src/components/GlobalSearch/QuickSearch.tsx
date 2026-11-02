@@ -32,7 +32,7 @@ import { getGlobalSearchResult } from "../../api/apiMethods/searchApiMethod";
 import DisplayImage from "../EntityDisplayImage";
 import SearchIcon from "@mui/icons-material/Search";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { entityStateReadOnly } from "../../utils/Enum";
+import { entityStateReadOnly, globalSessionData } from "../../utils/Enum";
 import {
 	extractKeyValueFromEntity,
 	isEmpty,
@@ -65,6 +65,7 @@ import {
 	navigateToBusinessMetadataDetailPage,
 	navigateToClassificationDetailPage,
 	navigateToGlossaryTermDetailPage,
+	navigateToSemanticSearch,
 	navigateToServiceTypeEntitySearch
 } from "@utils/dashboardSearchUtils";
 
@@ -79,6 +80,7 @@ const SCOPE_SELECT_ID = "quick-search-scope-select";
 
 const SCOPE_LABELS: Record<QuickSearchScope, string> = {
 	default: "Select All",
+	semantic: "Semantic",
 	entity: "Entity",
 	classification: "Classification",
 	glossary: "Glossary / Terms",
@@ -97,7 +99,11 @@ const QuickSearch = () => {
 	const [openAdvanceSearch, setOpenAdvanceSearch] = useState<boolean>(false);
 	const [loading, setLoading] = useState<boolean>(false);
 	const [inputText, setInputText] = useState<string>("");
-	const [scope, setScope] = useState<QuickSearchScope>("default");
+	const [scope, setScope] = useState<QuickSearchScope>(() =>
+		globalSessionData?.semanticSearch && searchParams.get("searchType") === "semantic"
+			? "semantic"
+			: "default"
+	);
 	const trimmedQuery = useMemo(() => inputText.trim(), [inputText]);
 	const isSearchEnabled = hasValidSearchQuery(inputText);
 
@@ -288,6 +294,10 @@ const QuickSearch = () => {
 			setOpen(false);
 			setOptions([]);
 			setInputText("");
+			if (scope === "semantic") {
+				navigateToSemanticSearch(navigate, queryValue);
+				return;
+			}
 			if (scope !== "default") {
 				return;
 			}
@@ -347,6 +357,10 @@ const QuickSearch = () => {
 		if (!hasValidSearchQuery(inputText)) {
 			return;
 		}
+		if (scope === "semantic") {
+			navigateToSemanticSearch(navigate, q);
+			return;
+		}
 		if (scope !== "default") {
 			const activeOption = options.find((o) => o.title === q);
 			if (activeOption?.scoped) {
@@ -381,7 +395,11 @@ const QuickSearch = () => {
 	};
 
 	const inputPlaceholder =
-		scope === "default" ? "Search Entities..." : "Contains text...";
+		scope === "semantic"
+			? "Semantic search (meaning-based)..."
+			: scope === "default"
+				? "Search Entities..."
+				: "Contains text...";
 
 	return (
 		<>
@@ -405,6 +423,7 @@ const QuickSearch = () => {
 						renderValue={(v) => SCOPE_LABELS[v as QuickSearchScope]}
 					>
 						<MenuItem value="default">Select All</MenuItem>
+						{globalSessionData?.semanticSearch && <MenuItem value="semantic">Semantic</MenuItem>}
 						<MenuItem value="entity">Entity</MenuItem>
 						<MenuItem value="classification">Classification</MenuItem>
 						<MenuItem value="glossary">Glossary / Terms</MenuItem>
