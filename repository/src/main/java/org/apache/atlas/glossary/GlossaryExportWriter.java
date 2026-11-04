@@ -37,8 +37,7 @@ public class GlossaryExportWriter {
 
     private static final String[] AUDIT_HEADERS = {
             "Record Type", "Name", "Glossary Name", "Short Description", "Long Description",
-            "Status", "Classifications", "Custom Attributes", "Related Categories / Parent",
-            "Qualified Name", "GUID"
+            "Status", "Classifications", "Custom Attributes", "Qualified Name", "GUID"
     };
 
     public void write(OutputStream outputStream, List<GlossaryExportRow> rows,
@@ -133,7 +132,6 @@ public class GlossaryExportWriter {
                 safe(row.getStatus()),
                 safe(row.getClassifications()),
                 safe(row.getCustomAttributes()),
-                safe(row.getRelatedCategoriesOrParent()),
                 safe(row.getQualifiedName()),
                 safe(row.getGuid())
         };
