@@ -148,22 +148,10 @@ public class AuditReductionEntityRetrievalTask extends AbstractTask {
                 return null;
             }
 
-            /*
-             * Entity types are selected with a regular (type based) search instead of a free-text query. The free-text
-             * form relied on backend specific query syntax: a leading '!' means NOT only in Solr's edismax handler;
-             * OpenSearch treats it as literal text, which selected the excluded types instead of excluding them, and
-             * a query with many type names also exceeds OpenSearch's max clause count.
-             *
-             * For SWEEP/CUSTOM the (already validated, wildcard-resolved and expanded) types are searched directly,
-             * leaving out internal types (a broad wildcard such as "*" would otherwise match them; the
-             * all-entity-types search used for DEFAULT never returns them either). For DEFAULT all entity types are
-             * searched and the excluded types are filtered out by
-             * EntityDiscoveryService.checkVertexMatchesSearchCriteria().
-             */
             if (auditAgingType != AtlasAuditAgingType.DEFAULT) {
                 Set<String> typesToSearch = entityTypes.stream().filter(typeName -> !isInternalEntityType(typeName)).collect(Collectors.toSet());
 
-                 if (typesToSearch.isEmpty()) {
+                if (typesToSearch.isEmpty()) {
                     LOG.error("All entity type names provided for audit aging type-{} are internal types", auditAgingType);
 
                     return null;

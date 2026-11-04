@@ -498,8 +498,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
             }
 
-            if (indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
-                indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField, withKeywordSubfield);
+            if (propertyKey != null && indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
+                if (isPropertyKeyRegisteredInMixedIndex(management, VERTEX_INDEX, propertyKey)) {
+                    indexFieldName = management.getIndexFieldName(VERTEX_INDEX, propertyKey, isStringField, withKeywordSubfield);
+                } else {
+                    LOG.debug("Retrying mixed-index registration for vertex property {} of type {}", propertyName, propertyClass.getName());
+
+                    indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, withKeywordSubfield);
+
+                    LOG.info("Registered backing index for vertex property {} of type {}", propertyName, propertyClass.getName());
+                }
             }
 
             if (propertyKey != null) {
@@ -535,6 +543,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
                     LOG.info("Created backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
                 }
+            } else if (isIndexApplicable(propertyClass, cardinality)
+                    && !isPropertyKeyRegisteredInMixedIndex(management, EDGE_INDEX, propertyKey)) {
+                LOG.debug("Retrying mixed-index registration for edge property {} of type {}", propertyName, propertyClass.getName());
+
+                management.addMixedIndex(EDGE_INDEX, propertyKey, false);
+
+                LOG.info("Registered backing index for edge property {} of type {}", propertyName, propertyClass.getName());
             }
 
             if (propertyKey != null) {
@@ -1191,6 +1206,13 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
 
         return createdCount;
+    }
+
+    private static boolean isPropertyKeyRegisteredInMixedIndex(AtlasGraphManagement management, String mixedIndexName,
+            AtlasPropertyKey propertyKey) {
+        AtlasGraphIndex graphIndex = management.getGraphIndex(mixedIndexName);
+
+        return graphIndex != null && graphIndex.getFieldKeys().contains(propertyKey);
     }
 
     private boolean isIndexApplicable(Class<?> propertyClass, AtlasCardinality cardinality) {

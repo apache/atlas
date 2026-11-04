@@ -177,7 +177,7 @@ public class GraphBackedSearchIndexerMixedIndexRetryTest {
     // getIndexFieldName() must NOT be called, regardless of mixed-index membership state.
     // ----------------------------------------------------------------------------------------------------------
     @Test
-    public void existingUnsupportedPropertyNeverRegistersRegardlessOfMembership() {
+        public void existingUnsupportedPropertyNeverRegistersRegardlessOfMembership() {
         AtlasGraphManagement management  = mock(AtlasGraphManagement.class);
         AtlasPropertyKey      propertyKey = mockPropertyKey();
 
