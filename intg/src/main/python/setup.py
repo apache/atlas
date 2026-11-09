@@ -1,4 +1,4 @@
-#!/usr/bin/env/python
+#!/usr/bin/env python
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -17,34 +17,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 from setuptools import setup, find_packages
 
-# External dependencies
-requirements = ['requests>=2.24']
+HERE = Path(__file__).parent.resolve()
 
-long_description = ''
-with open("README.md", "r") as fh:
+
+def read_requirements(filename):
+    with open(HERE / filename, "r", encoding="utf-8") as fh:
+        return [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+
+
+with open(HERE / "README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
     name='apache-atlas',
-    version='0.0.15',
+    version='0.0.16',
     author="Apache Atlas",
     author_email='dev@atlas.apache.org',
     description="Apache Atlas Python Client",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/apache/atlas/tree/master/intg/src/main/python",
-    license='Apache LICENSE 2.0',
+    license="Apache-2.0",
+    license_files=("LICENSE",),
     classifiers=[
-        "Programming Language :: Python :: 3.6",
-        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.13",
         "Operating System :: OS Independent",
     ],
     packages=find_packages(),
-    install_requires=requirements,
+    install_requires=read_requirements("requirements.txt"),
     include_package_data=True,
     zip_safe=False,
     keywords='atlas client, apache atlas',
-    python_requires='>=3.6',
+    python_requires='>=3.13',
 )

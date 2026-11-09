@@ -50,6 +50,10 @@ test-output
 **/build
 **/dist
 **/apache_atlas.egg-info
+**/.tox
+**/.venv*
+**/__pycache__
+**/.mypy_cache
 .python-version
 
 # review board
