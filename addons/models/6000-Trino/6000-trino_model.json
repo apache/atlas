@@ -26,7 +26,8 @@
       "serviceType":  "trino",
       "typeVersion":  "1.0",
       "attributeDefs": [
-        { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
+        { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "location",   "typeName": "string",             "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
       ]
     },
     {
