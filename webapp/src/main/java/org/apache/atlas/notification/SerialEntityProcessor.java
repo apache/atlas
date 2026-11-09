@@ -412,6 +412,7 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
         AtlasMetricsUtil.NotificationStat   stats                 = new AtlasMetricsUtil.NotificationStat();
         AuditFilter.AuditLog                auditLog              = null;
         boolean                             importRequestComplete = false;
+        String                              completedImportId     = null;
 
         if (authorizeUsingMessageUser) {
             setCurrentUser(messageUser);
@@ -639,6 +640,7 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
 
                                 asyncImporter.onImportComplete(importId);
                                 importRequestComplete = true;
+                                completedImportId     = importId;
                             }
                         }
                         break;
@@ -648,6 +650,8 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                             final String                                           importId                 = entityImportNotification.getImportId();
                             final AtlasEntity.AtlasEntityWithExtInfo               entityWithExtInfo        = entityImportNotification.getEntity();
                             final int                                              position                 = entityImportNotification.getPosition();
+
+                            completedImportId = null;
 
                             LOG.info("==> IMPORT_ENTITY:processing entity: {} at position: {}", importId, position);
 
@@ -659,6 +663,10 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                                 LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
                             } finally {
                                 if (importRequestComplete) {
+                                    // set before onImportComplete() so the import queue is released
+                                    // even if completion bookkeeping fails
+                                    completedImportId = importId;
+
                                     asyncImporter.onImportComplete(importId);
                                 }
                                 LOG.info("<== IMPORT_ENTITY:processing entity: {} at position: {}", importId, position);
@@ -775,8 +783,8 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                 nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(now);
             }
 
-            if (importRequestComplete) {
-                asyncImporter.onCompleteImportRequest(((AtlasEntityImportNotification) message).getImportId());
+            if (importRequestComplete && StringUtils.isNotEmpty(completedImportId)) {
+                asyncImporter.onCompleteImportRequest(completedImportId);
             }
         }
     }
