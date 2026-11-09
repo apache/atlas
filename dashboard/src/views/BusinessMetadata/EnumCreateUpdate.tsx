@@ -294,7 +294,7 @@ const EnumCreateUpdate = ({
                 size="small"
                 data-cy="clearButton"
                 color="primary"
-                onClick={(_e: Event) => {
+                onClick={(_e: React.MouseEvent<HTMLButtonElement>) => {
                   reset({ enumType: "", enumValues: [] });
                 }}
                 disabled={

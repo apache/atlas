@@ -358,7 +358,7 @@ const BusinessMetadataDetailsLayout = () => {
                   <CustomButton
                     variant="outlined"
                     color="primary"
-                    onClick={(_e: Event) => {
+                    onClick={(_e: React.MouseEvent<HTMLButtonElement>) => {
                       reset({ attributeDefs: [defaultAttrObj] });
                       setForm(false);
                       setBMAttribute({});
