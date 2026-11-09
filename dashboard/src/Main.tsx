@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { ThemeProvider, createTheme } from "@mui/material/styles";
+import { CacheProvider } from "@emotion/react";
+import { StyledEngineProvider, ThemeProvider, createTheme } from "@mui/material/styles";
 import * as React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -30,7 +31,11 @@ import "react-quill-new/dist/quill.core.css";
 import "../src/styles/table.scss";
 import { Provider } from "react-redux";
 import store from "./redux/store/store.ts";
+import { createEmotionCache } from "./utils/emotionCache.ts";
+import { getCspNonce } from "./utils/cspNonce.ts";
 // import ErrorBoundary from "ErrorBoundary.ts";
+
+const emotionCache = createEmotionCache(getCspNonce());
 
 const theme = createTheme({
   typography: {
@@ -44,11 +49,15 @@ const theme = createTheme({
 
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <Provider store={store}>
-        <App />
-      </Provider>
-      <ToastContainer />
-    </ThemeProvider>
+    <CacheProvider value={emotionCache}>
+      <StyledEngineProvider injectFirst>
+        <ThemeProvider theme={theme}>
+          <Provider store={store}>
+            <App />
+          </Provider>
+          <ToastContainer />
+        </ThemeProvider>
+      </StyledEngineProvider>
+    </CacheProvider>
   </React.StrictMode>
 );
