@@ -117,11 +117,12 @@ jest.mock('recharts', () => ({
 	LabelList: ({
 		formatter,
 	}: {
-		formatter?: (v: number) => string
+		formatter?: (v: unknown) => React.ReactNode
 	}) => (
 		<span
 			data-testid="label-list"
-			data-label-formatted={formatter ? formatter(99) : ''}
+			data-label-formatted={formatter ? String(formatter(99)) : ''}
+			data-label-formatted-str={formatter ? String(formatter('42')) : ''}
 		/>
 	),
 }))
@@ -164,6 +165,10 @@ describe('MessageConsumptionChart', () => {
 		expect(screen.getByTestId('label-list')).toHaveAttribute(
 			'data-label-formatted',
 			'99',
+		)
+		expect(screen.getByTestId('label-list')).toHaveAttribute(
+			'data-label-formatted-str',
+			'42',
 		)
 		expect(screen.getByTestId('bar-chart')).toBeInTheDocument()
 		expect(screen.getByTestId('bar-creates')).toBeInTheDocument()
