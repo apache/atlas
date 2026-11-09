@@ -329,8 +329,10 @@ public class GlossaryService {
         if (!storeObject.equals(atlasGlossary)) {
             atlasGlossary.setGuid(storeObject.getGuid());
             atlasGlossary.setQualifiedName(storeObject.getQualifiedName());
+            atlasGlossary.setTerms(null);
+            atlasGlossary.setCategories(null);
 
-            storeObject = dataAccess.save(atlasGlossary);
+            storeObject = dataAccess.savePartial(atlasGlossary);
 
             setInfoForRelations(storeObject);
         }
