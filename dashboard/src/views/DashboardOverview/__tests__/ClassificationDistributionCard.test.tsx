@@ -110,4 +110,60 @@ describe('ClassificationDistributionCard', () => {
 		expect(visibleTextNodes?.length).toBe(1);
 		expect(visibleTextNodes?.[0]?.textContent).toBe(truncatedLongName);
 	});
+
+	it('renders total tag-entity associations label with bold formatting and description text', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const boldLabel = screen.getByText('Tag-entity associations (total):');
+		expect(boldLabel).toBeInTheDocument();
+		expect(boldLabel.tagName).toBe('STRONG');
+
+		expect(
+			screen.getByText(
+				'The chart shows the top 5 classifications by number of entities in use.',
+			),
+		).toBeInTheDocument();
+	});
+
+	it('returns null when isLoading is true', () => {
+		const { container } = render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} isLoading={true} />
+			</MemoryRouter>,
+		);
+		expect(container.firstChild).toBeNull();
+	});
+
+	it('triggers View All navigation when View All link is clicked', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const viewAllLink = screen.getByRole('button', { name: /view all classifications/i });
+		expect(viewAllLink).toBeInTheDocument();
+		viewAllLink.click();
+		expect(mockNavigateToSearch).toHaveBeenCalledWith(expect.anything(), 'all_classifications');
+	});
+
+	it('triggers classification search navigation when clicking Y-axis tick label', () => {
+		render(
+			<MemoryRouter>
+				<ClassificationDistributionCard tag={{}} />
+			</MemoryRouter>,
+		);
+
+		const shortLabelGroup = screen.getByText(shortName).closest('g');
+		expect(shortLabelGroup).not.toBeNull();
+		shortLabelGroup?.click();
+		expect(mockNavigateToClassificationSearch).toHaveBeenCalledWith(
+			expect.anything(),
+			shortName,
+		);
+	});
 });

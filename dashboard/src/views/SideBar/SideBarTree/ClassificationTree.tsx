@@ -42,8 +42,10 @@ const ClassificationTree = (props: Props) => {
   const [isGroupView, setisGroupView] = useState<boolean>(true);
 
   useEffect(() => {
-    dispatch(fetchClassificationData());
-  }, []);
+    if (classificationData === null || classificationData === undefined) {
+      dispatch(fetchClassificationData());
+    }
+  }, [classificationData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchClassificationData());
@@ -254,6 +256,7 @@ const ClassificationTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loadingClassification}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };

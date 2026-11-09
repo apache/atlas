@@ -136,6 +136,7 @@ describe('EntitiesTree', () => {
 			reducer: {
 				typeHeader: (state = initialState.typeHeader) => state,
 				allEntityTypes: (state = initialState.allEntityTypes) => state,
+				entity: (state = initialState.entity || { entityData: null }) => state,
 				metrics: (state = initialState.metrics) => state
 			},
 			middleware: (getDefaultMiddleware) =>
@@ -155,6 +156,9 @@ describe('EntitiesTree', () => {
 			},
 			allEntityTypes: {
 				allEntityTypesData: { category: 'ENTITY' }
+			},
+			entity: {
+				entityData: null
 			},
 			metrics: {
 				metricsData: {
@@ -268,11 +272,23 @@ describe('EntitiesTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchEntityData on mount', async () => {
+		it('should dispatch fetchEntityData on mount if entityData is empty', async () => {
 			renderComponent()
 
 			await waitFor(() => {
 				expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchEntityData' })
+			})
+		})
+
+		it('should not dispatch fetchEntityData on mount if entityData exists', async () => {
+			renderComponent({}, {
+				entity: {
+					entityData: { entityDefs: [{ name: 'test' }] }
+				}
+			})
+
+			await waitFor(() => {
+				expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchEntityData' })
 			})
 		})
 
@@ -824,6 +840,30 @@ describe('EntitiesTree', () => {
 			)
 
 			expect(screen.getByTestId('search-term')).toHaveTextContent('updated')
+		})
+	})
+
+	describe('API Empty States Data Loading Logic', () => {
+		it('should dispatch fetchEntityData when entityData is null', () => {
+			const store = createMockStore({
+				entity: { entityData: null },
+				typeHeader: { typeHeaderData: [], loading: false },
+				allEntityTypes: { allEntityTypesData: { category: 'ENTITY' } },
+				metrics: { metricsData: null }
+			})
+			renderComponent({}, store)
+			expect(screen.getByTestId('sidebar-tree')).toBeInTheDocument();
+		})
+
+		it('should NOT dispatch fetchEntityData when entityData is defined but empty array/object', () => {
+			const store = createMockStore({
+				entity: { entityData: { entityDefs: [] } },
+				typeHeader: { typeHeaderData: [], loading: false },
+				allEntityTypes: { allEntityTypesData: { category: 'ENTITY' } },
+				metrics: { metricsData: null }
+			})
+			renderComponent({}, store)
+			expect(screen.getByTestId('sidebar-tree')).toBeInTheDocument();
 		})
 	})
 })

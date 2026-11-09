@@ -23,7 +23,7 @@ export const ENTITY_STATUS_DONUT_COLORS = {
 } as const;
 
 /** Active primary series / bar fill (aligned with Classification Distribution bars) */
-export const CHART_BAR_ACTIVE_BLUE = "#1976d2";
+export const CHART_BAR_ACTIVE_BLUE = "#1890ff";
 
 /** Horizontal bar charts: Y-axis title + ticks; keep left tight to reduce card gutter */
 export const HORIZONTAL_BAR_CHART_MARGIN = {
@@ -35,15 +35,15 @@ export const HORIZONTAL_BAR_CHART_MARGIN = {
 
 /** Classification bar chart: Y-axis width reserves label space; keep left margin minimal */
 export const CLASSIFICATION_DISTRIBUTION_CHART_MARGIN = {
-	top: 8,
+	top: 12,
 	right: 72,
-	left: 8,
-	bottom: 48,
+	left: 4,
+	bottom: 40,
 } as const;
 
-export const CLASSIFICATION_Y_AXIS_MIN_WIDTH = 160;
+export const CLASSIFICATION_Y_AXIS_MIN_WIDTH = 56;
 export const CLASSIFICATION_Y_AXIS_MAX_WIDTH = 360;
-export const CLASSIFICATION_Y_AXIS_CHAR_WIDTH = 8;
+export const CLASSIFICATION_Y_AXIS_CHAR_WIDTH = 7;
 export const CLASSIFICATION_Y_AXIS_LABEL_MAX_LENGTH = 30;
 export const CLASSIFICATION_Y_AXIS_LABEL_SUFFIX = '...';
 

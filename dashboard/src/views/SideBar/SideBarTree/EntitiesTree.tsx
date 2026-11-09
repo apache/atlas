@@ -34,13 +34,16 @@ import { fetchEntityData } from "@redux/slice/typeDefSlices/typedefEntitySlice.t
 import { fetchTypeHeaderData } from "@redux/slice/typeDefSlices/typeDefHeaderSlice.ts";
 import { fetchMetricEntity } from "@redux/slice/metricsSlice.ts";
 
-const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
+const EntitiesTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
   const { typeHeaderData, loading }: TypedefHeaderDataType = useAppSelector(
     (state: any) => state.typeHeader
   );
   const { allEntityTypesData }: any = useAppSelector(
     (state: any) => state.allEntityTypes
+  );
+  const { entityData }: any = useAppSelector(
+    (state: any) => state.entity
   );
   const { metricsData }: any = useAppSelector((state: any) => state.metrics);
   const [isEmptyServicetype, setisEmptyServicetype] = useState<boolean>(false);
@@ -53,8 +56,10 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
   >([]);
 
   useEffect(() => {
-    dispatch(fetchEntityData());
-  }, []);
+    if (entityData === null || entityData === undefined) {
+      dispatch(fetchEntityData());
+    }
+  }, [entityData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchTypeHeaderData());
@@ -267,6 +272,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };

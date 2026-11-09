@@ -31,8 +31,10 @@ const RelationshipsTree = (props: Props) => {
   );
 
   useEffect(() => {
-    dispatch(fetchRelationshipsData());
-  }, [dispatch]);
+    if (relationships === null || relationships === undefined) {
+      dispatch(fetchRelationshipsData());
+    }
+  }, [relationships, dispatch]);
 
   const relationshipsData = useMemo(() => {
     if (relationships?.relationshipDefs) {
@@ -63,6 +65,7 @@ const RelationshipsTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };
