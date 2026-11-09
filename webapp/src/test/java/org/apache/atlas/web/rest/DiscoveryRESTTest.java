@@ -42,10 +42,8 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.apache.atlas.common.TestUtility.generateString;
 import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.BASIC;
@@ -492,7 +490,7 @@ public class DiscoveryRESTTest {
     public void testSearchRelatedEntities_Success() throws Exception {
         String guid = "1234-5678";
         String relation = "relatedTo";
-        Set<String> attributes = new HashSet<>(Arrays.asList("name", "description"));
+        List<String> attributes = Arrays.asList("name", "description");
         String sortByAttribute = "name";
         SortOrder sortOrder = SortOrder.ASCENDING;
         boolean excludeDeletedEntities = true;
@@ -520,7 +518,7 @@ public class DiscoveryRESTTest {
         // Query Length exceeds the Configured Query Limit, Causes validation to Fail
         String guid = generateString(AtlasConfiguration.QUERY_PARAM_MAX_LENGTH.getInt() + 1, 'a'); // too long
         String relation = "relatedTo";
-        Set<String> attributes = new HashSet<>(Arrays.asList("name", "description"));
+        List<String> attributes = Arrays.asList("name", "description");
         String sortByAttribute = "name";
         SortOrder sortOrder = SortOrder.ASCENDING;
         boolean excludeDeletedEntities = true;

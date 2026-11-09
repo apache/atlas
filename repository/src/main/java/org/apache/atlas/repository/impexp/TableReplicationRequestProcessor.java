@@ -170,7 +170,7 @@ public class TableReplicationRequestProcessor {
         parameters.setExcludeDeletedEntities(false);
         parameters.setTypeName(TYPE_HIVE_TABLE);
         parameters.setExcludeDeletedEntities(true);
-        parameters.setAttributes(new HashSet<>(Collections.singleton(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM)));
+        parameters.setAttributes(Collections.singleton(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM));
         parameters.setQuery(query);
 
         return parameters;
