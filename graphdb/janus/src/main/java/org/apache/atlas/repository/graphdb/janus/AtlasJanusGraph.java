@@ -432,13 +432,54 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public List<AtlasVertex> getAllEdgesVertices(AtlasVertex vertex) {
-        GraphTraversal gt = V(vertex.getId()).both();
-        List<AtlasVertex> resultList = new ArrayList<>();
-        while (gt.hasNext()) {
-            Vertex v = (Vertex) gt.next();
-            resultList.add(GraphDbObjectFactory.createVertex(this, v));
-        }
+        List<AtlasVertex> resultList  = new ArrayList<>();
+        Set<Object>       adjacentIds = new HashSet<>();
+        int               batchSize   = AtlasConfiguration.GRAPH_VERTEX_EDGE_SCAN_BATCH_SIZE.getInt();
+
+        collectAdjacentVerticesInBatches(vertex, resultList, adjacentIds, batchSize, true);
+        collectAdjacentVerticesInBatches(vertex, resultList, adjacentIds, batchSize, false);
+
         return resultList;
+    }
+
+    private void collectAdjacentVerticesInBatches(AtlasVertex vertex, List<AtlasVertex> resultList, Set<Object> adjacentIds,
+                                                  int batchSize, boolean incoming) {
+        int offset = 0;
+
+        while (true) {
+            GraphTraversal<?, ?> traversal = V(vertex.getId());
+
+            if (incoming) {
+                traversal = traversal.inE().range(offset, offset + batchSize).otherV();
+            } else {
+                traversal = traversal.outE().range(offset, offset + batchSize).otherV();
+            }
+
+            int pageCount = 0;
+
+            try {
+                while (traversal.hasNext()) {
+                    pageCount++;
+
+                    Vertex adjacent = (Vertex) traversal.next();
+
+                    if (adjacentIds.add(adjacent.id())) {
+                        resultList.add(GraphDbObjectFactory.createVertex(this, adjacent));
+                    }
+                }
+            } catch (Exception ex) {
+                LOG.warn("getAllEdgesVertices(vertexId={}, incoming={}, offset={}): stopping due to {}",
+                        vertex.getId(), incoming, offset, ex.getMessage());
+
+                break;
+            }
+
+            if (pageCount < batchSize) {
+                break;
+            }
+
+            offset += batchSize;
+        }
     }
 
     @Override

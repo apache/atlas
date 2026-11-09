@@ -578,6 +578,31 @@ public class AtlasJanusGraphTest {
     }
 
     @Test
+    public void testGetAllEdgesVerticesHighDegree() {
+        if (realAtlasGraph != null) {
+            try {
+                AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> hub = realAtlasGraph.addVertex();
+                int                                             n  = 600;
+
+                for (int i = 0; i < n; i++) {
+                    AtlasVertex<AtlasJanusVertex, AtlasJanusEdge> spoke = realAtlasGraph.addVertex();
+
+                    realAtlasGraph.addEdge(hub, spoke, "rel_" + (i % 10));
+                }
+
+                realAtlasGraph.commit();
+
+                List<AtlasVertex> connectedVertices = realAtlasGraph.getAllEdgesVertices(hub);
+
+                assertNotNull(connectedVertices);
+                assertEquals(connectedVertices.size(), n);
+            } catch (Exception e) {
+                assertNotNull(e);
+            }
+        }
+    }
+
+    @Test
     public void testGetUniqueKeyHandler() {
         if (atlasGraph != null) {
             try {
