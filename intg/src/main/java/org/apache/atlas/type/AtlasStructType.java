@@ -484,6 +484,10 @@ public class AtlasStructType extends AtlasType {
                 if (obj.hasAttribute(attributeName)) {
                     Object attributeValue = getNormalizedValue(obj.getAttribute(attributeName), attributeDef);
 
+                    if (attributeValue == null && obj.getAttribute(attributeName) != null) {
+                        continue;
+                    }
+
                     obj.setAttribute(attributeName, attributeValue);
                 } else if (!attributeDef.getIsOptional()) {
                     obj.setAttribute(attributeName, createDefaultValue(attributeDef));
@@ -500,6 +504,10 @@ public class AtlasStructType extends AtlasType {
                 if (obj.hasAttribute(attributeName)) {
                     Object attributeValue = getNormalizedValueForUpdate(obj.getAttribute(attributeName), attributeDef);
 
+                    if (attributeValue == null && obj.getAttribute(attributeName) != null) {
+                        continue;
+                    }
+
                     obj.setAttribute(attributeName, attributeValue);
                 }
             }
@@ -513,6 +521,10 @@ public class AtlasStructType extends AtlasType {
 
                 if (obj.containsKey(attributeName)) {
                     Object attributeValue = getNormalizedValue(obj.get(attributeName), attributeDef);
+
+                    if (attributeValue == null && obj.get(attributeName) != null) {
+                        continue;
+                    }
 
                     obj.put(attributeName, attributeValue);
                 } else if (!attributeDef.getIsOptional()) {
@@ -530,6 +542,11 @@ public class AtlasStructType extends AtlasType {
 
                 if (obj.containsKey(attrName)) {
                     attrValue = getNormalizedValueForUpdate(attrValue, attrDef);
+
+                    if (attrValue == null && obj.get(attrName) != null) {
+                        continue;
+                    }
+
                     obj.put(attrName, attrValue);
                 }
             }
