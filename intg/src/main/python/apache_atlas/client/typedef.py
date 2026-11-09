@@ -48,11 +48,11 @@ class TypeDefClient:
     def __init__(self, client):
         self.client = client
 
-    def get_all_typedefs(self, search_filter):
-        return self.client.call_api(TypeDefClient.GET_ALL_TYPE_DEFS, AtlasTypesDef, search_filter.params)
+    def get_all_typedefs(self):
+        return self.client.call_api(TypeDefClient.GET_ALL_TYPE_DEFS, AtlasTypesDef)
 
-    def get_all_typedef_headers(self, search_filter):
-        return self.client.call_api(TypeDefClient.GET_ALL_TYPE_DEF_HEADERS, list, search_filter.params)
+    def get_all_typedef_headers(self):
+        return self.client.call_api(TypeDefClient.GET_ALL_TYPE_DEF_HEADERS, list)
 
     def type_with_guid_exists(self, guid):
         try:
