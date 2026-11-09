@@ -53,6 +53,9 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
         }
 
         ExportService.TraversalDirection direction = context.guidDirection.get(entity.getGuid());
+        if (context.startingEntityGuid.equals(entity.getGuid())) {
+            direction = null;
+        }
 
         if (direction == null || direction == UNKNOWN) {
             addToBeProcessed(entity, context, OUTWARD, INWARD);
