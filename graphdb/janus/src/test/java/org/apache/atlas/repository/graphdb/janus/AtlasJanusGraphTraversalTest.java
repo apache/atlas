@@ -225,7 +225,7 @@ public class AtlasJanusGraphTraversalTest {
         List<Vertex> vertexList = new ArrayList<>();
         vertexList.add(mock(Vertex.class));
 
-        mapResult.put(123, vertexList); // Non-string key
+        mapResult.put(123, vertexList); // Non-string key (Integer)
         mapResult.put("validKey", vertexList);
         resultList.add(mapResult);
 
@@ -234,8 +234,9 @@ public class AtlasJanusGraphTraversalTest {
 
         Map<String, Collection<AtlasJanusVertex>> vertexMap = traversal.getAtlasVertexMap();
         assertNotNull(vertexMap);
-        assertEquals(vertexMap.size(), 1); // Only string keys should be included
+        assertEquals(vertexMap.size(), 2);
         assertNotNull(vertexMap.get("validKey"));
+        assertNotNull(vertexMap.get("123")); // Integer key converted to String
     }
 
     @Test
@@ -269,6 +270,44 @@ public class AtlasJanusGraphTraversalTest {
         Map<String, Collection<AtlasJanusVertex>> vertexMap = traversal.getAtlasVertexMap();
         assertNotNull(vertexMap);
         assertTrue(vertexMap.isEmpty());
+    }
+
+    @Test
+    public void testGetAtlasVertexMapWithLongKeysForDSLGroupByCreateTime() throws Exception {
+        List<Object> resultList = new ArrayList<>();
+        Map<Object, Object> mapResult = new HashMap<>();
+
+        // Create mock vertices for different timestamp groups
+        List<Vertex> group1Vertices = new ArrayList<>();
+        group1Vertices.add(mock(Vertex.class));
+        group1Vertices.add(mock(Vertex.class));
+
+        List<Vertex> group2Vertices = new ArrayList<>();
+        group2Vertices.add(mock(Vertex.class));
+
+        List<Vertex> group3Vertices = new ArrayList<>();
+        group3Vertices.add(mock(Vertex.class));
+        group3Vertices.add(mock(Vertex.class));
+        group3Vertices.add(mock(Vertex.class));
+
+        // Add groups with Long keys (simulating createTime timestamps)
+        mapResult.put(1700000000000L, group1Vertices); // Timestamp 1
+        mapResult.put(1710000000000L, group2Vertices); // Timestamp 2
+        mapResult.put(1720000000000L, group3Vertices); // Timestamp 3
+
+        resultList.add(mapResult);
+        setResultList(traversal, resultList);
+
+        Map<String, Collection<AtlasJanusVertex>> vertexMap = traversal.getAtlasVertexMap();
+        // Verify results
+        assertNotNull(vertexMap);
+        assertEquals(vertexMap.size(), 3); // All Long keys converted to String
+        assertNotNull(vertexMap.get("1700000000000")); // Verify Long converted to String
+        assertNotNull(vertexMap.get("1710000000000"));
+        assertNotNull(vertexMap.get("1720000000000"));
+        assertEquals(vertexMap.get("1700000000000").size(), 2); // 2 vertices in group1
+        assertEquals(vertexMap.get("1710000000000").size(), 1); // 1 vertex in group2
+        assertEquals(vertexMap.get("1720000000000").size(), 3); // 3 vertices in group3
     }
 
     @Test

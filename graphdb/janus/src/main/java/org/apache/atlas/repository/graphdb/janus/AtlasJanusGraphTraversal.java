@@ -114,9 +114,9 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
             ret = new HashMap<>(map.size());
 
             for (Object key : map.keySet()) {
-                if (!(key instanceof String)) {
-                    continue;
-                }
+                LOG.info("Printing Key DataType: {}", key.getClass());
+
+                String keyStr = (key instanceof String) ? (String) key : String.valueOf(key);
 
                 Object value = map.get(key);
 
@@ -131,7 +131,7 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
                         }
                     }
 
-                    ret.put((String) key, values);
+                    ret.put(keyStr, values);
                 }
             }
         } else {
