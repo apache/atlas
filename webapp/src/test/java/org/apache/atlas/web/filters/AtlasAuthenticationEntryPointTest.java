@@ -54,7 +54,7 @@ public class AtlasAuthenticationEntryPointTest {
     }
 
     @Test
-    public void testCommence_AjaxRequest() throws IOException {
+    public void testCommence_AjaxRequest() throws Exception {
         // Arrange
         when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
 
@@ -67,7 +67,7 @@ public class AtlasAuthenticationEntryPointTest {
     }
 
     @Test
-    public void testCommence_NormalRequest() throws IOException {
+    public void testCommence_NormalRequest() throws Exception {
         // Arrange
         when(request.getHeader("X-Requested-With")).thenReturn(null);
 
