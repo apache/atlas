@@ -19,7 +19,7 @@ package org.apache.atlas.notification.rest.web.listeners;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.security.SecurityProperties;
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -50,7 +50,7 @@ public class LoginProcessor {
         // first, let's see if we're running in a hadoop cluster and have the env configured
         boolean isHadoopCluster = isHadoopCluster();
         Configuration hadoopConfig = isHadoopCluster ? getHadoopConfiguration() : new Configuration(false);
-        org.apache.commons.configuration.Configuration configuration = getApplicationConfiguration();
+        org.apache.commons.configuration2.Configuration configuration = getApplicationConfiguration();
         if (!isHadoopCluster) {
             // need to read the configured authentication choice and create the UGI configuration
             setupHadoopConfiguration(hadoopConfig, configuration);
@@ -59,7 +59,7 @@ public class LoginProcessor {
     }
 
     protected void doServiceLogin(Configuration hadoopConfig,
-            org.apache.commons.configuration.Configuration configuration) {
+            org.apache.commons.configuration2.Configuration configuration) {
         UserGroupInformation.setConfiguration(hadoopConfig);
 
         UserGroupInformation ugi = null;
@@ -80,7 +80,7 @@ public class LoginProcessor {
         }
     }
 
-    private String getHostname(org.apache.commons.configuration.Configuration configuration) {
+    private String getHostname(org.apache.commons.configuration2.Configuration configuration) {
         String bindAddress = configuration.getString(SecurityProperties.BIND_ADDRESS);
         if (bindAddress == null) {
             LOG.info("No host name configured.  Defaulting to local host name.");
@@ -93,7 +93,7 @@ public class LoginProcessor {
         return bindAddress;
     }
 
-    protected void setupHadoopConfiguration(Configuration hadoopConfig, org.apache.commons.configuration.Configuration
+    protected void setupHadoopConfiguration(Configuration hadoopConfig, org.apache.commons.configuration2.Configuration
             configuration) {
         String authMethod = "";
         String kerberosAuthNEnabled = configuration != null ? configuration.getString(AUTHENTICATION_KERBEROS_METHOD) : null;
@@ -133,7 +133,7 @@ public class LoginProcessor {
      * @return the metadata configuration.
      * @throws ConfigurationException
      */
-    protected org.apache.commons.configuration.Configuration getApplicationConfiguration() {
+    protected org.apache.commons.configuration2.Configuration getApplicationConfiguration() {
         try {
             return ApplicationProperties.get();
         } catch (AtlasException e) {

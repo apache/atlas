@@ -62,7 +62,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     private StringWriter stringWriter;
 
     @BeforeMethod
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
         authenticationFailureHandler = new AtlasAuthenticationFailureHandler();
         stringWriter = new StringWriter();
@@ -72,7 +72,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithValidException() throws IOException {
+    public void testOnAuthenticationFailure_WithValidException() throws Exception {
         // Setup
         String exceptionMessage = "Authentication failed for user";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -94,7 +94,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithNullExceptionMessage() throws IOException {
+    public void testOnAuthenticationFailure_WithNullExceptionMessage() throws Exception {
         // Setup
         when(mockAuthenticationException.getMessage()).thenReturn(null);
 
@@ -110,7 +110,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithEmptyExceptionMessage() throws IOException {
+    public void testOnAuthenticationFailure_WithEmptyExceptionMessage() throws Exception {
         // Setup
         String exceptionMessage = "";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -127,7 +127,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithSpecialCharactersInMessage() throws IOException {
+    public void testOnAuthenticationFailure_WithSpecialCharactersInMessage() throws Exception {
         // Setup
         String exceptionMessage = "Authentication failed: Special chars !@#$%^&*(){}[]|\\:;\"'<>,.?/~`";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -145,7 +145,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithLongExceptionMessage() throws IOException {
+    public void testOnAuthenticationFailure_WithLongExceptionMessage() throws Exception {
         // Setup
         StringBuilder longMessage = new StringBuilder();
         for (int i = 0; i < 1000; i++) {
@@ -167,7 +167,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithUnicodeCharacters() throws IOException {
+    public void testOnAuthenticationFailure_WithUnicodeCharacters() throws Exception {
         // Setup
         String exceptionMessage = "认证失败 - Authentication failed with 中文 characters and émojis 🔐";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -185,7 +185,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_VerifyJSONContent() throws IOException {
+    public void testOnAuthenticationFailure_VerifyJSONContent() throws Exception {
         // Setup
         String exceptionMessage = "Test authentication failure";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -211,7 +211,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_VerifyJSONContentWithNullMessage() throws IOException {
+    public void testOnAuthenticationFailure_VerifyJSONContentWithNullMessage() throws Exception {
         // Setup
         when(mockAuthenticationException.getMessage()).thenReturn(null);
 
@@ -233,7 +233,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_WithIOException() throws IOException {
+    public void testOnAuthenticationFailure_WithIOException() throws Exception {
         // Setup
         String exceptionMessage = "Authentication failed";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -255,7 +255,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_ResponseStatusValue() throws IOException {
+    public void testOnAuthenticationFailure_ResponseStatusValue() throws Exception {
         // Setup
         String exceptionMessage = "Authentication failed";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -268,7 +268,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_MethodCallOrder() throws IOException {
+    public void testOnAuthenticationFailure_MethodCallOrder() throws Exception {
         // Setup
         String exceptionMessage = "Authentication failed";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -297,7 +297,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testJSONObjectCreation() throws IOException {
+    public void testJSONObjectCreation() throws Exception {
         // Setup
         String exceptionMessage = "Test message";
         when(mockAuthenticationException.getMessage()).thenReturn(exceptionMessage);
@@ -321,7 +321,7 @@ public class AtlasAuthenticationFailureHandlerTest {
     }
 
     @Test
-    public void testOnAuthenticationFailure_AllExecutionPaths() throws IOException {
+    public void testOnAuthenticationFailure_AllExecutionPaths() throws Exception {
         // This test ensures all lines of code in the onAuthenticationFailure method are executed
 
         // Setup

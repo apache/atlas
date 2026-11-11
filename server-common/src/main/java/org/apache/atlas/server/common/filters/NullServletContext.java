@@ -64,33 +64,6 @@ public class NullServletContext implements ServletContext {
         return null;
     }
 
-    @Override
-    public int getSessionTimeout() {
-        return 0;
-    }
-
-    @Override
-    public void setSessionTimeout(int i) {
-    }
-
-    @Override
-    public String getRequestCharacterEncoding() {
-        return "";
-    }
-
-    @Override
-    public void setRequestCharacterEncoding(String s) {
-    }
-
-    @Override
-    public String getResponseCharacterEncoding() {
-        return "";
-    }
-
-    @Override
-    public void setResponseCharacterEncoding(String s) {
-    }
-
     public SessionCookieConfig getSessionCookieConfig() {
         return null;
     }
@@ -235,11 +208,6 @@ public class NullServletContext implements ServletContext {
 
     public javax.servlet.ServletRegistration.Dynamic addServlet(
             String servletName, Class<? extends Servlet> servletClass) {
-        return null;
-    }
-
-    @Override
-    public ServletRegistration.Dynamic addJspFile(String s, String s1) {
         return null;
     }
 
