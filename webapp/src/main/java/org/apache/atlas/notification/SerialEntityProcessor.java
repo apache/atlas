@@ -117,7 +117,7 @@ import static org.apache.atlas.notification.NotificationHookConsumer.DUMMY_DATAB
 import static org.apache.atlas.notification.NotificationHookConsumer.DUMMY_TABLE;
 import static org.apache.atlas.notification.NotificationHookConsumer.VALUES_TMP_TABLE_NAME_PREFIX;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
-import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
+import static org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
 public class SerialEntityProcessor implements NotificationEntityProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(SerialEntityProcessor.class);
