@@ -40,6 +40,8 @@ public class HeadersUtil {
     public static final String X_XSS_PROTECTION_KEY               = "X-XSS-Protection";
     public static final String STRICT_TRANSPORT_SEC_KEY           = "Strict-Transport-Security";
     public static final String CONTENT_SEC_POLICY_KEY             = "Content-Security-Policy";
+    /** Servlet request attribute for correlation id (set by {@code AtlasHeaderPreAuthFilter} on main webapp). */
+    public static final String ATLAS_REQUEST_ID_ATTRIBUTE         = "atlas.request.id";
     public static final String X_FRAME_OPTIONS_VAL                = "DENY";
     public static final String X_CONTENT_TYPE_OPTIONS_VAL         = "nosniff";
     public static final String X_XSS_PROTECTION_VAL               = "1; mode=block";

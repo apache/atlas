@@ -153,7 +153,7 @@ public class AuditFilter implements Filter {
     }
 
     private String getRequestId(HttpServletRequest httpRequest) {
-        String requestId = (String) httpRequest.getAttribute(AtlasHeaderPreAuthFilter.REQUEST_ID_ATTRIBUTE);
+        String requestId = (String) httpRequest.getAttribute(HeadersUtil.ATLAS_REQUEST_ID_ATTRIBUTE);
         if (StringUtils.isNotEmpty(requestId)) {
             return requestId;
         }

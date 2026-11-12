@@ -19,6 +19,7 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.authn.handler.AtlasAuth;
 import org.apache.atlas.authn.handler.jwt.AtlasDefaultJwtAuthHandler;
 import org.apache.atlas.authn.handler.jwt.AtlasJwtAuthHandler;
