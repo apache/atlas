@@ -112,7 +112,7 @@ for i in "${KAFKA_HOME}/libs/kafka-clients"*.jar "${KAFKA_HOME}/libs/slf4j-"*.ja
 done
 
 
-CP="${ATLASCPPATH}:${KAFKA_CP}"
+CP="${KAFKA_CP}:${ATLASCPPATH}"
 
 # If running in cygwin, convert pathnames and classpath to Windows format.
 if [ "${CYGWIN}" == "true" ]

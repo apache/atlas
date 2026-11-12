@@ -1,0 +1,29 @@
+services:
+  atlas-rest:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-rest
+      args:
+        - ATLAS_VERSION=${ATLAS_VERSION}
+    image: atlas-rest:latest
+    container_name: atlas-rest
+    hostname: atlas-rest.example.com
+    stdin_open: true
+    tty: true
+    networks:
+      - atlas
+    ports:
+      - "41000:41000"
+    depends_on:
+      atlas-kafka:
+        condition: service_started
+      atlas-zk:
+        condition: service_started
+    environment:
+      - ATLAS_VERSION
+    command:
+      - /home/atlas/scripts/atlas-rest.sh
+
+networks:
+  atlas:
+    name: atlasnw

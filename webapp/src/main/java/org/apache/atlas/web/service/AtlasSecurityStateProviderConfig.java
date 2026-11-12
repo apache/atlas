@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.atlas.web.security;
+package org.apache.atlas.web.service;
 
 import org.apache.atlas.server.common.filters.spi.ActiveInstanceStateProvider;
 import org.apache.atlas.server.common.filters.spi.ServiceStateProvider;
