@@ -22,7 +22,7 @@ import com.google.common.base.Charsets;
 import org.apache.atlas.server.common.service.CuratorFactory;
 import org.apache.atlas.server.common.service.HighAvailabilityProperties;
 import org.apache.atlas.server.common.service.HighAvailabilitySupport;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.mockito.Mock;

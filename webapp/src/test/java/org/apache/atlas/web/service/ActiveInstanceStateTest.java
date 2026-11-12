@@ -22,7 +22,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.server.common.service.ActiveInstanceState;
 import org.apache.atlas.server.common.service.HighAvailabilitySupport;
 import org.apache.atlas.server.common.service.CuratorFactory;
-import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration2.Configuration;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CreateBuilder;
 import org.apache.curator.framework.api.ExistsBuilder;
