@@ -20,6 +20,7 @@ package org.apache.atlas.notification.rest;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
@@ -30,6 +31,7 @@ import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +47,7 @@ public class RestNotification extends AbstractNotification {
     private static final Logger LOG = LoggerFactory.getLogger(RestNotification.class);
 
     private static final int    BATCH_MAX_LENGTH_BYTES = AtlasConfiguration.NOTIFICATION_REST_BODY_MAX_LENGTH_BYTES.getInt();
-    private static final String ATLAS_ENDPOINT         = "atlas.rest.address";
+    private static final String ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT   = "atlas.hook.rest.notification.address";
     private static final String BASIC_AUTH_USERNAME    = "atlas.rest.basic.auth.username";
     private static final String BASIC_AUTH_PASSWORD    = "atlas.rest.basic.auth.password";
     private static final String DEFAULT_ATLAS_URL      = "http://localhost:31000/";
@@ -110,9 +112,13 @@ public class RestNotification extends AbstractNotification {
         }
 
         try {
-            String[] atlasEndPoint = configuration.getStringArray(ATLAS_ENDPOINT);
+            String[] atlasEndPoint = configuration.getStringArray(ATLAS_HOOK_REST_NOTIFICATION_ENDPOINT);
 
-            if (atlasEndPoint == null || atlasEndPoint.length == 0) {
+            if (isEndpointNotSpecified(atlasEndPoint)) {
+                atlasEndPoint = configuration.getStringArray(AtlasConstants.ATLAS_REST_ADDRESS_KEY);
+            }
+
+            if (isEndpointNotSpecified(atlasEndPoint)) {
                 atlasEndPoint = new String[] {DEFAULT_ATLAS_URL};
             }
 
@@ -131,6 +137,18 @@ public class RestNotification extends AbstractNotification {
         }
 
         return atlasClientV2;
+    }
+
+    private boolean isEndpointNotSpecified(String[] endpointUrls) {
+        if (endpointUrls == null || endpointUrls.length == 0) {
+            return true;
+        }
+        for (String url : endpointUrls) {
+            if (StringUtils.isNotBlank(url)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private List<List<String>> getBatches(List<String> messages) {

@@ -20,6 +20,7 @@
 package org.apache.atlas.web.security;
 
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider;
 import org.apache.commons.configuration2.Configuration;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.OidcKeycloakAccount;
@@ -80,7 +81,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
     @Mock
     private AccessToken mockAccessToken;
 
-    private AtlasKeycloakAuthenticationProvider keycloakAuthenticationProvider;
+    private org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider keycloakAuthenticationProvider;
 
     @BeforeMethod
     public void setUp() {
@@ -96,7 +97,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
             when(mockConfiguration.getString("atlas.authentication.method.keycloak.groups_claim")).thenReturn(null);
 
             // Execute
-            keycloakAuthenticationProvider = new AtlasKeycloakAuthenticationProvider();
+            keycloakAuthenticationProvider = new org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider();
 
             // Verify using reflection
             assertTrue((Boolean) getPrivateField(keycloakAuthenticationProvider, "groupsFromUGI"));
@@ -114,7 +115,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
             when(mockConfiguration.getString("atlas.authentication.method.keycloak.groups_claim")).thenReturn("customGroups");
 
             // Execute
-            keycloakAuthenticationProvider = new AtlasKeycloakAuthenticationProvider();
+            keycloakAuthenticationProvider = new org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider();
 
             // Verify using reflection
             assertFalse((Boolean) getPrivateField(keycloakAuthenticationProvider, "groupsFromUGI"));
@@ -132,7 +133,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
 
             // Execute & Verify
             try {
-                keycloakAuthenticationProvider = new AtlasKeycloakAuthenticationProvider();
+                keycloakAuthenticationProvider = new org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider();
                 fail("Expected Exception to be thrown");
             } catch (Exception e) {
                 assertTrue(e.getMessage().contains("Configuration loading failed") || e instanceof RuntimeException);
@@ -429,7 +430,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
     @Test
     public void testClassAnnotations() {
         // Verify @Component annotation
-        Component componentAnnotation = AtlasKeycloakAuthenticationProvider.class.getAnnotation(Component.class);
+        Component componentAnnotation = org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider.class.getAnnotation(Component.class);
         assertNotNull(componentAnnotation);
     }
 
@@ -494,7 +495,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
             when(mockConfiguration.getString("atlas.authentication.method.keycloak.groups_claim")).thenReturn("custom_claim");
 
             // Execute
-            keycloakAuthenticationProvider = new AtlasKeycloakAuthenticationProvider();
+            keycloakAuthenticationProvider = new org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider();
 
             // Verify configuration loading
             verify(mockConfiguration).getBoolean("atlas.authentication.method.keycloak.ugi-groups", true);
@@ -513,7 +514,7 @@ public class AtlasKeycloakAuthenticationProviderTest {
             when(mockConfiguration.getBoolean("atlas.authentication.method.keycloak.ugi-groups", true)).thenReturn(groupsFromUGI);
             when(mockConfiguration.getString("atlas.authentication.method.keycloak.groups_claim")).thenReturn(groupsClaim);
 
-            keycloakAuthenticationProvider = new AtlasKeycloakAuthenticationProvider();
+            keycloakAuthenticationProvider = new org.apache.atlas.server.common.security.AtlasKeycloakAuthenticationProvider();
         }
     }
 

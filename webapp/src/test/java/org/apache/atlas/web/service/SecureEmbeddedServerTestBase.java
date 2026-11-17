@@ -22,6 +22,8 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.Atlas;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.server.common.service.EmbeddedServer;
+import org.apache.atlas.server.common.service.SecureEmbeddedServer;
 import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.integration.AdminJerseyResourceIT;
 import org.apache.atlas.web.integration.EntityJerseyResourceIT;
