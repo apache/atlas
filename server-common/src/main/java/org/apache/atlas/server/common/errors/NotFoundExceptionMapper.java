@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.atlas.server.common.errors;
 
-package org.apache.atlas.web.errors;
-
+import org.apache.atlas.exception.NotFoundException;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.Response;
@@ -26,22 +26,16 @@ import javax.ws.rs.ext.Provider;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Exception mapper for Jersey.
- */
 @Provider
 @Component
-public class AllExceptionMapper implements ExceptionMapper<Exception> {
+public class NotFoundExceptionMapper implements ExceptionMapper<NotFoundException> {
     @Override
-    public Response toResponse(Exception exception) {
+    public Response toResponse(NotFoundException e) {
         final long id = ThreadLocalRandom.current().nextLong();
 
-        // Log the response and use the error codes from the Exception
-        ExceptionMapperUtil.logException(id, exception);
-
         return Response
-                .serverError()
-                .entity(ExceptionMapperUtil.formatErrorMessage(id, exception))
+                .status(Response.Status.NOT_FOUND)
+                .entity(ExceptionMapperUtil.formatErrorMessage(id, e))
                 .build();
     }
 }
