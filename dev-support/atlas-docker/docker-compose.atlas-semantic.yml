@@ -1,0 +1,41 @@
+# Semantic search stack: Postgres + OpenSearch + standalone Semantic Indexer.
+#
+#   export ATLAS_BACKEND=postgres ATLAS_INDEX_BACKEND=opensearch COMPOSE_PROFILES=opensearch-index
+#   ./scripts/run-atlas-semantic.sh
+#
+# Or manually:
+#   docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-postgres.yml \
+#     -f docker-compose.atlas-semantic.yml up -d --wait
+
+services:
+  atlas:
+    volumes:
+      - ./config/atlas-logback.xml:/opt/atlas/conf/atlas-logback.xml:ro
+    environment:
+      - ATLAS_SEMANTIC_ENABLED=true
+
+  atlas-semantic-indexer:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-semantic-indexer
+      args:
+        - ATLAS_VERSION=${ATLAS_VERSION}
+    image: atlas-semantic-indexer:latest
+    container_name: atlas-semantic-indexer
+    networks:
+      - atlas
+    depends_on:
+      atlas-db-init:
+        condition: service_completed_successfully
+      atlas-kafka:
+        condition: service_started
+      atlas-index:
+        condition: service_healthy
+    ports:
+      - "8089:8089"
+    environment:
+      - ATLAS_SEMANTIC_ENABLED=true
+    volumes:
+      # same file as the atlas service
+      - ./config/atlas/${ATLAS_BACKEND}/${ATLAS_INDEX_BACKEND}/atlas-application.properties:/opt/atlas-semantic-indexer/conf/atlas-application.properties:ro
+    restart: unless-stopped

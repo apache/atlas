@@ -143,6 +143,22 @@ public final class GraphHelper {
         return StringUtils.equals(edge.getLabel(), TERM_ASSIGNMENT_LABEL);
     }
 
+    /**
+     * Term-to-entity assignment edges of a term (OUT) or an entity (IN). With soft delete, removed assignments keep
+     * their edge in DELETED state: they are skipped.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Iterable<AtlasEdge> getActiveTermAssignmentEdges(AtlasVertex vertex, AtlasEdgeDirection direction, int limit) {
+        AtlasVertexQuery query = vertex.query();
+        Iterable<AtlasEdge> edges = query == null ? null : query
+                .direction(direction)
+                .label(TERM_ASSIGNMENT_LABEL)
+                .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                .edges(limit);
+
+        return edges != null ? edges : Collections.emptyList();
+    }
+
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
     //So traversing all the edges
     public static Iterator<AtlasEdge> getAdjacentEdgesByLabel(AtlasVertex instanceVertex, AtlasEdgeDirection direction, final String edgeLabel) {

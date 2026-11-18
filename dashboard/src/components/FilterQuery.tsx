@@ -334,6 +334,28 @@ export const FilterQuery = ({ value }: any) => {
     );
   }
 
+  // Handle entity filters without a type (semantic search)
+  if (!value.type && value.entityFilters) {
+    const entityFilters: any = attributeFilter.extractUrl({
+      value: value.entityFilters,
+      formatDate: true
+    });
+    if (entityFilters) {
+      queryArray.push(
+        <Stack direction="row" flexWrap="wrap" gap="0.25rem" alignItems="center">
+          <Typography fontWeight="600">{"("}</Typography>
+          <Typography className="operator" fontWeight="600">
+            {entityFilters.condition}
+          </Typography>
+          <Typography fontWeight="600">{"("}</Typography>
+          {objToString(entityFilters, "entityFilters")}
+          <Typography fontWeight="600">{")"}</Typography>
+          <Typography fontWeight="600">{")"}</Typography>
+        </Stack>
+      );
+    }
+  }
+
   // Handle Tag filters
   if (value.tag) {
     let tagKeyValue = (

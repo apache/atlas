@@ -112,6 +112,8 @@ public class OpenSearchIndex implements IndexProvider {
 
     private static final Logger log = LoggerFactory.getLogger(OpenSearchIndex.class);
 
+    private static final String INDEX_KNN_SETTING = "index.knn";
+
     private static final String STRING_MAPPING_SUFFIX = "__STRING";
 
     public static final ConfigNamespace OPENSEARCH_NS =
@@ -547,16 +549,28 @@ public class OpenSearchIndex implements IndexProvider {
             return;
         }
 
+        Map<String, Object> settings = existingIndexSettings(indexSetting);
+        if (!settings.isEmpty()) {
+            client.updateIndexSettings(index, settings);
+        }
+    }
+
+    /**
+     * The {@code create.ext.*} settings to update on an existing index. index.knn is left out: OpenSearch only accepts
+     * it at index creation, and rejects any update of it on an open index, even with the same value.
+     */
+    static Map<String, Object> existingIndexSettings(Map<String, Object> indexSetting) {
         Map<String, Object> settings = new HashMap<>(indexSetting.size());
         for (Map.Entry<String, Object> entry : indexSetting.entrySet()) {
             String key = entry.getKey();
             if (!key.startsWith("index.")) {
                 key = "index." + key;
             }
-            settings.put(key, entry.getValue());
+            if (!INDEX_KNN_SETTING.equals(key)) {
+                settings.put(key, entry.getValue());
+            }
         }
-
-        client.updateIndexSettings(index, settings);
+        return settings;
     }
 
     static boolean createIndexIdempotent(OpenSearchClient client, String index, Map<String, Object> indexSetting) throws IOException {

@@ -26,6 +26,8 @@ import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SemanticSearchParameters;
+import org.apache.atlas.model.discovery.SimilarEntitySearchParameters;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
@@ -204,4 +206,14 @@ public interface AtlasDiscoveryService {
      * @return Task created to perform audit aging
      */
     AtlasTask createAndQueueAuditReductionTask(Map<String, Object> taskParams, String taskType) throws AtlasBaseException;
+
+    /**
+     * Semantic vector search over entity metadata.
+     */
+    AtlasSearchResult semanticSearch(SemanticSearchParameters searchParameters) throws AtlasBaseException;
+
+    /**
+     * Find entities similar to the entity identified by guid.
+     */
+    AtlasSearchResult similarEntities(String guid, SimilarEntitySearchParameters searchParameters) throws AtlasBaseException;
 }

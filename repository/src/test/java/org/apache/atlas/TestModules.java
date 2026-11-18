@@ -70,6 +70,8 @@ import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.asyncimport.ImportTaskListener;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
 import org.apache.atlas.runner.LocalSolrRunner;
+import org.apache.atlas.semantic.OpenSearchSemanticStore;
+import org.apache.atlas.semantic.SemanticVectorStore;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.tasks.TaskManagement;
@@ -142,6 +144,7 @@ public class TestModules {
 
             // bind the DiscoveryService interface to an implementation
             bind(AtlasDiscoveryService.class).to(EntityDiscoveryService.class).asEagerSingleton();
+            bind(SemanticVectorStore.class).to(OpenSearchSemanticStore.class);
 
             bind(AtlasLineageService.class).to(EntityLineageService.class).asEagerSingleton();
             bind(BulkImporter.class).to(BulkImporterImpl.class).asEagerSingleton();

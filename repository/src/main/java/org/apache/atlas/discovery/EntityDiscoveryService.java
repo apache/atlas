@@ -38,6 +38,8 @@ import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
 import org.apache.atlas.model.discovery.QuickSearchParameters;
 import org.apache.atlas.model.discovery.RelationshipSearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.discovery.SemanticSearchParameters;
+import org.apache.atlas.model.discovery.SimilarEntitySearchParameters;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -63,6 +65,7 @@ import org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTaskFactor
 import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTaskFactory;
 import org.apache.atlas.repository.userprofile.UserProfileService;
+import org.apache.atlas.semantic.SemanticSearchService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -138,9 +141,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final SuggestionsProvider       suggestionsProvider;
     private final DSLQueryExecutor          dslQueryExecutor;
     private final TaskManagement            taskManagement;
+    private final SemanticSearchService     semanticSearchService;
 
     @Inject
-    EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement) throws AtlasException {
+    EntityDiscoveryService(AtlasTypeRegistry typeRegistry, AtlasGraph graph, GraphBackedSearchIndexer indexer, SearchTracker searchTracker, UserProfileService userProfileService, TaskManagement taskManagement, SemanticSearchService semanticSearchService) throws AtlasException {
         this.graph                    = graph;
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
@@ -155,8 +159,25 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.suggestionsProvider      = new SuggestionsProviderImpl(graph, typeRegistry);
         this.dslQueryExecutor         = new TraversalBasedExecutor(typeRegistry, graph, entityRetriever);
         this.taskManagement           = taskManagement;
+        this.semanticSearchService    = semanticSearchService;
 
         LOG.info("DSL Executor: {}", this.dslQueryExecutor.getClass().getSimpleName());
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasSearchResult semanticSearch(SemanticSearchParameters searchParameters) throws AtlasBaseException {
+        AtlasSearchResult ret = semanticSearchService.semanticSearch(searchParameters);
+        scrubSearchResults(ret);
+        return ret;
+    }
+
+    @Override
+    @GraphTransaction
+    public AtlasSearchResult similarEntities(String guid, SimilarEntitySearchParameters searchParameters) throws AtlasBaseException {
+        AtlasSearchResult ret = semanticSearchService.similarEntities(guid, searchParameters);
+        scrubSearchResults(ret);
+        return ret;
     }
 
     public static SearchParameters createSearchParameters(QuickSearchParameters quickSearchParameters) {

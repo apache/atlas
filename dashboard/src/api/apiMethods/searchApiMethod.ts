@@ -26,6 +26,20 @@ const getBasicSearchResult = (params: any, searchType: string | null) => {
   };
   return fetchApi(searchApiUrl(searchType || ""), config);
 };
+
+const getSemanticSearchResult = (params: { data: Record<string, unknown> }) => {
+  return fetchApi(searchApiUrl("semantic"), {
+    method: "POST",
+    ...params
+  });
+};
+
+const getSimilarEntities = (guid: string, params: Record<string, unknown> = {}) => {
+  return fetchApi(searchApiUrl("similar"), {
+    method: "GET",
+    params: { guid, ...params }
+  });
+};
 const getRelationShipResult = (params: any) => {
   const config: any = {
     method: "POST",
@@ -109,6 +123,8 @@ const getLatestEntities = () => {
 
 export {
 	getBasicSearchResult,
+	getSemanticSearchResult,
+	getSimilarEntities,
 	getRelationShipResult,
 	getGlobalSearchResult,
 	getRelationShip,
