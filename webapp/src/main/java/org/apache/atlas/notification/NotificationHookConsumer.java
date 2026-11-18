@@ -47,6 +47,7 @@ import org.apache.atlas.model.notification.ImportNotification.AtlasEntityImportN
 import org.apache.atlas.model.notification.ImportNotification.AtlasTypesDefImportNotification;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.notification.preprocessor.NotificationPreProcessor;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.GenericEntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
@@ -54,6 +55,7 @@ import org.apache.atlas.notification.preprocessor.PreprocessorContext.Preprocess
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.AtlasTypeDefGraphStore;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -179,6 +181,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT                    = 30000;
     private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME                 = "atlas-hook-consumer-thread";
     private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME        = "atlas-hook-unsorted-consumer-thread";
+    private static final String ATLAS_HOOK_PRE_PROCESSOR_CONSUMER_THREAD_NAME = "atlas-hook-preprocessor-consumer-thread";
     private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX             = "atlas-import-consumer-thread-";
     private static final String THREADNAME_PREFIX                               = NotificationHookConsumer.class.getSimpleName();
 
@@ -221,6 +224,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final long                          consumerMsgBufferingIntervalMS;
     private final int                           consumerMsgBufferingBatchSize;
     private final AsyncImporter                 asyncImporter;
+    private final boolean                       parallelProcessingEnabled;
+    private final AtlasTypeDefGraphStore        typeDefStore;
 
     private ExecutorService executors;
     private Instant         nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
@@ -233,6 +238,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter) throws AtlasException {
+        this(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, entityCorrelationStore, asyncImporter, null);
+    }
+
+    public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter, AtlasTypeDefGraphStore typeDefStore) throws AtlasException {
         this.notificationInterface        = notificationInterface;
         this.atlasEntityStore             = atlasEntityStore;
         this.serviceState                 = serviceState;
@@ -242,6 +251,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         this.metricsUtil                  = metricsUtil;
         this.lastCommittedPartitionOffset = new HashMap<>();
         this.asyncImporter                = asyncImporter;
+        this.typeDefStore                 = typeDefStore;
+        this.parallelProcessingEnabled    = AtlasConfiguration.ATLAS_PARALLEL_PROCESSING_ENABLED.getBoolean();
 
         maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
@@ -543,7 +554,33 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hookConsumers.add(hookConsumer);
         }
 
+        if (parallelProcessingEnabled) {
+            hookConsumers.addAll(getPreprocessorHookConsumers());
+        }
+
         startConsumers(hookConsumers);
+    }
+
+    List<HookConsumer> getPreprocessorHookConsumers() {
+        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK_PREPROCESS, 1);
+        List<HookConsumer>                           hookConsumers         = new ArrayList<>();
+
+        for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
+            NotificationPreProcessor processor = new NotificationPreProcessor(applicationProperties, metricsUtil, typeRegistry, FAILED_LOG);
+
+            if (typeDefStore != null) {
+                typeDefStore.registerTypeDefChangeListener(processor);
+                LOG.info("Registered NotificationPreProcessor with AtlasTypeDefStore for type registry updates");
+            } else {
+                LOG.warn("AtlasTypeDefStore is null, NotificationPreProcessor will not receive type registry updates");
+            }
+
+            HookConsumer hookConsumer = new HookConsumer(ATLAS_HOOK_PRE_PROCESSOR_CONSUMER_THREAD_NAME, consumer, processor);
+
+            hookConsumers.add(hookConsumer);
+        }
+
+        return hookConsumers;
     }
 
     public void startAsyncImportConsumer(NotificationType notificationType, String importId, String topic) throws AtlasBaseException {
@@ -1121,6 +1158,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     class HookConsumer extends Thread {
         private final NotificationConsumer<HookNotification> consumer;
         private final AtomicBoolean                          shouldRun      = new AtomicBoolean(false);
+        private final NotificationEntityProcessor            entityProcessor;
         private final List<String>                           failedMessages = new ArrayList<>();
         private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
@@ -1129,13 +1167,22 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         public HookConsumer(NotificationConsumer<HookNotification> consumer) {
             super(ATLAS_HOOK_CONSUMER_THREAD_NAME);
 
-            this.consumer = consumer;
+            this.consumer        = consumer;
+            this.entityProcessor = null;
         }
 
         public HookConsumer(String consumerThreadName, NotificationConsumer<HookNotification> consumer) {
             super(consumerThreadName);
 
-            this.consumer = consumer;
+            this.consumer        = consumer;
+            this.entityProcessor = null;
+        }
+
+        public HookConsumer(String consumerThreadName, NotificationConsumer<HookNotification> consumer, NotificationEntityProcessor entityProcessor) {
+            super(consumerThreadName);
+
+            this.consumer        = consumer;
+            this.entityProcessor = entityProcessor;
         }
 
         @Override
@@ -1243,6 +1290,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         @VisibleForTesting
         void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
+            if (entityProcessor != null) {
+                TopicPartitionOffsetResult result = entityProcessor.handleMessage(kafkaMsg);
+                commit(result);
+                return;
+            }
+
             AtlasPerfTracer  perf                   = null;
             HookNotification message                = kafkaMsg.getMessage();
             String           messageUser            = message.getUser();
@@ -1683,6 +1736,20 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             failedMessages.clear();
         }
 
+        private void commit(TopicPartitionOffsetResult result) {
+            if (result != null) {
+                if (!lastCommittedPartitionOffset.containsKey(result.getTopicPartition())
+                        || (lastCommittedPartitionOffset.containsKey(result.getTopicPartition())
+                        && lastCommittedPartitionOffset.get(result.getTopicPartition()) != null
+                        && lastCommittedPartitionOffset.get(result.getTopicPartition()) != result.getOffset())) {
+                    LOG.info("Committing the result: {}", result.getKey());
+                    commit(result.getTopicPartition(), result.getOffset());
+                } else {
+                    consumer.poll();
+                }
+            }
+        }
+
         private void commit(AtlasKafkaMessage<HookNotification> kafkaMessage) {
             recordFailedMessages();
 
@@ -1691,6 +1758,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             lastCommittedPartitionOffset.put(kafkaMessage.getTopicPartition(), commitOffset);
 
             consumer.commit(kafkaMessage.getTopicPartition(), commitOffset);
+        }
+
+        private void commit(TopicPartition topicPartition, long commitOffset) {
+            long offsetToCommit = commitOffset + 1;
+            consumer.commit(topicPartition, offsetToCommit);
+            lastCommittedPartitionOffset.put(topicPartition, commitOffset);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Committing: topicPartition: {} with offset: {}", topicPartition, offsetToCommit);
+            }
         }
     }
 }

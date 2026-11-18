@@ -132,6 +132,12 @@ public class AtlasSecurityConfigTest {
     private StaleTransactionCleanupFilter mockStaleTransactionCleanupFilter;
 
     @Mock
+    private AtlasHeaderPreAuthFilter mockHeaderPreAuthFilter;
+
+    @Mock
+    private AtlasJwtAuthWrapper mockAtlasJwtAuthWrapper;
+
+    @Mock
     private ActiveServerFilter mockActiveServerFilter;
 
     @Mock
@@ -177,7 +183,9 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 objectProvider(mockActiveServerFilter),
-                objectProvider(mockStaleTransactionCleanupFilter));
+                objectProvider(mockStaleTransactionCleanupFilter),
+                mockHeaderPreAuthFilter,
+                mockAtlasJwtAuthWrapper);
     }
 
     @Test
