@@ -70,6 +70,7 @@ class AtlasSearchResult(AtlasBase):
         self.fullTextResult = attrs.get('fullTextResult')
         self.referredEntities = attrs.get('referredEntities')
         self.approximateCount = non_null(attrs.get('approximateCount'), -1)
+        self.approximateCountExact = attrs.get('approximateCountExact')
 
     def type_coerce_attrs(self):
         super(AtlasSearchResult, self).type_coerce_attrs()

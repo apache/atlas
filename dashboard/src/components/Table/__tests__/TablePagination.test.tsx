@@ -23,6 +23,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@utils/test-utils';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router-dom';
 import TablePagination from '../TablePagination';
 
 const theme = createTheme();
@@ -178,15 +179,48 @@ describe('TablePagination', () => {
 		expect(screen.getByRole('navigation')).toBeTruthy();
 	});
 
-	it('should handle server-side pagination', () => {
-		const fetchDataMock = jest.fn();
+	const renderServerSidePagination = (extraProps: Record<string, unknown> = {}) =>
 		render(
-			<TestWrapper>
-				<TablePagination {...defaultProps} isServerSide={true} />
-			</TestWrapper>
+			<MemoryRouter initialEntries={['/?pageLimit=25&pageOffset=0']}>
+				<TestWrapper>
+					<TablePagination
+						{...defaultProps}
+						isServerSide={true}
+						{...extraProps}
+					/>
+				</TestWrapper>
+			</MemoryRouter>,
+			{ withRouter: false }
 		);
 
+	it('should handle server-side pagination', () => {
+		renderServerSidePagination();
+
 		expect(screen.getByRole('navigation')).toBeTruthy();
+	});
+
+	it('shows approximate total hint when server-side count is not exact', () => {
+		renderServerSidePagination({
+			approximateCountExact: false,
+			totalCount: 100,
+			memoizedData: Array.from({ length: 25 }, (_, i) => ({ id: i }))
+		});
+
+		expect(screen.getByText('(approx.)')).toBeInTheDocument();
+		expect(screen.getByRole('navigation')).toHaveTextContent(
+			'Showing 1-25 of ~100 records (approx.)'
+		);
+	});
+
+	it('omits approximate hint when server-side count is exact', () => {
+		renderServerSidePagination({
+			approximateCountExact: true,
+			totalCount: 100,
+			memoizedData: Array.from({ length: 25 }, (_, i) => ({ id: i }))
+		});
+
+		expect(screen.queryByText('(approx.)')).not.toBeInTheDocument();
+		expect(screen.getByRole('navigation')).toHaveTextContent('Showing 1-25 of 100 records');
 	});
 
 	it('should update goToPageVal when input changes', () => {

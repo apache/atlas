@@ -282,6 +282,54 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
     }
 
     @Test
+    public void approximateCountExactForIndexOnlyTypeSearch() throws AtlasBaseException {
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(DATABASE_TYPE);
+        params.setLimit(20);
+
+        SearchContext context =
+                new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+
+        assertTrue(processor.isApproximateCountExact());
+        assertTrue(processor.getResultCount() >= processor.execute().size());
+    }
+
+    @Test
+    public void approximateCountNotExactForInMemoryNeqFilter() throws AtlasBaseException {
+        createDummyEntity(EXPECTED_ENTITY_NAME, HIVE_TABLE_TYPE);
+
+        SearchParameters.FilterCriteria filterCriteria =
+                getSingleFilterCondition("tableType", SearchParameters.Operator.NEQ, "Managed");
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HIVE_TABLE_TYPE);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context =
+                new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+
+        assertFalse(processor.isApproximateCountExact());
+    }
+
+    @Test
+    public void approximateCountNotExactForStartsWithFilter() throws AtlasBaseException {
+        SearchParameters.FilterCriteria filterCriteria =
+                getSingleFilterCondition("name", SearchParameters.Operator.STARTS_WITH, "hdfs");
+        SearchParameters params = new SearchParameters();
+        params.setTypeName(HDFS_PATH);
+        params.setEntityFilters(filterCriteria);
+        params.setLimit(20);
+
+        SearchContext context =
+                new SearchContext(params, typeRegistry, graph, indexer.getVertexIndexKeys());
+        EntitySearchProcessor processor = new EntitySearchProcessor(context);
+
+        assertFalse(processor.isApproximateCountExact());
+    }
+
+    @Test
     public void entityTypes() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setTypeName(DATABASE_TYPE + "," + HIVE_TABLE_TYPE);

@@ -97,6 +97,8 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
   const { businessMetadataDefs } = businessMetaData || {};
   const [pageCount, setPageCount] = useState<number>(0);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [approximateCountExact, setApproximateCountExact] =
+    useState<boolean>(false);
   const [isEmptyData, setIsEmptyData] = useState(false);
   const [checkedEntities, setCheckedEntities] = useState<any>(
     !isEmpty(searchParams.get("includeDE"))
@@ -296,11 +298,15 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
           setIsEmptyData(true);
           setSearchData({ entities: [], referredEntities: {} });
           setTotalCount(0);
+          setApproximateCountExact(false);
           setPageCount(0);
           setLoader(false);
         } else {
           setIsEmptyData(false);
           setSearchData(searchResp.data);
+          setApproximateCountExact(
+            Boolean((data as any)?.approximateCountExact)
+          );
           setTotalCount(totalCountLocal || 0);
           setPageCount(
             Math.ceil((totalCountLocal || dataLength) / (pagination.pageSize || pageSize))
@@ -1144,6 +1150,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams, hideFilters }:
         setIsEmptyData={setIsEmptyData}
         showGoToPage={true}
         totalCount={totalCount}
+        approximateCountExact={approximateCountExact}
       />
       </div>
     </Stack>

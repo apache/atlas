@@ -34,6 +34,15 @@ define(['require',
 ], function(require, Backbone, tableDragger, SearchResultLayoutViewTmpl, Modal, VEntity, Utils, Globals, VSearchList, VCommon, CommonViewFunction, Messages, Enums, UrlLinks, platform, VDownloadList) {
     'use strict';
 
+    var formatBasicSearchPageRecordText = function(pageFrom, pageTo, approximateCount, approximateCountExact) {
+        var total = _.isNumber(approximateCount) ? approximateCount : pageTo,
+            displayTo = Math.min(pageTo, total),
+            approxPrefix = approximateCountExact === true ? '' : '~',
+            approxSuffix = approximateCountExact === true ? '' :
+                ' <span title="Count is approximate when search applies in-memory filtering beyond the index query.">(approx.)</span>';
+        return 'Showing ' + pageFrom + '-' + displayTo + ' of ' + approxPrefix + total + ' records' + approxSuffix;
+    };
+
     var SearchResultLayoutView = Backbone.Marionette.LayoutView.extend(
         /** @lends SearchResultLayoutView */
         {
@@ -474,6 +483,8 @@ define(['require',
                             });
                             that.searchCollection.reset(dataOrCollection.entities, { silent: true });
                             that.searchCollection.fullCollection.reset(dataOrCollection.entities, { silent: true });
+                            that.approximateCount = dataOrCollection.approximateCount;
+                            that.approximateCountExact = dataOrCollection.approximateCountExact === true;
                         }
 
 
@@ -509,7 +520,11 @@ define(['require',
                             that.pageTo = that.pageTo - that.limit;
                             that.pageFrom = (that.pageTo - that.limit) + 1;
                         }
-                        that.ui.pageRecordText.html("Showing  <u>" + that.searchCollection.models.length + " records</u> From " + that.pageFrom + " - " + that.pageTo);
+                        if (isPostMethod && _.isNumber(that.approximateCount)) {
+                            that.ui.pageRecordText.html(formatBasicSearchPageRecordText(that.pageFrom, that.pageTo, that.approximateCount, that.approximateCountExact));
+                        } else {
+                            that.ui.pageRecordText.html("Showing  <u>" + that.searchCollection.models.length + " records</u> From " + that.pageFrom + " - " + that.pageTo);
+                        }
                         that.activePage = Math.round(that.pageTo / that.limit);
                         that.ui.activePage.attr('title', "Page " + that.activePage);
                         that.ui.activePage.text(that.activePage);
