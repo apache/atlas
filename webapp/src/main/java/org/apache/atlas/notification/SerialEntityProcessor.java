@@ -17,9 +17,11 @@
  */
 package org.apache.atlas.notification;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
@@ -371,8 +373,11 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
         // Non-retryable: Entity not found is acceptable in some scenarios
         if (e instanceof AtlasBaseException) {
             AtlasBaseException baseException = (AtlasBaseException) e;
-            if (baseException.getAtlasErrorCode().equals(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)) {
-                LOG.warn("Non-retryable exception: INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND");
+            AtlasErrorCode errorCode = baseException.getAtlasErrorCode();
+            if (errorCode.equals(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)
+                    || errorCode.equals(AtlasErrorCode.UNKNOWN_TYPENAME)
+                    || errorCode.equals(AtlasErrorCode.TYPE_NAME_INVALID)) {
+                LOG.warn("Non-retryable exception: {}", errorCode);
                 return false;
             }
         }
@@ -447,6 +452,26 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                 }
             } catch (AtlasBaseException excp) {
                 LOG.error("handleMessage(): failed to convert V1 message to V2", message.getType().name());
+            }
+
+            // Reject unknown entity type names before preprocessing or the retry loop.
+            // Preprocess walks the payload and can touch the type registry; an unknown
+            // type is permanent and must not open that work or a graph transaction.
+            try {
+                validateEntityTypeNames(message);
+            } catch (AtlasBaseException excp) {
+                LOG.warn("Unrecoverable failure, skipping retries: {}. type={}, topic={}, partition={}, offset={}",
+                        excp.getMessage(), message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset());
+
+                stats.isFailedMsg = true;
+
+                failedMessages.add(AbstractNotification.getMessageJson(message));
+
+                if (failedMessages.size() >= failedMsgCacheSize) {
+                    recordFailedMessages(kafkaMsg.getTopic(), failedMessages);
+                }
+
+                return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
             }
 
             PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
@@ -1091,6 +1116,135 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
         }
 
         return ret;
+    }
+
+    @VisibleForTesting
+    void validateEntityTypeNames(HookNotification message) throws AtlasBaseException {
+        for (String typeName : getEntityTypeNames(message)) {
+            if (typeRegistry.getEntityTypeByName(typeName) == null) {
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, typeName);
+            }
+        }
+    }
+
+    private Set<String> getEntityTypeNames(HookNotification message) {
+        Set<String> ret = new HashSet<>();
+
+        switch (message.getType()) {
+            case ENTITY_CREATE:
+                addReferenceableTypeNames(((HookNotificationV1.EntityCreateRequest) message).getEntities(), ret);
+                break;
+
+            case ENTITY_FULL_UPDATE:
+                addReferenceableTypeNames(((HookNotificationV1.EntityUpdateRequest) message).getEntities(), ret);
+                break;
+
+            case ENTITY_PARTIAL_UPDATE: {
+                HookNotificationV1.EntityPartialUpdateRequest request = (HookNotificationV1.EntityPartialUpdateRequest) message;
+
+                ret.add(request.getTypeName());
+
+                if (request.getEntity() != null) {
+                    ret.add(request.getEntity().getTypeName());
+                }
+            }
+            break;
+
+            case ENTITY_DELETE:
+                ret.add(((HookNotificationV1.EntityDeleteRequest) message).getTypeName());
+                break;
+
+            case ENTITY_CREATE_V2:
+                addEntityTypeNames(((EntityCreateRequestV2) message).getEntities(), ret);
+                break;
+
+            case ENTITY_FULL_UPDATE_V2:
+                addEntityTypeNames(((EntityUpdateRequestV2) message).getEntities(), ret);
+                break;
+
+            case ENTITY_PARTIAL_UPDATE_V2: {
+                EntityPartialUpdateRequestV2 request = (EntityPartialUpdateRequestV2) message;
+
+                if (request.getEntityId() != null) {
+                    ret.add(request.getEntityId().getTypeName());
+                }
+
+                addEntityTypeNames(request.getEntity(), ret);
+            }
+            break;
+
+            case ENTITY_DELETE_V2: {
+                List<AtlasObjectId> objectIds = ((EntityDeleteRequestV2) message).getEntities();
+
+                if (objectIds != null) {
+                    for (AtlasObjectId objectId : objectIds) {
+                        if (objectId != null) {
+                            ret.add(objectId.getTypeName());
+                        }
+                    }
+                }
+            }
+            break;
+
+            case IMPORT_ENTITY:
+                // Same failure mode as entity hooks: the imported entity's type must already be registered.
+                addEntityTypeNames(((AtlasEntityImportNotification) message).getEntity(), ret);
+                break;
+
+            case TYPE_CREATE:
+            case TYPE_UPDATE:
+            case IMPORT_TYPES_DEF:
+                // These messages register types. Requiring the names to already exist would drop the typedef.
+                // UNKNOWN_TYPENAME / TYPE_NAME_INVALID raised later stay non-retryable in isRetryableException.
+                break;
+
+            default:
+                break;
+        }
+
+        return ret;
+    }
+
+    private static void addReferenceableTypeNames(List<Referenceable> referenceables, Set<String> typeNames) {
+        if (referenceables != null) {
+            for (Referenceable referenceable : referenceables) {
+                if (referenceable != null) {
+                    typeNames.add(referenceable.getTypeName());
+                }
+            }
+        }
+    }
+
+    private static void addEntityTypeNames(AtlasEntitiesWithExtInfo entities, Set<String> typeNames) {
+        if (entities != null) {
+            addEntityTypeNames(entities.getEntities(), typeNames);
+
+            if (entities.getReferredEntities() != null) {
+                addEntityTypeNames(entities.getReferredEntities().values(), typeNames);
+            }
+        }
+    }
+
+    private static void addEntityTypeNames(AtlasEntityWithExtInfo entity, Set<String> typeNames) {
+        if (entity != null) {
+            if (entity.getEntity() != null) {
+                typeNames.add(entity.getEntity().getTypeName());
+            }
+
+            if (entity.getReferredEntities() != null) {
+                addEntityTypeNames(entity.getReferredEntities().values(), typeNames);
+            }
+        }
+    }
+
+    private static void addEntityTypeNames(Collection<AtlasEntity> entities, Set<String> typeNames) {
+        if (entities != null) {
+            for (AtlasEntity entity : entities) {
+                if (entity != null) {
+                    typeNames.add(entity.getTypeName());
+                }
+            }
+        }
     }
 
     private void recordProcessedEntities(EntityMutationResponse mutationResponse, NotificationStat stats, PreprocessorContext context) {
