@@ -1509,6 +1509,12 @@ public class NotificationHookConsumerTest {
 
         NotificationHookConsumer.Timer mockTimer = mock(NotificationHookConsumer.Timer.class);
 
+        // A no-op sleep never observes the interrupt, leaving the thread spinning on mocks until the fork runs out of heap.
+        doAnswer(invocation -> {
+            Thread.sleep(10);
+            return null;
+        }).when(mockTimer).sleep(anyInt());
+
         // Run in separate thread to avoid blocking
         Thread testThread = new Thread(() -> {
             try {
@@ -1523,6 +1529,7 @@ public class NotificationHookConsumerTest {
         testThread.interrupt();
         testThread.join(1000);
 
+        assertFalse(testThread.isAlive(), "serverAvailable() should exit once interrupted");
         verify(serviceState, atLeast(1)).getState();
     }
 

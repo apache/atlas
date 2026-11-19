@@ -36,6 +36,7 @@ import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasMetricsUtil;
@@ -104,6 +105,7 @@ public class NotificationHookConsumerKafkaTest {
         AtlasEntitiesWithExtInfo mockEntity = new AtlasEntitiesWithExtInfo(createV2Entity());
 
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
+        when(typeRegistry.getEntityTypeByName(any())).thenReturn(mock(AtlasEntityType.class));
 
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
 
