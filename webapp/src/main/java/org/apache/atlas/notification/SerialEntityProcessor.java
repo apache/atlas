@@ -454,12 +454,9 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                 LOG.error("handleMessage(): failed to convert V1 message to V2", message.getType().name());
             }
 
-            PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
-
-            if (isEmptyMessage(kafkaMsg)) {
-                return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
-            }
-
+            // Reject unknown entity type names before preprocessing or the retry loop.
+            // Preprocess walks the payload and can touch the type registry; an unknown
+            // type is permanent and must not open that work or a graph transaction.
             try {
                 validateEntityTypeNames(message);
             } catch (AtlasBaseException excp) {
@@ -474,6 +471,12 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                     recordFailedMessages(kafkaMsg.getTopic(), failedMessages);
                 }
 
+                return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
+            }
+
+            PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
+
+            if (isEmptyMessage(kafkaMsg)) {
                 return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
             }
 
@@ -1182,6 +1185,18 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                 }
             }
             break;
+
+            case IMPORT_ENTITY:
+                // Same failure mode as entity hooks: the imported entity's type must already be registered.
+                addEntityTypeNames(((AtlasEntityImportNotification) message).getEntity(), ret);
+                break;
+
+            case TYPE_CREATE:
+            case TYPE_UPDATE:
+            case IMPORT_TYPES_DEF:
+                // These messages register types. Requiring the names to already exist would drop the typedef.
+                // UNKNOWN_TYPENAME / TYPE_NAME_INVALID raised later stay non-retryable in isRetryableException.
+                break;
 
             default:
                 break;
