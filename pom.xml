@@ -2434,5 +2434,20 @@
             </properties>
         </profile>
 
+        <!-- Node 12 (node-for-v2) has no darwin-arm64 binary; frontend-maven-plugin falls back to x64 and fails on Apple Silicon -->
+        <profile>
+            <id>darwin-aarch64-dashboardv2-node</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <node-for-v2.version>v16.20.2</node-for-v2.version>
+                <npm-for-v2.version>8.19.4</npm-for-v2.version>
+            </properties>
+        </profile>
+
     </profiles>
 </project>

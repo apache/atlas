@@ -38,7 +38,6 @@
                     <groupId>com.github.eirslett</groupId>
                     <artifactId>frontend-maven-plugin</artifactId>
                     <configuration>
-                        <phase>validate</phase>
                         <workingDirectory>${project.build.directory}</workingDirectory>
                     </configuration>
                 </plugin>
@@ -92,6 +91,7 @@
                         <goals>
                             <goal>install-node-and-npm</goal>
                         </goals>
+                        <phase>generate-resources</phase>
                         <configuration>
                             <nodeVersion>${node-for-v2.version}</nodeVersion>
                             <npmVersion>${npm-for-v2.version}</npmVersion>
@@ -102,6 +102,7 @@
                         <goals>
                             <goal>npm</goal>
                         </goals>
+                        <phase>generate-resources</phase>
                         <configuration>
                             <arguments>install</arguments>
                         </configuration>
@@ -111,6 +112,7 @@
                         <goals>
                             <goal>grunt</goal>
                         </goals>
+                        <phase>generate-resources</phase>
                         <configuration>
                             <arguments>${project.build.dashboardv2.gruntBuild}</arguments>
                         </configuration>

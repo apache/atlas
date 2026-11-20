@@ -206,10 +206,20 @@ describe('CustomFiltersTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchSavedSearchData on mount', () => {
+		it('should dispatch fetchSavedSearchData on mount if data is empty', () => {
 			renderComponent()
 
 			expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchSavedSearchData' })
+		})
+
+		it('should not dispatch fetchSavedSearchData on mount if data exists', () => {
+			renderComponent({}, {
+				savedSearch: {
+					savedSearchData: [{ name: 'test' }]
+				}
+			})
+
+			expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchSavedSearchData' })
 		})
 
 		it('should call refreshData when refresh button is clicked', async () => {

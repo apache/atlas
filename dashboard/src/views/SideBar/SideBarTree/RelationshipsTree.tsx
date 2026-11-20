@@ -27,16 +27,22 @@ const RelationshipsTree = (props: Props) => {
   const dispatch = useAppDispatch();
 
   const { relationships, loading } = useAppSelector(
-    (state: any) => state.relationships
+    (state) => state.relationships
   );
+  type RelationshipsPayload = {
+    relationshipDefs?: EnumTypeDefData[];
+  } | null;
+  const relationshipsPayload = relationships as RelationshipsPayload;
 
   useEffect(() => {
-    dispatch(fetchRelationshipsData());
-  }, [dispatch]);
+    if (relationships === null || relationships === undefined) {
+      dispatch(fetchRelationshipsData());
+    }
+  }, [relationships, dispatch]);
 
   const relationshipsData = useMemo(() => {
-    if (relationships?.relationshipDefs) {
-      return relationships.relationshipDefs.map((obj: EnumTypeDefData) => ({
+    if (relationshipsPayload?.relationshipDefs) {
+      return relationshipsPayload.relationshipDefs.map((obj: EnumTypeDefData) => ({
         id: obj.name,
         label: obj.name,
         childrenData: [],
@@ -44,7 +50,7 @@ const RelationshipsTree = (props: Props) => {
       }));
     }
     return [];
-  }, [relationships]);
+  }, [relationshipsPayload]);
 
   const treeData = useMemo(
     () => customSortBy(relationshipsData, ["label"]),
@@ -63,6 +69,7 @@ const RelationshipsTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };

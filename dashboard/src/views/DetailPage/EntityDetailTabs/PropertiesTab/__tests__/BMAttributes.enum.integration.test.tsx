@@ -115,7 +115,7 @@ jest.mock("@redux/slice/enumSlice", () => ({
 	fetchEnumData: jest.fn(() => ({ type: "FETCH_ENUM_DATA" }))
 }));
 
-jest.mock("@components/DatePicker/CustomDatepicker", () => ({
+jest.mock("@components/DatePicker/CustomDatePicker", () => ({
 	__esModule: true,
 	default: () => <input data-testid="date-picker" />
 }));

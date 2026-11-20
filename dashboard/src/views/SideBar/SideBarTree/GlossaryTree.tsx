@@ -37,19 +37,30 @@ import {
 } from "@models/glossaryTreeType.ts";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice.ts";
 
-const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
+const GlossaryTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
-  const { glossaryData, loading }: any = useAppSelector(
-    (state: any) => state.glossary
+  const { glossaryData, loading } = useAppSelector(
+    (state) => state.glossary
   );
+  type GlossaryApiItem = {
+    name: string;
+    subTypes: [];
+    guid: string;
+    superTypes: string[];
+    categories: EnumCategoryRelation[];
+    terms: EnumCategoryRelation[];
+  };
+  const glossaryList = glossaryData as GlossaryApiItem[] | null;
   const [glossaryType, setGlossaryType] = useState<boolean>(true);
   const [glossaryTypeData, setGlossaryData] = useState<
     ServiceTypeArrType<typeof glossaryType>
   >([]);
 
   useEffect(() => {
-    dispatch(fetchGlossaryData());
-  }, []);
+    if (glossaryData === null || glossaryData === undefined) {
+      dispatch(fetchGlossaryData());
+    }
+  }, [glossaryData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchGlossaryData());
@@ -59,16 +70,9 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
     let newServiceTypeArr: ServiceTypeArrType<typeof glossaryType> = [];
 
     newServiceTypeArr =
-      glossaryData != null
-        ? glossaryData.map(
-          (glossary: {
-            name: string;
-            subTypes: [];
-            guid: string;
-            superTypes: string[];
-            categories: EnumCategoryRelation[];
-            terms: EnumCategoryRelation[];
-          }) => {
+      glossaryList != null
+        ? glossaryList.map(
+          (glossary: GlossaryApiItem) => {
             let categoryRelation: EnumCategoryRelation[] = [];
 
             glossary?.categories?.map((obj: EnumCategoryRelations) => {
@@ -209,6 +213,7 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };

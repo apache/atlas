@@ -144,8 +144,8 @@ const ClassificationCoverage = memo(
 					"&:hover": { boxShadow: 4 },
 				}}
 			>
-				<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
-					<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+				<Box className="dashboard-card__header">
+					<Typography className="dashboard-card__title">
 						Classification Types In Use
 					</Typography>
 				</Box>
