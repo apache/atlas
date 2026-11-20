@@ -132,6 +132,12 @@ public class AtlasSecurityConfigTest {
     private StaleTransactionCleanupFilter mockStaleTransactionCleanupFilter;
 
     @Mock
+    private AtlasHeaderPreAuthFilter mockHeaderPreAuthFilter;
+
+    @Mock
+    private AtlasJwtAuthWrapper mockAtlasJwtAuthWrapper;
+
+    @Mock
     private ActiveServerFilter mockActiveServerFilter;
 
     @Mock
@@ -177,7 +183,9 @@ public class AtlasSecurityConfigTest {
                 mockAtlasAuthenticationEntryPoint,
                 mockConfiguration,
                 objectProvider(mockActiveServerFilter),
-                objectProvider(mockStaleTransactionCleanupFilter));
+                objectProvider(mockStaleTransactionCleanupFilter),
+                mockHeaderPreAuthFilter,
+                mockAtlasJwtAuthWrapper);
     }
 
     @Test
@@ -467,8 +475,10 @@ public class AtlasSecurityConfigTest {
         }
 
         // Verify standard filters are always added
+        verify(freshHttpSecurity, atLeastOnce()).addFilterBefore(eq(mockHeaderPreAuthFilter), any());
+        verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockSsoAuthenticationFilter), eq(AtlasHeaderPreAuthFilter.class));
+        verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockAtlasJwtAuthWrapper), eq(AtlasKnoxSSOAuthenticationFilter.class));
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockStaleTransactionCleanupFilter), any());
-        verify(freshHttpSecurity, atLeastOnce()).addFilterBefore(eq(mockSsoAuthenticationFilter), any());
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockAtlasAuthenticationFilter), any());
         verify(freshHttpSecurity, atLeastOnce()).addFilterAfter(eq(mockCsrfPreventionFilter), any());
 
@@ -797,7 +807,9 @@ public class AtlasSecurityConfigTest {
                 AtlasAuthenticationEntryPoint.class,
                 Configuration.class,
                 ObjectProvider.class,
-                ObjectProvider.class
+                ObjectProvider.class,
+                AtlasHeaderPreAuthFilter.class,
+                AtlasJwtAuthWrapper.class
         ).getAnnotation(Inject.class);
         assertNotNull(injectAnnotation);
     }
