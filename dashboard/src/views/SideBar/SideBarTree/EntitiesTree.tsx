@@ -27,22 +27,33 @@ import {
   ServiceTypeArrType,
   ServiceTypeFlatInterface,
   ServiceTypeInterface,
-  TypedefHeaderDataType,
   TypeHeaderInterface
 } from "@models/entityTreeType.ts";
 import { fetchEntityData } from "@redux/slice/typeDefSlices/typedefEntitySlice.ts";
 import { fetchTypeHeaderData } from "@redux/slice/typeDefSlices/typeDefHeaderSlice.ts";
 import { fetchMetricEntity } from "@redux/slice/metricsSlice.ts";
 
-const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
+const EntitiesTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
-  const { typeHeaderData, loading }: TypedefHeaderDataType = useAppSelector(
-    (state: any) => state.typeHeader
+  const { typeHeaderData, loading } = useAppSelector(
+    (state) => state.typeHeader
   );
-  const { allEntityTypesData }: any = useAppSelector(
-    (state: any) => state.allEntityTypes
+  const typeHeaderList = typeHeaderData as TypeHeaderInterface[] | null;
+  const { allEntityTypesData } = useAppSelector(
+    (state) => state.allEntityTypes
   );
-  const { metricsData }: any = useAppSelector((state: any) => state.metrics);
+  const entityTypesPayload = allEntityTypesData as { category?: string } | null;
+  const { entityData } = useAppSelector((state) => state.entity);
+  const { metricsData } = useAppSelector((state) => state.metrics);
+  type MetricsPayload = {
+    data?: {
+      entity?: {
+        entityActive?: Record<string, number>;
+        entityDeleted?: Record<string, number>;
+      };
+    };
+  };
+  const metricsPayload = metricsData as MetricsPayload | null;
   const [isEmptyServicetype, setisEmptyServicetype] = useState<boolean>(false);
   const [isGroupView, setisGroupView] = useState<boolean>(true);
   const [serviceTypeArr, setServiceTypeArr] = useState<
@@ -53,8 +64,10 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
   >([]);
 
   useEffect(() => {
-    dispatch(fetchEntityData());
-  }, []);
+    if (entityData === null || entityData === undefined) {
+      dispatch(fetchEntityData());
+    }
+  }, [entityData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchTypeHeaderData());
@@ -63,13 +76,13 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
   };
 
   useEffect(() => {
-    if (!isEmpty(typeHeaderData)) {
+    if (!isEmpty(typeHeaderList)) {
       const newServiceTypeArr: ServiceTypeArrType<typeof isGroupView> = [];
       const newServiceTypeArrwithEntity: ServiceTypeArrType<
         typeof isGroupView
       > = [];
 
-      typeHeaderData?.forEach((entity: TypeHeaderInterface) => {
+      typeHeaderList?.forEach((entity: TypeHeaderInterface) => {
         let { serviceType = "other_types", category, name, guid } = entity;
         let entityCount = 0;
         let modelName = "";
@@ -84,12 +97,12 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
 
         if (
           category === "ENTITY" &&
-          metricsData &&
-          !isEmpty(metricsData.data)
+          metricsPayload &&
+          !isEmpty(metricsPayload.data)
         ) {
           entityCount =
-            (metricsData.data.entity.entityActive[name] || 0) +
-            (metricsData.data.entity.entityDeleted[name] || 0);
+            (metricsPayload.data?.entity?.entityActive?.[name] || 0) +
+            (metricsPayload.data?.entity?.entityDeleted?.[name] || 0);
           modelName = entityCount ? `${name} (${entityCount})` : name;
           children = {
             text: modelName,
@@ -123,7 +136,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
         pushRootEntityTotree(newServiceTypeArrwithEntity)
       );
     }
-  }, [typeHeaderData, metricsData]);
+  }, [typeHeaderList, metricsPayload]);
 
   const generateServiceTypeArr = (
     entityCountArr: ServiceTypeArrType<typeof isGroupView>,
@@ -164,7 +177,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
       guid: addOnEntities[0], 
       id: addOnEntities[0],
       name: addOnEntities[0],
-      type: allEntityTypesData?.category,
+      type: entityTypesPayload?.category,
       text: addOnEntities[0]
     };
 
@@ -267,6 +280,7 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };

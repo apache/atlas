@@ -219,6 +219,15 @@ td:has(.searchTableName) {
   height: 24px;
 }
 
+.entity-display-avatar-wrapper {
+  display: inline-flex;
+}
+
+.entity-display-avatar {
+  width: var(--entity-avatar-width, 40px) !important;
+  height: var(--entity-avatar-height, 40px) !important;
+}
+
 .assignTag {
   height: 24px;
   padding: 2px 4px !important;

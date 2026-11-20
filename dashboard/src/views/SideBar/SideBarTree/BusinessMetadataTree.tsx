@@ -25,19 +25,27 @@ import { fetchBusinessMetaData } from "@redux/slice/typeDefSlices/typedefBusines
 const BusinessMetadataTree = (props: Props) => {
   const { sideBarOpen, searchTerm } = props;
   const dispatch = useAppDispatch();
-  const [businessMetadataData, setBusinessMetadataData] = useState([]);
-  const { businessMetaData, loading }: any = useAppSelector(
-    (state: any) => state.businessMetaData
+  const [businessMetadataData, setBusinessMetadataData] = useState<
+    Array<{ id: string; label: string; childrenData: never[]; guid: string }>
+  >([]);
+  const { businessMetaData, loading } = useAppSelector(
+    (state) => state.businessMetaData
   );
+  type BusinessMetadataPayload = {
+    businessMetadataDefs?: EnumTypeDefData[];
+  } | null;
+  const businessMetadataPayload = businessMetaData as BusinessMetadataPayload;
 
   useEffect(() => {
-    dispatch(fetchBusinessMetaData());
-  }, []);
+    if (businessMetaData === null || businessMetaData === undefined) {
+      dispatch(fetchBusinessMetaData());
+    }
+  }, [businessMetaData, dispatch]);
 
   useEffect(() => {
-    if (businessMetaData?.businessMetadataDefs != undefined) {
+    if (businessMetadataPayload?.businessMetadataDefs != undefined) {
       const businessMetaDataStructure =
-        businessMetaData.businessMetadataDefs.map((obj: EnumTypeDefData) => {
+        businessMetadataPayload.businessMetadataDefs.map((obj: EnumTypeDefData) => {
           return {
             id: obj.name,
             label: obj.name,
@@ -47,7 +55,7 @@ const BusinessMetadataTree = (props: Props) => {
         });
       setBusinessMetadataData(businessMetaDataStructure);
     }
-  }, [businessMetaData]);
+  }, [businessMetadataPayload]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchBusinessMetaData());
@@ -66,6 +74,7 @@ const BusinessMetadataTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loading}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };

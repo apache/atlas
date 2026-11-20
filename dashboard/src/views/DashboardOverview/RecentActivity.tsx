@@ -237,9 +237,9 @@ const RecentActivity = memo(() => {
 				"&:hover": { boxShadow: 4 }
 			}}
 		>
-			<Box sx={{ pb: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+			<Box className="dashboard-card__header">
 				<Stack direction="row" justifyContent="space-between" alignItems="center">
-					<Typography sx={{ fontSize: "1rem", fontWeight: 600, color: "#1a1a1a" }}>
+					<Typography className="dashboard-card__title">
 						Recent Activity
 					</Typography>
 					<Link

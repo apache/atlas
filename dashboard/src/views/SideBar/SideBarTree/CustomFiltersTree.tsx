@@ -38,12 +38,13 @@ import {
 import { fetchSavedSearchData } from "@redux/slice/savedSearchSlice.ts";
 import { globalSessionData } from "@utils/Enum.ts";
 
-const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
+const CustomFiltersTree = ({ sideBarOpen, searchTerm, isPopover }: Props) => {
   const dispatch = useAppDispatch();
-  const { savedSearchData }: any = useAppSelector(
-    (state: any) => state.savedSearch
+  const { savedSearchData } = useAppSelector(
+    (state) => state.savedSearch
   );
-  const { relationshipSearch = {} } = globalSessionData || {};
+  const savedSearchList = savedSearchData as SavedSearchArrInterface[] | null;
+  const { relationshipSearch = false } = globalSessionData || {};
 
   const [savedSearchTypeData, setSavedSearchTypeData] = useState<
     SavedSearchArrType<true>
@@ -51,10 +52,12 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
   const [customFilterLoader, setCustomFilterLoader] = useState<boolean>(false);
 
   useEffect(() => {
-    setCustomFilterLoader(true);
-    dispatch(fetchSavedSearchData());
-    setCustomFilterLoader(false);
-  }, []);
+    if (savedSearchData === null || savedSearchData === undefined) {
+      setCustomFilterLoader(true);
+      dispatch(fetchSavedSearchData());
+      setCustomFilterLoader(false);
+    }
+  }, [savedSearchData, dispatch]);
 
   const fetchInitialData = async () => {
     setCustomFilterLoader(true);
@@ -72,8 +75,8 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
         : [])
     ];
 
-    let searchTypes = !isEmpty(savedSearchData)
-      ? groupBy(savedSearchData, "searchType")
+    let searchTypes = !isEmpty(savedSearchList)
+      ? groupBy(savedSearchList ?? [], "searchType")
       : groupBy(emptySearchTypes, "searchType");
     for (let type in searchTypes) {
       const getType = (type: string) => {
@@ -174,6 +177,7 @@ const CustomFiltersTree = ({ sideBarOpen, searchTerm }: Props) => {
       sideBarOpen={sideBarOpen}
       loader={customFilterLoader}
       searchTerm={searchTerm}
+      isPopover={isPopover}
     />
   );
 };

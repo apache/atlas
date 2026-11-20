@@ -33,17 +33,32 @@ import { isEmptyValueCheck } from "@utils/Helper.ts";
 const ClassificationTree = (props: Props) => {
   const { sideBarOpen, searchTerm } = props;
   const dispatch = useAppDispatch();
-  const { classificationData, loadingClassification }: any = useAppSelector(
-    (state: any) => state.classification
+  const { classificationData, loadingClassification } = useAppSelector(
+    (state) => state.classification
   );
+  type ClassificationPayload = {
+    classificationDefs: Array<{
+      name: string;
+      subTypes: [];
+      guid: string;
+      superTypes: string[];
+    }>;
+  } | null;
+  const classificationPayload = classificationData as ClassificationPayload;
   const [isEmptyClassification, setIsEmptyClassification] =
     useState<boolean>(false);
-  const { metricsData }: any = useAppSelector((state: any) => state.metrics);
+  const { metricsData } = useAppSelector((state) => state.metrics);
+  type TagMetricsPayload = {
+    data?: { tag?: { tagEntities?: Record<string, number> } };
+  } | null;
+  const metricsPayload = metricsData as TagMetricsPayload;
   const [isGroupView, setisGroupView] = useState<boolean>(true);
 
   useEffect(() => {
-    dispatch(fetchClassificationData());
-  }, []);
+    if (classificationData === null || classificationData === undefined) {
+      dispatch(fetchClassificationData());
+    }
+  }, [classificationData, dispatch]);
 
   const fetchInitialData = async () => {
     await dispatch(fetchClassificationData());
@@ -51,9 +66,9 @@ const ClassificationTree = (props: Props) => {
   };
 
   let childrenData: object[] = [];
-  childrenData =
-    classificationData != null
-      ? classificationData.classificationDefs.map(
+  childrenData = (
+    classificationPayload != null
+      ? classificationPayload.classificationDefs.map(
           (obj: {
             name: string;
             subTypes: [];
@@ -69,14 +84,14 @@ const ClassificationTree = (props: Props) => {
               const getChildren = (classify: { children: any }) => {
                 return classify.children?.subTypes?.map((subtype: any) => {
                   var child: any =
-                    classificationData != null
-                      ? classificationData?.classificationDefs?.find(
+                    classificationPayload != null
+                      ? classificationPayload?.classificationDefs?.find(
                           (obj: { name: string }) => obj.name == subtype
                         )
                       : {};
-                  let tagEntityCount: number =
-                    metricsData != null
-                      ? metricsData.data.tag.tagEntities[subtype]
+                  let tagEntityCount: number | null | undefined =
+                    metricsPayload != null
+                      ? metricsPayload.data?.tag?.tagEntities?.[subtype]
                       : null;
                   let tagName = tagEntityCount
                     ? `${subtype} (${tagEntityCount})`
@@ -102,8 +117,8 @@ const ClassificationTree = (props: Props) => {
                   };
                 });
               };
-              let parentTagEntityCount: number =
-                metricsData?.data?.tag?.tagEntities?.[classification.name];
+              let parentTagEntityCount: number | undefined =
+                metricsPayload?.data?.tag?.tagEntities?.[classification.name];
               let name: string =
                   parentTagEntityCount !== undefined
                     ? `${classification.name} (${parentTagEntityCount})`
@@ -142,7 +157,7 @@ const ClassificationTree = (props: Props) => {
             }
           }
         )
-      : [];
+      : []) as object[];
 
   const pushRootEntityTotree = (
     entities: ServiceTypeArrType<typeof isGroupView>
@@ -254,6 +269,7 @@ const ClassificationTree = (props: Props) => {
       sideBarOpen={sideBarOpen}
       loader={loadingClassification}
       searchTerm={searchTerm}
+      isPopover={props.isPopover}
     />
   );
 };

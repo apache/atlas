@@ -216,11 +216,24 @@ describe('GlossaryTree', () => {
 	})
 
 	describe('Data Fetching', () => {
-		it('should dispatch fetchGlossaryData on mount', async () => {
+		it('should dispatch fetchGlossaryData on mount if data is empty', async () => {
 			renderComponent()
 
 			await waitFor(() => {
 				expect(mockDispatch).toHaveBeenCalledWith({ type: 'fetchGlossaryData' })
+			})
+		})
+
+		it('should not dispatch fetchGlossaryData on mount if data exists', async () => {
+			renderComponent({}, {
+				glossary: {
+					glossaryData: [{ name: 'test' }],
+					loading: false
+				}
+			})
+
+			await waitFor(() => {
+				expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'fetchGlossaryData' })
 			})
 		})
 

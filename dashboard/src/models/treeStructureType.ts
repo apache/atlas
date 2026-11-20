@@ -18,6 +18,7 @@ export interface Props {
   sideBarOpen: boolean;
   loading?: boolean;
   searchTerm: string;
+  isPopover?: boolean;
 }
 
 export interface TypeHeaderState {

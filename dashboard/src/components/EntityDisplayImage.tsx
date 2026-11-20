@@ -15,89 +15,95 @@
  * limitations under the License.
  */
 
-import { useEffect, useState } from "react";
-import { Avatar, Skeleton } from "@mui/material";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { Avatar } from "@mui/material";
 import { getEntityIconPath } from "../utils/Utils";
-import axios from "axios";
+
+interface EntityData {
+  guid?: string | number;
+  isProcess?: boolean;
+  [key: string]: unknown;
+}
+
+interface DisplayImageProps {
+  entity: EntityData;
+  width?: string | number;
+  height?: string | number;
+  avatarDisplay?: boolean;
+  isProcess?: boolean;
+}
+
+const toCssSize = (value: string | number | undefined): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  return typeof value === "number" ? `${value}px` : value;
+};
 
 const DisplayImage = ({
   entity,
   width,
   height,
   avatarDisplay,
-  isProcess
-}: any) => {
-  const [imageUrl, setImageUrl] = useState<any>(null);
-  const [checkEntityImage, setCheckEntityImage] = useState<any>({
-    [entity.guid]: false
-  });
+  isProcess,
+}: DisplayImageProps) => {
+  const entityData = { ...entity, isProcess };
+
+  const primaryUrl = getEntityIconPath({ entityData }) || "";
+  const fallbackUrl =
+    getEntityIconPath({ entityData, errorUrl: primaryUrl }) || "";
+
+  const [imgSrc, setImgSrc] = useState(primaryUrl);
+  const avatarWrapperRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const fetchImagePath = async () => {
-      let entityData = { ...entity, ...{ isProcess: isProcess } };
-      let imagePath: any = getEntityIconPath({ entityData: entityData });
-      try {
-        const response = await axios.get(imagePath, {
-                    responseType: "blob"
-        });
-        const contentType: any = response.headers["content-type"];
+    setImgSrc(primaryUrl);
+  }, [primaryUrl]);
 
-        if (contentType && contentType.startsWith("image/")) {
-          let cache = { [entityData.guid]: imagePath };
-          setCheckEntityImage(cache);
-          setImageUrl(getEntityIconPath({ entityData: entityData }));
-        } else {
-          setImageUrl(
-            getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
-          );
-        }
-      } catch (_error) {
-        setImageUrl(
-          getEntityIconPath({ entityData: entityData, errorUrl: imagePath })
-        );
-      }
-    };
+  useLayoutEffect(() => {
+    const el = avatarWrapperRef.current;
+    if (!el) {
+      return;
+    }
+    const cssWidth = toCssSize(width);
+    const cssHeight = toCssSize(height);
+    if (cssWidth) {
+      el.style.setProperty("--entity-avatar-width", cssWidth);
+    }
+    if (cssHeight) {
+      el.style.setProperty("--entity-avatar-height", cssHeight);
+    }
+  }, [width, height]);
 
-    fetchImagePath();
-  }, []);
+  const handleError = () => {
+    if (imgSrc !== fallbackUrl) {
+      setImgSrc(fallbackUrl);
+    }
+  };
 
-  return imageUrl != undefined ? (
+  return (
     <div className="search-result-table-name-col" data-cy="entityIcon">
-      {checkEntityImage[entity.guid] !== false ? (
-        avatarDisplay == undefined ? (
-          <img
-            className="search-result-table-img"
-            id={entity.guid}
-            data-cy={entity.guid}
-            src={checkEntityImage[entity.guid]}
-            alt="Entity Icon"
-          />
-        ) : (
-          <Avatar
-            alt="entityImg"
-            src={checkEntityImage[entity.guid]}
-            sx={{ width: width, height: height }}
-            variant="square"
-          ></Avatar>
-        )
-      ) : avatarDisplay == undefined ? (
+      {avatarDisplay === undefined ? (
         <img
           className="search-result-table-img"
-          id={entity.guid}
-          data-cy={entity.guid}
-          src={imageUrl}
+          id={entity.guid ? String(entity.guid) : undefined}
+          data-cy={entity.guid ? String(entity.guid) : undefined}
+          src={imgSrc}
           alt="Entity Icon"
+          onError={handleError}
         />
       ) : (
-        <Avatar
-          alt="entityImg"
-          src={imageUrl}
-          sx={{ width: width, height: height }}
-        ></Avatar>
+        <span ref={avatarWrapperRef} className="entity-display-avatar-wrapper">
+          <Avatar
+            alt="entityImg"
+            src={imgSrc}
+            className="entity-display-avatar"
+            variant="square"
+            imgProps={{ onError: handleError }}
+          />
+        </span>
       )}
     </div>
-  ) : (
-    <div>{<Skeleton variant="circular" width={22} height={20} />}</div>
   );
 };
 
