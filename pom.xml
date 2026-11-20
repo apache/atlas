@@ -1455,7 +1455,6 @@
                         <exclude>.svn/**</exclude>
                         <exclude>.git/**</exclude>
                         <exclude>.github/pull_request_template.md</exclude>
-                        <exclude>.mvn/jvm.config</exclude>
                         <exclude>.gitignore</exclude>
                         <exclude>**/.idea/**</exclude>
                         <exclude>**/*.twiki</exclude>
