@@ -150,7 +150,6 @@ public class NotificationHookConsumerTest {
         AtlasEntitiesWithExtInfo mockEntity = new AtlasEntitiesWithExtInfo(mock(AtlasEntity.class));
 
         when(typeRegistry.getType(anyString())).thenReturn(mockType);
-        when(typeRegistry.getEntityTypeByName(any())).thenReturn(mock(AtlasEntityType.class));
         when(instanceConverter.toAtlasEntities(anyList())).thenReturn(mockEntity);
 
         EntityMutationResponse mutationResponse = mock(EntityMutationResponse.class);
@@ -227,16 +226,71 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testUnknownTypeNameInPartialUpdateIsNotRetried() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildFailedMsgCacheConfig(10), consumer);
         AtlasObjectId entityId = new AtlasObjectId("trino_table", "qualifiedName", "db.tbl@cl1");
-        AtlasEntity entity = new AtlasEntity("trino_table");
-        HookNotification.EntityPartialUpdateRequestV2 message = new HookNotification.EntityPartialUpdateRequestV2("user", entityId, new AtlasEntity.AtlasEntityWithExtInfo(entity));
+        HookNotification.EntityPartialUpdateRequestV2 message = new HookNotification.EntityPartialUpdateRequestV2("user", entityId, new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity("trino_table")));
 
-        when(typeRegistry.getEntityTypeByName("trino_table")).thenReturn(null);
+        when(atlasEntityStore.updateEntity(any(AtlasObjectId.class), any(AtlasEntity.AtlasEntityWithExtInfo.class), anyBoolean()))
+                .thenThrow(new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, "trino_table"));
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(atlasEntityStore, times(1)).updateEntity(any(AtlasObjectId.class), any(AtlasEntity.AtlasEntityWithExtInfo.class), anyBoolean());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testInvalidTypeNameInCreateIsNotRetried() throws Exception {
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildFailedMsgCacheConfig(10), consumer);
+        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(new AtlasEntity("unknown_type"));
+
+        when(atlasEntityStore.createOrUpdate(any(EntityStream.class), anyBoolean()))
+                .thenThrow(new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, "entity", "unknown_type"));
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityCreateRequestV2("user", entities), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(atlasEntityStore, times(1)).createOrUpdate(any(EntityStream.class), anyBoolean());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testUnknownTypeNameInV1PartialUpdateIsNotRetried() throws Exception {
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildFailedMsgCacheConfig(10), consumer);
+        HookNotificationV1.EntityPartialUpdateRequest message = new HookNotificationV1.EntityPartialUpdateRequest("user", "trino_table", "qualifiedName", "db.tbl@cl1", new Referenceable("trino_table"));
+
+        when(instanceConverter.toAtlasEntity(any(Referenceable.class))).thenThrow(new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPENAME, "trino_table"));
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(instanceConverter, times(1)).toAtlasEntity(any(Referenceable.class));
+        verify(atlasEntityStore, never()).createOrUpdate(any(EntityStream.class), anyBoolean());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testUnknownTypeNameInDeleteV2IsNotRetried() throws Exception {
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildFailedMsgCacheConfig(10), consumer);
+        List<AtlasObjectId> objectIds = Collections.singletonList(new AtlasObjectId("unknown_type", "qualifiedName", "x@cl1"));
+
+        when(typeRegistry.getType("unknown_type")).thenThrow(new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "unknown_type"));
+
+        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityDeleteRequestV2("user", objectIds), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+
+        verify(typeRegistry, times(1)).getType("unknown_type");
+        verify(atlasEntityStore, never()).deleteByUniqueAttributes(any(AtlasEntityType.class), any());
+        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
+    }
+
+    @Test
+    public void testIgnoredTypeInPartialUpdateV2IsSkipped() throws Exception {
+        NotificationConsumer consumer = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
+        AtlasObjectId entityId = new AtlasObjectId("trino_table", "qualifiedName", "db.tbl@cl1");
+        HookNotification.EntityPartialUpdateRequestV2 message = new HookNotification.EntityPartialUpdateRequestV2("user", entityId, new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity("trino_table")));
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
 
@@ -245,121 +299,52 @@ public class NotificationHookConsumerTest {
     }
 
     @Test
-    public void testUnknownReferredEntityTypeNameInCreateIsNotRetried() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+    public void testIgnoredTypeInV1DeleteIsSkipped() throws Exception {
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
-        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(new AtlasEntity("hive_table"));
-
-        entities.addReferredEntity(new AtlasEntity("unknown_type"));
-
-        when(typeRegistry.getEntityTypeByName("unknown_type")).thenReturn(null);
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityCreateRequestV2("user", entities), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
-        verify(atlasEntityStore, never()).createOrUpdate(any(EntityStream.class), anyBoolean());
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
-    public void testUnknownTypeNameInV1PartialUpdateIsNotRetried() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
-        HookNotificationV1.EntityPartialUpdateRequest message = new HookNotificationV1.EntityPartialUpdateRequest("user", "trino_table", "qualifiedName", "db.tbl@cl1", new Referenceable("trino_table"));
-
-        when(typeRegistry.getEntityTypeByName("trino_table")).thenReturn(null);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
+        HookNotificationV1.EntityDeleteRequest message = new HookNotificationV1.EntityDeleteRequest("user", "trino_table", "qualifiedName", "db.tbl@cl1");
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
 
-        verify(instanceConverter, never()).toAtlasEntity(any(Referenceable.class));
-        verify(atlasEntityStore, never()).createOrUpdate(any(EntityStream.class), anyBoolean());
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
-    public void testUnknownTypeNameInDeleteV2IsNotRetried() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
-        List<AtlasObjectId> objectIds = Arrays.asList(new AtlasObjectId("hive_table", "qualifiedName", "db.t1@cl1"), new AtlasObjectId("unknown_type", "qualifiedName", "x@cl1"));
-
-        when(typeRegistry.getEntityTypeByName("unknown_type")).thenReturn(null);
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityDeleteRequestV2("user", objectIds), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
+        verify(typeRegistry, never()).getType("trino_table");
         verify(atlasEntityStore, never()).deleteByUniqueAttributes(any(AtlasEntityType.class), any());
         verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
     }
 
     @Test
-    public void testUnknownTypeNameInImportEntityIsNotRetried() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+    public void testIgnoredTypesAreRemovedFromDeleteV2() throws Exception {
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
-        AtlasEntity.AtlasEntityWithExtInfo entity = new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity("unknown_import_type"));
-        ImportNotification.AtlasEntityImportNotification message = new ImportNotification.AtlasEntityImportNotification("import-1", "user", entity, 1);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
+        AtlasEntityType hiveTableType = mock(AtlasEntityType.class);
+        List<AtlasObjectId> objectIds = new ArrayList<>(Arrays.asList(new AtlasObjectId("hive_table", "qualifiedName", "db.t1@cl1"), new AtlasObjectId("trino_table", "qualifiedName", "db.t1@cl1")));
+        EntityDeleteRequestV2 message = new EntityDeleteRequestV2("user", objectIds);
 
-        when(typeRegistry.getEntityTypeByName("unknown_import_type")).thenReturn(null);
+        when(typeRegistry.getType("hive_table")).thenReturn(hiveTableType);
+        when(atlasEntityStore.deleteByUniqueAttributes(any(AtlasEntityType.class), any())).thenReturn(new EntityMutationResponse());
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
 
-        verify(asyncImporter, never()).onImportEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class), anyString(), anyInt());
+        assertEquals(message.getEntities().size(), 1);
+        assertEquals(message.getEntities().get(0).getTypeName(), "hive_table");
+        verify(atlasEntityStore, times(1)).deleteByUniqueAttributes(eq(hiveTableType), any());
+        verify(typeRegistry, never()).getType("trino_table");
         verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
     }
 
     @Test
-    public void testTypeDefImportIsNotRejectedForUnknownEntityType() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+    public void testDeleteV2IsSkippedWhenAllTypesAreIgnored() throws Exception {
         NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
-        AtlasTypesDef typesDef = new AtlasTypesDef();
-        ImportNotification.AtlasTypesDefImportNotification message = new ImportNotification.AtlasTypesDefImportNotification("import-typedef", "user", typesDef);
+        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
+        List<AtlasObjectId> objectIds = new ArrayList<>(Collections.singletonList(new AtlasObjectId("trino_table", "qualifiedName", "db.t1@cl1")));
 
-        when(typeRegistry.getEntityTypeByName(any())).thenReturn(null);
+        when(typeRegistry.getType("trino_table")).thenReturn(mock(AtlasEntityType.class));
+        when(atlasEntityStore.deleteByUniqueAttributes(any(AtlasEntityType.class), any())).thenReturn(new EntityMutationResponse());
 
-        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
+        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityDeleteRequestV2("user", objectIds), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
 
-        verify(asyncImporter, times(1)).onImportTypeDef(typesDef, "import-typedef");
+        verify(typeRegistry, never()).getType("trino_table");
+        verify(atlasEntityStore, never()).deleteByUniqueAttributes(any(AtlasEntityType.class), any());
         verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
-    public void testUnknownTypeNameIsRejectedBeforePreprocess() throws Exception {
-        Configuration config = buildFailedMsgCacheConfig(10);
-
-        when(config.getBoolean(NotificationHookConsumer.CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, true)).thenReturn(true);
-
-        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(
-                notificationHookConsumer, consumer, createEntityProcessor(config));
-        AtlasEntity hiveProcess = new AtlasEntity("hive_process");
-
-        hiveProcess.setAttribute("name", "original-name");
-        hiveProcess.setAttribute("qualifiedName", "rewritten-name");
-
-        AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(hiveProcess);
-
-        entities.addReferredEntity(new AtlasEntity("unknown_type"));
-
-        when(typeRegistry.getEntityTypeByName("unknown_type")).thenReturn(null);
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityCreateRequestV2("user", entities), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
-        verify(atlasEntityStore, never()).createOrUpdate(any(EntityStream.class), anyBoolean());
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-        assertEquals(hiveProcess.getAttribute("name"), "original-name");
     }
 
     @Test
@@ -2728,6 +2713,18 @@ public class NotificationHookConsumerTest {
         when(cacheConfig.getInt("atlas.notification.consumer.message.buffering.interval.seconds", 15)).thenReturn(10);
         when(cacheConfig.getInt("atlas.notification.consumer.message.buffering.batch.size", 100)).thenReturn(25);
         return cacheConfig;
+    }
+
+    private Configuration buildEntityTypeIgnoreConfig(String... patterns) {
+        Configuration ignoreConfig = buildFailedMsgCacheConfig(10);
+        when(ignoreConfig.getStringArray(NotificationHookConsumer.CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN)).thenReturn(patterns);
+        return ignoreConfig;
+    }
+
+    private NotificationHookConsumer.HookConsumer createHookConsumerWithConfig(Configuration config, NotificationConsumer consumer) throws Exception {
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
+
+        return (NotificationHookConsumer.HookConsumer) createHookConsumerWithEntityProcessor(notificationHookConsumer, consumer, createEntityProcessor(config));
     }
 
     private Object createEntityProcessor(Configuration configuration) throws Exception {
