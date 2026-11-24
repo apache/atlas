@@ -269,7 +269,8 @@ const AttributeProperties = ({
                               "properties",
                               referredEntities,
                               entity,
-                              keys
+                              keys,
+                              auditDetails
                             )}
                           </div>
                         </Stack>

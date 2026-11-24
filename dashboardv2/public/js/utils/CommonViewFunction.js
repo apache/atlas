@@ -127,7 +127,11 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                                 newVal = numberFormat(newVal);
                             }
                         }
-                        newVal = (options && options.isEditorValue) ? newVal : _.escape(newVal);
+                        // Business-metadata string attrs may contain rich text; sanitize instead of
+                        // skipping escape (stored XSS via REST API + search table HtmlCell).
+                        newVal = (options && options.isEditorValue)
+                            ? Utils.sanitizeHtmlContent({ data: newVal })
+                            : _.escape(newVal);
                         return getHighlightedString(newVal);
                     }
                 } else {
@@ -342,6 +346,7 @@ define(['require', 'utils/Utils', 'modules/Modal', 'utils/Messages', 'utils/Enum
                 }
                 table += '<tr class="' + appendClass + '"><td>' + (_.escape(key) + listCount) + '</td><td>' + htmlTag + '</td></tr>';
             } else {
+                // val is sanitized (isEditorValue) or entity-escaped via getValue() above.
                 table += '<span>' + val + '</span>';
             }
 

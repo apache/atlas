@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-// @ts-nocheck
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type SyntheticEvent } from "react";
 import {
   CustomButton,
   Accordion,
@@ -42,10 +41,16 @@ import {
   dateFormat,
   formatedDate,
   isEmpty,
-  isNull,
   serverError
 } from "@utils/Utils";
-import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
+import {
+  Controller,
+  useFieldArray,
+  useForm,
+  useWatch,
+  type Control,
+  type FieldValues
+} from "react-hook-form";
 import { useParams } from "react-router-dom";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import RemoveOutlinedIcon from "@mui/icons-material/RemoveOutlined";
@@ -57,18 +62,48 @@ import { toast } from "react-toastify";
 import { cloneDeep } from "@utils/Helper";
 import moment from "moment-timezone";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
+import { fetchEnumData } from "@redux/slice/enumSlice";
+import type { RootState } from "@redux/store/store";
 
 import { isEntityModificationAllowed } from "@utils/EntityStatus";
+import {
+  isEnumTypeName,
+  isPotentialEnumTypeName,
+  serializeMultiEnumValue
+} from "@utils/enumTypeUtils";
 
 const defaultField = {
   key: null,
   value: ""
 };
 
+type BusinessMetadataAttributeDef = {
+  name: string;
+  typeName: string;
+};
+
+type BusinessMetadataKey = {
+  label: string;
+  group: string;
+  value: string;
+  obj: BusinessMetadataAttributeDef;
+};
+
+type BusinessMetadataFormRow = {
+  key: BusinessMetadataKey | null;
+  value: unknown;
+};
+
+type EntitySummary = {
+  guid?: string;
+  status?: string;
+  typeName: string;
+};
+
 type BMAttributesProps = {
   loading: boolean | undefined;
-  bmAttributes: Record<string, any>;
-  entity: any;
+  bmAttributes: Record<string, Record<string, unknown>>;
+  entity: EntitySummary;
 };
 
 const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
@@ -81,6 +116,11 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
   const { businessMetaData } = useAppSelector(
     (state: any) => state.businessMetaData
   );
+  const enumObj = useAppSelector((state: RootState) => state.enum.enumObj);
+  const enumDefs = enumObj?.data?.enumDefs ?? [];
+  const enumLoading = enumObj?.loading === true;
+  const enumLoaded = enumObj?.data != null;
+  const enumFetchAttemptedRef = useRef(false);
   const { businessMetadataDefs } = businessMetaData || {};
 
   let businessAttributes = cloneDeep(bmAttributes);
@@ -151,17 +191,16 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
   );
   const [addLabel, setAddLabel] = useState<boolean>(true);
   const [expanded, setExpanded] = useState<string | false>(false);
-  const [selectedIndex, setSelectedIndex] = useState();
 
   let attributes = cloneDeep(bmAttributes);
 
-  let defaultFieldValues = !isEmpty(attributes)
-    ? Object.entries(attributes)
+  let defaultFieldValues: BusinessMetadataFormRow[] = !isEmpty(attributes)
+    ? (Object.entries(attributes) as Array<[string, Record<string, unknown>]>)
         .map(([group, attrs]) =>
           Object.entries(attrs)
             .map(([key, value]) => {
-              const matchedDef = businessAttributeDefs[group].find(
-                (bm) => bm.name === key
+              const matchedDef = businessAttributeDefs[group]?.find(
+                (bm: BusinessMetadataAttributeDef) => bm.name === key
               );
 
               if (!matchedDef) {
@@ -180,7 +219,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
             })
             .filter((item) => item !== null)
         )
-        .flat()
+        .flat() as BusinessMetadataFormRow[]
     : [defaultField];
 
   const {
@@ -188,13 +227,13 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
     handleSubmit,
     reset,
     watch,
-    setValue,
-    formState: { isSubmitting, errors }
-  } = useForm({
+    formState: { isSubmitting }
+  } = useForm<{ businessMetadata: BusinessMetadataFormRow[] }>({
     defaultValues: {
       businessMetadata: defaultFieldValues
     }
   });
+  const fieldsControl = control as unknown as Control<FieldValues>;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "businessMetadata"
@@ -206,8 +245,22 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
     }
   }, [bmAttributes]);
 
+  useEffect(() => {
+    if (
+      enumLoaded ||
+      enumLoading ||
+      enumObj?.error ||
+      enumFetchAttemptedRef.current
+    ) {
+      return;
+    }
+
+    enumFetchAttemptedRef.current = true;
+    dispatchApi(fetchEnumData());
+  }, [dispatchApi, enumLoaded, enumLoading, enumObj?.error]);
+
   const handleChange =
-    (panel: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+    (panel: string) => (_event: SyntheticEvent, isExpanded: boolean) => {
       setExpanded(isExpanded ? panel : false);
       if (expanded) {
         setAddLabel(true);
@@ -219,58 +272,84 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
     control
   });
 
-  const onSubmit = async (values: { businessMetadata: any[] }) => {
+  const hasPotentialEnumFields = bmAttributesValues?.some((item) => {
+    const typeName = item?.key?.obj?.typeName;
+    return Boolean(typeName && isPotentialEnumTypeName(typeName));
+  });
+  const isEnumDataPending = enumLoading && hasPotentialEnumFields;
+
+  const onSubmit = async (values: { businessMetadata: BusinessMetadataFormRow[] }) => {
     let formData = { ...values };
     const { businessMetadata } = formData;
-    let data: Record<string, any> = {};
+    let data: Record<string, Record<string, unknown>> = {};
     for (let dataObj of businessMetadata) {
-      if (isEmpty(dataObj.key)) {
+      if (!dataObj.key || isEmpty(dataObj.key)) {
         return;
       }
       const { label, group, obj } = dataObj.key;
       const { typeName } = obj;
 
-      let atrributeType: string[] = [
+      let attributeType: string[] = [
         "array<string>",
         "array<int>",
         "array<short>",
         "array<float>",
-        "array<double",
+        "array<double>",
         "array<long>"
       ];
 
-      if (atrributeType.includes(typeName)) {
+      if (attributeType.includes(typeName)) {
+        const arrayValue = Array.isArray(dataObj.value) ? dataObj.value : [];
         data[group] = {
           ...data[group],
           ...{
-            [label]: !isEmpty(dataObj)
-              ? dataObj?.value?.map(
-                  (input: { inputValue: any }) => input.inputValue || input
-                )
-              : []
+            [label]: arrayValue.map(
+              (input: string | { inputValue?: string }) =>
+                typeof input === "object" && input?.inputValue
+                  ? input.inputValue
+                  : input
+            )
           }
         };
       } else if (
         typeName.indexOf("array") > -1 &&
-        !atrributeType.includes(typeName)
+        !attributeType.includes(typeName)
       ) {
-        data[group] = {
-          ...data[group],
-          ...{
-            [label]: dataObj?.value?.map((val: any) =>
-              typeName === "array<date>" ? val : val.label
-            )
-          }
-        };
+        if (isEnumTypeName(typeName, enumDefs)) {
+          data[group] = {
+            ...data[group],
+            ...{
+              [label]: serializeMultiEnumValue(dataObj.value)
+            }
+          };
+        } else {
+          const arrayValue = Array.isArray(dataObj.value) ? dataObj.value : [];
+          data[group] = {
+            ...data[group],
+            ...{
+              [label]: arrayValue.map((val: string | { label?: string }) =>
+                typeName === "array<date>"
+                  ? val
+                  : typeof val === "string"
+                    ? val
+                    : val.label
+              )
+            }
+          };
+        }
       } else if (typeName == "boolean") {
         data[group] = {
           ...data[group],
-          ...{ [label]: dataObj.value == "true" ? true : false }
+          ...{
+            [label]:
+              dataObj.value === true ||
+              dataObj.value === "true"
+          }
         };
       } else if (typeName == "date") {
         data[group] = {
           ...data[group],
-          ...{ [label]: moment(dataObj.value).valueOf() }
+          ...{ [label]: moment(dataObj.value as moment.MomentInput).valueOf() }
         };
       } else {
         data[group] = { ...data[group], ...{ [label]: dataObj.value } };
@@ -284,8 +363,8 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
     }
 
     try {
-      await getEntityBusinessMetadata(guid, data);
-      toast.dismiss(toastId.current);
+      await getEntityBusinessMetadata(guid ?? "", data);
+      toast.dismiss(toastId.current ?? undefined);
       toastId.current = toast.success(
         "One or more Business Metadata attributes were updated successfully"
       );
@@ -299,25 +378,34 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
         "Error while adding or updating business metadta attribute",
         error
       );
-      toast.dismiss(toastId.current);
+      toast.dismiss(toastId.current ?? undefined);
       serverError(error, toastId);
     }
   };
-  const handleSave = (e: React.MouseEvent) => {
+  const handleSave = (e: MouseEvent) => {
     e.stopPropagation();
     handleSubmit(onSubmit)();
   };
 
-  const renderValues = (values: { value: any; typeName: string }) => {
+  const renderValues = (values: { value: unknown; typeName?: string }) => {
     const { value, typeName } = values;
+
+    if (!typeName) {
+      return String(value ?? "");
+    }
 
     if (
       typeName.indexOf("array<date>") == -1 &&
-      typeName.indexOf("array") > -1
+      typeName.indexOf("array") > -1 &&
+      Array.isArray(value)
     ) {
       return value.map((obj: number) => obj).join(", ");
     }
-    if (value.length > 0 && typeName.indexOf("array<date>") > -1) {
+    if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      typeName.indexOf("array<date>") > -1
+    ) {
       return value
         .map((obj: number) =>
           formatedDate({
@@ -343,7 +431,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
 
   const selectedOptions = watch("businessMetadata");
 
-  const getAvailableOptions = (index) => {
+  const getAvailableOptions = (index: number) => {
     return bmOptions.filter((option) => {
       return !selectedOptions.some(
         (selected, selectedIndex) =>
@@ -409,7 +497,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                               variant="outlined"
                               color="success"
                               size="small"
-                              disabled={isSubmitting}
+                              disabled={isSubmitting || isEnumDataPending}
                               onClick={handleSave}
                               startIcon={
                                 isSubmitting && <CircularProgress size="14px" color="inherit"/>
@@ -495,38 +583,20 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                                       <AccordionDetails
                                         sx={{ padding: "4px 16px" }}
                                       >
-                                        <Stack
-                                          direction="row"
-                                          spacing={4}
-                                          marginBottom={1}
-                                          marginTop={1}
-                                        >
-                                          <div
-                                            style={{
-                                              flex: "0 0 8em",
-                                              wordBreak: "break-all",
-                                              textAlign: "left",
-                                              fontWeight: "400"
-                                            }}
-                                          >
-                                            <Typography fontWeight="600">{`${key} (${value.typeName})`}</Typography>
-                                          </div>
-                                          <div
-                                            style={{
-                                              flex: 1,
-                                              wordBreak: "break-all",
-                                              textAlign: "left"
-                                            }}
-                                          >
-                                            {value.typeName == "string" ? (
-                                              <HtmlRenderer
-                                                htmlString={value.value}
-                                              />
-                                            ) : (
-                                              renderValues(value)
-                                            )}
-                                          </div>
-                                        </Stack>
+                                      <div className="bm-attribute-read-row">
+                                        <div className="bm-attribute-read-key">
+                                          <Typography fontWeight="600">{`${key} (${value.typeName})`}</Typography>
+                                        </div>
+                                        <div className="bm-attribute-read-value">
+                                          {value.typeName == "string" ? (
+                                            <HtmlRenderer
+                                              htmlString={value.value}
+                                            />
+                                          ) : (
+                                            renderValues(value)
+                                          )}
+                                        </div>
+                                      </div>
                                       </AccordionDetails>
                                     )}
                                   </>
@@ -578,7 +648,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                           }}
                           variant="outlined"
                           size="small"
-                          onClick={(e: React.MouseEvent) => {
+                          onClick={(e: MouseEvent) => {
                             e.stopPropagation();
                             append(defaultField);
                           }}
@@ -589,56 +659,46 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                       </LightTooltip>
                     )}
                     {fields.map((field, index) => {
-                      const keySelected = !isEmpty(
-                        bmAttributesValues?.[index]?.key
-                      );
                       return (
                         <Stack
-                          gap="0.5rem"
+                          className="bm-attribute-row"
                           direction="row"
                           key={field?.id}
-                          alignItems={keySelected ? "flex-start" : "center"}
-                          sx={{
-                            '& .MuiAutocomplete-root': {
-                              alignSelf: keySelected ? 'stretch' : 'center'
-                            }
-                          }}
                         >
-                          <Controller
-                            control={control}
-                            name={`businessMetadata.${index}.key` as const}
-                            key={`businessMetadata.${index}.key` as const}
-                            defaultValue={field.key}
-                            render={({ field: { onChange, value } }) => (
-                              <>
-                                {field.key == null || isEmpty(bmAttributes) ? (
-                                  <Autocomplete
-                                    disableClearable={true}
-                                    freeSolo
-                                    size="small"
-                                    value={isEmpty(value) ? null : value}
-                                    options={getAvailableOptions(index)}
-                                    onChange={(_, selectedOption) => {
-                                      onChange(selectedOption);
-                                    }}
-                                    sx={{
-                                      flexBasis: "35%",
-                                      '& .MuiOutlinedInput-root': {
-                                        height: 36
-                                      }
-                                    }}
-                                    getOptionLabel={(option) => option.label}
-                                    groupBy={(option) => option.group}
-                                    noOptionsText="No results found"
-                                    renderOption={(props, option, _state) => (
-                                      <MenuItem {...props} key={option.label}>
-                                        {`${option.label} (${option.typeName})`}
-                                      </MenuItem>
-                                    )}
-                                    // className="advanced-search-autocomplete"
-                                    className="bmattributes-key"
-                                    renderInput={(params) => {
-                                      return (
+                          <div className="bm-attribute-key-col">
+                            <Controller
+                              control={control}
+                              name={`businessMetadata.${index}.key` as const}
+                              key={`businessMetadata.${index}.key` as const}
+                              defaultValue={field.key}
+                              render={({ field: { onChange, value } }) => (
+                                <>
+                                  {field.key == null || isEmpty(bmAttributes) ? (
+                                    <Autocomplete
+                                      disableClearable={true}
+                                      freeSolo
+                                      size="small"
+                                      value={isEmpty(value) ? null : value}
+                                      options={getAvailableOptions(index)}
+                                      onChange={(_, selectedOption) => {
+                                        onChange(selectedOption);
+                                      }}
+                                      sx={{
+                                        width: "100%",
+                                        "& .MuiOutlinedInput-root": {
+                                          height: 36
+                                        }
+                                      }}
+                                      getOptionLabel={(option) => option.label}
+                                      groupBy={(option) => option.group}
+                                      noOptionsText="No results found"
+                                      renderOption={(props, option, _state) => (
+                                        <MenuItem {...props} key={option.label}>
+                                          {`${option.label} (${option.typeName})`}
+                                        </MenuItem>
+                                      )}
+                                      className="bmattributes-key"
+                                      renderInput={(params) => (
                                         <TextField
                                           {...params}
                                           placeholder="Select Attribute"
@@ -647,81 +707,69 @@ const BMAttributes = ({ loading, bmAttributes, entity }: BMAttributesProps) => {
                                             type: "search"
                                           }}
                                         />
-                                      );
-                                    }}
-                                  />
-                                ) : (
-                                  <InputLabel className="form-textfield-label">
-                                    {`${value.label} (${
-                                      value.value || value.typeName
-                                    })`}
-                                  </InputLabel>
-                                )}
-                              </>
-                            )}
-                          />
-                          <span
-                            style={{ margin: 0, alignSelf: "center" }}
-                          >
-                            :
-                          </span>
-                          {isEmpty(bmAttributesValues?.[index]?.key) ? (
-                            <Controller
-                              control={control}
-                              name={`businessMetadata.${index}.value` as const}
-                              rules={{
-                                required: true
-                              }}
-                              key={`businessMetadata.${index}.value` as const}
-                              render={({
-                                field: { onChange, value },
-                                fieldState: { error }
-                              }) => (
-                                <>
-                                  <div
-                                    style={{
-                                      flex: "1",
-                                      display: "flex",
-                                      alignItems: "center"
-                                    }}
-                                  >
-                                    <TextField
-                                      margin="none"
-                                      error={!!error}
-                                      className="form-textfield bm-empty-field"
-                                      onChange={onChange}
-                                      value={value}
-                                      variant="outlined"
-                                      size="small"
-                                      disabled
-                                      sx={{
-                                        '& .MuiInputBase-root': {
-                                          height: 36
-                                        },
-                                        "& .MuiInputBase-root.Mui-disabled": {
-                                          backgroundColor: "#eee",
-                                          cursor: "not-allowed"
-                                        }
-                                      }}
-                                      type={"string"}
+                                      )}
                                     />
-                                  </div>
+                                  ) : (
+                                    <InputLabel className="bm-attribute-key-label">
+                                      {`${value?.label ?? ""} (${
+                                        value?.obj?.typeName ?? value?.value ?? ""
+                                      })`}
+                                    </InputLabel>
+                                  )}
                                 </>
                               )}
                             />
-                          ) : (
-                            <div style={{ flex: "1" }}>
-                              <Stack direction="row">
-                                <BMAttributesFields
-                                  obj={bmAttributesValues[index].key.obj}
-                                  control={control}
-                                  index={index}
-                                />
-                              </Stack>
-                            </div>
-                          )}
+                          </div>
+                          <span className="bm-attribute-separator">:</span>
+                          <div className="bm-attribute-value-col">
+                            {isEmpty(bmAttributesValues?.[index]?.key) ? (
+                              <Controller
+                                control={control}
+                                name={`businessMetadata.${index}.value` as const}
+                                rules={{
+                                  required: true
+                                }}
+                                key={`businessMetadata.${index}.value` as const}
+                                render={({
+                                  field: { onChange, value },
+                                  fieldState: { error }
+                                }) => (
+                                  <TextField
+                                    margin="none"
+                                    error={!!error}
+                                    className="form-textfield bm-empty-field bm-attribute-value-field"
+                                    onChange={onChange}
+                                    value={value}
+                                    variant="outlined"
+                                    size="small"
+                                    disabled
+                                    fullWidth
+                                    sx={{
+                                      "& .MuiInputBase-root": {
+                                        height: 36
+                                      },
+                                      "& .MuiInputBase-root.Mui-disabled": {
+                                        backgroundColor: "#eee",
+                                        cursor: "not-allowed"
+                                      }
+                                    }}
+                                    type="string"
+                                  />
+                                )}
+                              />
+                            ) : (
+                              <BMAttributesFields
+                                obj={bmAttributesValues[index]?.key?.obj ?? {
+                                  name: "",
+                                  typeName: ""
+                                }}
+                                control={fieldsControl}
+                                index={index}
+                              />
+                            )}
+                          </div>
 
-                          <Stack direction="row" gap="0.5rem">
+                          <Stack className="bm-attribute-actions-col" direction="row">
                             {field.key === null ? (
                               <>
                                 <IconButton

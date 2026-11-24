@@ -32,6 +32,14 @@
         </query>
     </named-query>
 
+    <named-query name="DbEntityAudit.getDistinctEntityIdsByActionPrefixAndTimeRange">
+        <query>SELECT DISTINCT obj.entityId FROM DbEntityAudit obj
+            WHERE obj.action LIKE :actionPrefix
+            AND obj.eventTime >= :fromTimestamp
+            AND obj.eventTime &lt; :toTimestamp
+        </query>
+    </named-query>
+
     <named-query name="JanusStore.getIdByName">
         <query>SELECT s.id FROM JanusStore s WHERE s.name = :name</query>
     </named-query>

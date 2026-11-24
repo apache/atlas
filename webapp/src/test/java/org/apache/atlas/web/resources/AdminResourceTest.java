@@ -64,6 +64,8 @@ import org.apache.atlas.repository.ogm.AtlasAuditEntryDTO;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.services.PurgeService;
 import org.apache.atlas.tasks.TaskManagement;
@@ -74,8 +76,6 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.configuration2.Configuration;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -246,6 +246,7 @@ public class AdminResourceTest {
         try (MockedStatic<AtlasAuthorizationUtils> mockedUtils = mockStatic(AtlasAuthorizationUtils.class)) {
             mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class), any())).then(invocation -> null);
             mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(AtlasEntityAccessRequest.class), any())).then(invocation -> null);
+            mockedUtils.when(() -> AtlasAuthorizationUtils.isAccessAllowed(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class))).thenReturn(true);
             runnable.run();
         }
     }
@@ -254,6 +255,7 @@ public class AdminResourceTest {
         try (MockedStatic<AtlasAuthorizationUtils> mockedUtils = mockStatic(AtlasAuthorizationUtils.class)) {
             mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class), any())).then(invocation -> null);
             mockedUtils.when(() -> AtlasAuthorizationUtils.verifyAccess(any(AtlasEntityAccessRequest.class), any())).then(invocation -> null);
+            mockedUtils.when(() -> AtlasAuthorizationUtils.isAccessAllowed(any(org.apache.atlas.authorize.AtlasAdminAccessRequest.class))).thenReturn(true);
             return callable.call();
         }
     }
@@ -567,13 +569,19 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        Set<String> result = adminResource.getActiveSearches();
+        withAuthorizationBypass(() -> {
+            try {
+                Set<String> result = adminResource.getActiveSearches();
 
-        assertNotNull(result);
-        assertEquals(result.size(), 2);
-        assertTrue(result.contains("search1"));
-        assertTrue(result.contains("search2"));
-        verify(activeSearches).getActiveSearches();
+                assertNotNull(result);
+                assertEquals(result.size(), 2);
+                assertTrue(result.contains("search1"));
+                assertTrue(result.contains("search2"));
+                verify(activeSearches).getActiveSearches();
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -585,10 +593,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        boolean result = adminResource.terminateActiveSearch(searchId);
+        withAuthorizationBypass(() -> {
+            try {
+                boolean result = adminResource.terminateActiveSearch(searchId);
 
-        assertTrue(result);
-        verify(activeSearches).terminate(searchId);
+                assertTrue(result);
+                verify(activeSearches).terminate(searchId);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test
@@ -599,10 +613,16 @@ public class AdminResourceTest {
 
         AdminResource adminResource = createAdminResource();
 
-        boolean result = adminResource.terminateActiveSearch(searchId);
+        withAuthorizationBypass(() -> {
+            try {
+                boolean result = adminResource.terminateActiveSearch(searchId);
 
-        assertFalse(result);
-        verify(activeSearches).terminate(searchId);
+                assertFalse(result);
+                verify(activeSearches).terminate(searchId);
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Test

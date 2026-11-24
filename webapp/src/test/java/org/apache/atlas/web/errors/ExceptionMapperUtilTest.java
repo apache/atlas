@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.errors;
 
+import org.apache.atlas.server.common.errors.ExceptionMapperUtil;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertNotNull;

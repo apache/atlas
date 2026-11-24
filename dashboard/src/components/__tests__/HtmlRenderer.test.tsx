@@ -50,4 +50,36 @@ describe('HtmlRenderer', () => {
 		expect(strong).toBeTruthy()
 		expect(strong?.textContent).toBe('Content')
 	})
+
+	it('strips script tags from malicious html (negative)', () => {
+		const { container } = render(
+			<HtmlRenderer htmlString='<script>alert("xss")</script><p>Safe</p>' />
+		)
+
+		const root = container.querySelector('.html-content')
+		expect(root?.querySelector('script')).toBeNull()
+		expect(root?.querySelector('p')?.textContent).toBe('Safe')
+		expect(root?.innerHTML.toLowerCase()).not.toContain('<script')
+	})
+
+	it('strips img onerror handlers from malicious html (negative)', () => {
+		const { container } = render(
+			<HtmlRenderer htmlString='<img src=x onerror="alert(1)"><em>Notes</em>' />
+		)
+
+		const root = container.querySelector('.html-content')
+		expect(root?.querySelector('img')).toBeNull()
+		expect(root?.innerHTML.toLowerCase()).not.toContain('onerror')
+		expect(root?.querySelector('em')?.textContent).toBe('Notes')
+	})
+
+	it('allows safe formatting tags (positive)', () => {
+		const { container } = render(
+			<HtmlRenderer htmlString='<p>Hello <strong>world</strong></p>' />
+		)
+
+		const root = container.querySelector('.html-content')
+		expect(root?.querySelector('strong')?.textContent).toBe('world')
+		expect(root?.querySelector('p')?.textContent).toBe('Hello world')
+	})
 })

@@ -39,6 +39,7 @@ import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -50,7 +51,6 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.web.rest.EntityREST;
-import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -992,6 +992,8 @@ public class EntityResource {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityResource.getAuditEvents(" + guid + ", " + startKey + ", " + count + ")");
             }
 
+            entityREST.verifyEntityReadForAudit(guid);
+
             List<Object>           events   = entityAuditRepository.listEvents(guid, startKey, count);
             List<EntityAuditEvent> v1Events = new ArrayList<>();
 
@@ -1011,6 +1013,10 @@ public class EntityResource {
             response.put(AtlasClient.EVENTS, v1Events);
 
             return Response.ok(AtlasJson.toV1Json(response)).build();
+        } catch (AtlasBaseException e) {
+            LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);
+
+            throw toWebApplicationException(e);
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get audit events for entity guid={} startKey={}", guid, startKey, e);
 

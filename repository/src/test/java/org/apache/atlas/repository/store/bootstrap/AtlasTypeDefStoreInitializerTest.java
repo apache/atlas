@@ -42,6 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
+import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -134,8 +135,11 @@ public class AtlasTypeDefStoreInitializerTest {
         lenient().when(typeDefStore.updateClassificationDefByName(anyString(), any())).thenReturn(new AtlasClassificationDef());
         lenient().when(typeDefStore.updateRelationshipDefByName(anyString(), any())).thenReturn(new AtlasRelationshipDef());
 
-        // Mock patch manager
-        lenient().when(patchManager.getContext()).thenReturn(null);
+        // Mock patch manager — production uses getOrCreatePatchContext before Java patch registration
+        PatchContext mockPatchContext = mock(PatchContext.class);
+        lenient().when(mockPatchContext.getPatchRegistry()).thenReturn(patchRegistry);
+        lenient().when(patchManager.getOrCreatePatchContext()).thenReturn(mockPatchContext);
+        lenient().when(patchManager.getContext()).thenReturn(mockPatchContext);
 
         initializer = new AtlasTypeDefStoreInitializer(typeDefStore, typeRegistry, graph, conf, patchManager);
 

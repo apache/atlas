@@ -19,6 +19,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.server.common.security.UserAuthorityGranter;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;

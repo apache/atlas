@@ -225,5 +225,48 @@
             <outputDirectory>server/webapp</outputDirectory>
             <destName>atlas.war</destName>
         </file>
+
+        <file>
+            <source>target/bin/rest_start.py</source>
+            <outputDirectory>rest-notification-webapp/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+
+        <file>
+            <source>target/bin/rest_stop.py</source>
+            <outputDirectory>rest-notification-webapp/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+
+        <file>
+            <source>target/bin/rest_config.py</source>
+            <outputDirectory>rest-notification-webapp/bin</outputDirectory>
+            <fileMode>0755</fileMode>
+        </file>
+
+        <file>
+            <source>../rest-notification-webapp/target/rest-notification-webapp-${project.version}.war</source>
+            <outputDirectory>rest-notification-webapp/server/webapp</outputDirectory>
+            <destName>rest-notification-webapp.war</destName>
+        </file>
+        <file>
+            <source>target/conf/atlas-application.properties</source>
+            <outputDirectory>rest-notification-webapp/conf</outputDirectory>
+        </file>
+        <file>
+            <source>target/conf/users-credentials.properties</source>
+            <outputDirectory>rest-notification-webapp/conf</outputDirectory>
+        </file>
+
+        <file>
+            <source>target/conf/rest-env.sh</source>
+            <outputDirectory>rest-notification-webapp/conf</outputDirectory>
+        </file>
+
+        <file>
+            <source>target/conf/rest-logback.xml</source>
+            <outputDirectory>rest-notification-webapp/conf</outputDirectory>
+        </file>
+
     </files>
 </assembly>

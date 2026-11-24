@@ -45,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,8 +121,18 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
-        // TODO:
-        return Collections.emptySet();
+        LOG.debug("Listing entities with tag changes for fromTimestamp {}, toTimestamp {}", fromTimestamp, toTimestamp);
+
+        try (RdbmsTransaction trx = new RdbmsTransaction()) {
+            DbEntityAuditDao dao = new DbEntityAuditDao(trx.getEntityManager());
+
+            List<String> entityIds = dao.getDistinctEntityIdsByActionPrefixAndTimeRange(
+                    "CLASSIFICATION_%", fromTimestamp, toTimestamp);
+
+            return new HashSet<>(entityIds);
+        } catch (Exception excp) {
+            throw new AtlasBaseException("Error while retrieving entities with tag changes", excp);
+        }
     }
 
     @Override
@@ -278,6 +289,8 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
         ret.setAction(dbEntityAudit.getAction() != null ? EntityAuditEventV2.EntityAuditActionV2.valueOf(dbEntityAudit.getAction()) : null);
         ret.setDetails(dbEntityAudit.getDetails());
         ret.setType(EntityAuditEventV2.EntityAuditType.values()[dbEntityAudit.getAuditType()]);
+        ret.setEventKey(dbEntityAudit.getEntityId() + FIELD_SEPARATOR + dbEntityAudit.getEventTime()
+                + FIELD_SEPARATOR + dbEntityAudit.getEventIndex());
 
         if (PERSIST_ENTITY_DEFINITION) {
             ret.setEntityDefinition(dbEntityAudit.getEntity());

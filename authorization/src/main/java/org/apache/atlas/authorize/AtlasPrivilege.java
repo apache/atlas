@@ -48,6 +48,8 @@ public enum AtlasPrivilege {
 
     ADMIN_AUDITS("admin-audits"),
 
+    POST_NOTIFICATION("post-notification"),
+
     SERVICE_NOTIFICATION_POST("service-notification-post");
 
     private final String type;

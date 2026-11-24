@@ -131,12 +131,22 @@ To use the option, set the contents of _importOptions.json_ to:
 
 In a scenario where the file to be imported is present at a location on the server, the _importfile_ API can be used. It behaves like the Import API.
 
+The _fileName_ option must be a relative path to a `.zip` file under the configured import directory. Absolute paths and path traversal (for example, `../`) are rejected.
+
+Configure the allowed import directory in _atlas-application.properties_:
+
+<SyntaxHighlighter wrapLines={true} language="properties" style={theme.dark}>
+{`atlas.import.allowed.directory=${sys:atlas.data}/import`}
+</SyntaxHighlighter>
+
+New installations ship with this default. After upgrading, ensure _atlas.import.allowed.directory_ is set and that the directory exists on disk; otherwise, _importfile_ requests will fail with _IMPORT_FILE_NOT_ACCESSIBLE_ (ATLAS-400-00-10B).
+
 To use the option, set the contents of _importOptions.json_ to:
 
 <SyntaxHighlighter wrapLines={true} language="json" style={theme.dark}>
 {`{
   "options": {
-    "fileName": "/root/fileToBeImported.zip"
+    "fileName": "export.zip"
   }
 }`}
 </SyntaxHighlighter>

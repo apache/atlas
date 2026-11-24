@@ -42,7 +42,7 @@ The general approach is:
 | _Data Parameters_|_None_|
 | _Success Response_ | _AtlasImporResult_ is returned as JSON. See details below.|
 |_Error Response_|Errors that are handled within the system will be returned as _AtlasBaseException_. |
-|_Notes_| The file to be imported needs to be present on the server at the location specified by the _FILENAME_ parameter.|
+|_Notes_| The file to be imported must be a `.zip` file present under the configured import directory. Set _atlas.import.allowed.directory_ in _atlas-application.properties_ (default: `${sys:atlas.data}/import`). The _fileName_ option must be a relative path under that directory; absolute paths and path traversal are rejected. All file-access failures return _IMPORT_FILE_NOT_ACCESSIBLE_ (ATLAS-400-00-10B). Ensure the configured import directory exists on disk before calling this API.|
 
 __Method Signature for Import__
 

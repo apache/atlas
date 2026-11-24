@@ -1364,10 +1364,10 @@ public class EntityGraphMapper {
     }
 
     @GraphTransaction
-    public void updateTagPropagations(String relationshipEdgeId, AtlasRelationship relationship) throws AtlasBaseException {
+    public void updateTagPropagations(String relationshipEdgeId, AtlasRelationship relationship, String oldTagPropagation, java.util.List<String> oldBlockedClassifications) throws AtlasBaseException {
         AtlasEdge relationshipEdge = graph.getEdge(relationshipEdgeId);
 
-        deleteDelegate.getHandler().updateTagPropagations(relationshipEdge, relationship);
+        deleteDelegate.getHandler().updateTagPropagations(relationshipEdge, relationship, true, oldTagPropagation, oldBlockedClassifications);
 
         entityChangeNotifier.notifyPropagatedEntities();
     }

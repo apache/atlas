@@ -717,6 +717,7 @@ define(['require',
                     );
                 }
             },
+            // Marks business-metadata string columns so search results sanitize (not raw HTML).
             checkIsEditorValue: function(key) {
                 var isEditorKey = false;
                 if (this.businessMetadataAttributes.length) {

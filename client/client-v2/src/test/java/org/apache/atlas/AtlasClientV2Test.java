@@ -126,7 +126,7 @@ public class AtlasClientV2Test {
 
         when(response.getStatus()).thenReturn(Response.Status.NO_CONTENT.getStatusCode());
 
-        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), any())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
@@ -147,7 +147,7 @@ public class AtlasClientV2Test {
         ClientResponse response = mock(ClientResponse.class);
 
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), anyString())).thenReturn(response);
+        when(builder.method(anyString(), org.mockito.Matchers.<Class>any(), any())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));

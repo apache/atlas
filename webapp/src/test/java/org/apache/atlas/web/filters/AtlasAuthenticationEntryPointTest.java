@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.filters;
 
+import org.apache.atlas.server.common.filters.AtlasAuthenticationEntryPoint;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.security.core.AuthenticationException;
@@ -52,7 +53,7 @@ public class AtlasAuthenticationEntryPointTest {
     }
 
     @Test
-    public void testCommence_AjaxRequest() throws IOException {
+    public void testCommence_AjaxRequest() throws Exception {
         // Arrange
         when(request.getHeader("X-Requested-With")).thenReturn("XMLHttpRequest");
 
@@ -65,7 +66,7 @@ public class AtlasAuthenticationEntryPointTest {
     }
 
     @Test
-    public void testCommence_NormalRequest() throws IOException {
+    public void testCommence_NormalRequest() throws Exception {
         // Arrange
         when(request.getHeader("X-Requested-With")).thenReturn(null);
 

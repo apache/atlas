@@ -3,12 +3,17 @@ Apache Atlas Release Notes
 
 --trunk - unreleased
 INCOMPATIBLE CHANGES:
+ATLAS-5421: importfile API now returns IMPORT_FILE_NOT_ACCESSIBLE (ATLAS-400-00-10B) for all file-access failures. Callers that previously relied on distinct "file not found" or "empty ZIP" errors must update automation that parses error codes.
 ATLAS-675 Storm Hook should use timestamps as Date type instead of Long (ayubkhan via sumasai)
 ATLAS-1122 Change trait edge labels to have trait name alone (sumasai)
 ATLAS-1060 Add composite indexes for exact match performance improvements for all attributes (sumasai via shwethags)
 ATLAS-1127 Modify creation and modification timestamps to Date instead of Long(sumasai)
 
+CONFIGURATION CHANGES:
+ATLAS-5421: After upgrading, ensure atlas.import.allowed.directory is set. New installations ship with ${sys:atlas.data}/import. Also ensure the configured import directory exists on disk; otherwise, importfile will fail.
+
 ALL CHANGES:
+ATLAS-5421: Prevent /api/atlas/admin/importfile from reading arbitrary server files and enumerating filesystem paths
 ATLAS-1608 :Search UI improvement (kevalbhatt)
 ATLAS-1630: basic search implementation (#2)
 ATLAS-1630: basic search implementation using fulltext with support for filter by type & classification

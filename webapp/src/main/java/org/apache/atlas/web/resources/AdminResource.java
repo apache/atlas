@@ -69,6 +69,9 @@ import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.purge.PurgeUtils;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.server.common.service.ServiceState;
+import org.apache.atlas.server.common.util.Servlets;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.services.PurgeService;
 import org.apache.atlas.tasks.TaskManagement;
@@ -78,11 +81,8 @@ import org.apache.atlas.util.AtlasMetricsUtil;
 import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
-import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
-import org.apache.atlas.web.service.ServiceState;
-import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.PropertiesConfiguration;
@@ -136,7 +136,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static javax.servlet.http.HttpServletResponse.SC_NO_CONTENT;
-import static org.apache.atlas.web.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
+import static org.apache.atlas.server.common.filters.AtlasCSRFPreventionFilter.CSRF_TOKEN;
 
 /**
  * Jersey Resource for admin operations.
@@ -1175,14 +1175,31 @@ public class AdminResource {
     @GET
     @Path("activeSearches")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Set<String> getActiveSearches() {
+    public Set<String> getActiveSearches() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "active searches");
+
         return activeSearches.getActiveSearches();
     }
 
     @DELETE
     @Path("activeSearches/{id}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public boolean terminateActiveSearch(@PathParam("id") String searchId) {
+    public boolean terminateActiveSearch(@PathParam("id") String searchId) throws AtlasBaseException {
+        String  currentUser = AtlasAuthorizationUtils.getCurrentUserName();
+        boolean isAdmin     = AtlasAuthorizationUtils.isAccessAllowed(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT));
+
+        if (!isAdmin) {
+            String searchOwner = activeSearches.getSearchOwner(searchId);
+
+            if (searchOwner == null) {
+                return false;
+            }
+
+            if (!StringUtils.equals(currentUser, searchOwner)) {
+                AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_EXPORT), "terminate active search");
+            }
+        }
+
         SearchContext terminate = activeSearches.terminate(searchId);
 
         return null != terminate;

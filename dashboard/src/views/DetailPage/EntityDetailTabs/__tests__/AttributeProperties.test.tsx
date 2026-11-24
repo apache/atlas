@@ -142,13 +142,31 @@ jest.mock('@components/SkeletonLoader', () => ({
 }));
 
 jest.mock('@components/commonComponents', () => ({
-	getValues: jest.fn((value, properties, typeDefEntityData, relationShipAttr, propertiesParam, referredEntities, filterEntityData, keys) => {
+	getValues: jest.fn((
+		value,
+		properties,
+		typeDefEntityData,
+		relationShipAttr,
+		propertiesParam,
+		referredEntities,
+		filterEntityData,
+		keys,
+		auditDetails
+	) => {
 		// Return a simple mock value
 		if (Array.isArray(value)) {
 			// Show count for arrays like "key (count)"
-			return <span data-testid={`value-${keys}`}>{keys} ({value.length})</span>;
+			return (
+				<span data-testid={`value-${keys}`} data-audit-details={String(auditDetails)}>
+					{keys} ({value.length})
+				</span>
+			);
 		}
-		return <span data-testid={`value-${keys}`}>{String(value)}</span>;
+		return (
+			<span data-testid={`value-${keys}`} data-audit-details={String(auditDetails)}>
+				{String(value)}
+			</span>
+		);
 	})
 }));
 
@@ -1501,6 +1519,29 @@ describe('AttributeProperties', () => {
 			);
 
 			expect(getValues).toHaveBeenCalled();
+		});
+
+		it('should pass auditDetails as 9th argument to getValues in audit mode', () => {
+			const { getValues } = require('@components/commonComponents');
+
+			render(
+				<TestWrapper>
+					<AttributeProperties
+						entity={defaultMockEntity}
+						referredEntities={defaultMockReferredEntities}
+						loading={false}
+						auditDetails={true}
+						propertiesName="Relationship"
+					/>
+				</TestWrapper>
+			);
+
+			expect(getValues).toHaveBeenCalled();
+			const auditCall = getValues.mock.calls.find(
+				(call: unknown[]) => call[8] === true
+			);
+			expect(auditCall).toBeDefined();
+			expect(auditCall[8]).toBe(true);
 		});
 	});
 });

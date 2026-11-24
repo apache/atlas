@@ -187,6 +187,7 @@ public enum AtlasErrorCode {
     INVALID_GUID(400, "ATLAS-400-00-108", "guid {0} is not a valid UUID"),
     PURGE_REQUEST_SIZE_EXCEEDS_LIMIT(400, "ATLAS-400-00-109", "purge request size {0} exceeds maximum limit {1}"),
     NOT_IN_DELETED_STATE(400, "ATLAS-400-00-10A", "entity {0} is not in DELETED state"),
+    IMPORT_FILE_NOT_ACCESSIBLE(400, "ATLAS-400-00-10B", "Import file not found or invalid."),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 

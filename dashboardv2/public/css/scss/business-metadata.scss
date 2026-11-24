@@ -249,3 +249,11 @@
     cursor: not-allowed;
     pointer-events: none;
 }
+
+.bm-enum-unavailable-text {
+    display: inline-block;
+    min-height: 34px;
+    padding-top: 6px;
+    font-style: italic;
+    color: #666666;
+}

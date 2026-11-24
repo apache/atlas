@@ -17,8 +17,10 @@
  */
 package org.apache.atlas.util;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.AtlasService;
 import org.apache.atlas.discovery.SearchContext;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +28,7 @@ import java.util.Set;
 
 @AtlasService
 public class SearchTracker {
-    private final Map<String, SearchContext> activeSearches = new HashMap<>();
+    private final Map<String, ActiveSearch> activeSearches = new HashMap<>();
 
     /**
      * @param context
@@ -34,7 +36,7 @@ public class SearchTracker {
     public String add(SearchContext context) {
         String searchId = Thread.currentThread().getName();
 
-        activeSearches.put(searchId, context);
+        activeSearches.put(searchId, new ActiveSearch(context, RequestContext.getCurrentUser()));
 
         return searchId;
     }
@@ -46,19 +48,27 @@ public class SearchTracker {
     public SearchContext terminate(String searchId) {
         SearchContext ret = null;
 
-        if (activeSearches.containsKey(searchId)) {
-            SearchContext pipelineToTerminate = activeSearches.remove(searchId);
+        ActiveSearch activeSearch = activeSearches.remove(searchId);
 
-            pipelineToTerminate.terminateSearch(true);
+        if (activeSearch != null) {
+            activeSearch.context.terminateSearch(true);
 
-            ret = pipelineToTerminate;
+            ret = activeSearch.context;
         }
 
         return ret;
     }
 
     public SearchContext remove(String id) {
-        return activeSearches.remove(id);
+        ActiveSearch activeSearch = activeSearches.remove(id);
+
+        return activeSearch != null ? activeSearch.context : null;
+    }
+
+    public String getSearchOwner(String searchId) {
+        ActiveSearch activeSearch = activeSearches.get(searchId);
+
+        return activeSearch != null ? activeSearch.userName : null;
     }
 
     /**
@@ -66,5 +76,15 @@ public class SearchTracker {
      */
     public Set<String> getActiveSearches() {
         return activeSearches.keySet();
+    }
+
+    private static final class ActiveSearch {
+        private final SearchContext context;
+        private final String        userName;
+
+        private ActiveSearch(SearchContext context, String userName) {
+            this.context  = context;
+            this.userName = StringUtils.defaultString(userName);
+        }
     }
 }
