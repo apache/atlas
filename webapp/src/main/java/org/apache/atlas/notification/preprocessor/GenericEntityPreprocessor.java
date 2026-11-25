@@ -79,7 +79,7 @@ public class GenericEntityPreprocessor extends EntityPreprocessor {
         objList.removeAll(toRemove);
     }
 
-    public boolean isToBeIgnored(Object entity) {
+    private boolean isToBeIgnored(Object entity) {
         String  qualifiedName = getQualifiedName(entity);
         String  typeName      = getTypeName(entity);
         boolean decision      = false;

@@ -286,68 +286,6 @@ public class NotificationHookConsumerTest {
     }
 
     @Test
-    public void testIgnoredTypeInPartialUpdateV2IsSkipped() throws Exception {
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
-        AtlasObjectId entityId = new AtlasObjectId("trino_table", "qualifiedName", "db.tbl@cl1");
-        HookNotification.EntityPartialUpdateRequestV2 message = new HookNotification.EntityPartialUpdateRequestV2("user", entityId, new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity("trino_table")));
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
-        verify(atlasEntityStore, never()).updateEntity(any(AtlasObjectId.class), any(AtlasEntity.AtlasEntityWithExtInfo.class), anyBoolean());
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
-    public void testIgnoredTypeInV1DeleteIsSkipped() throws Exception {
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
-        HookNotificationV1.EntityDeleteRequest message = new HookNotificationV1.EntityDeleteRequest("user", "trino_table", "qualifiedName", "db.tbl@cl1");
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
-        verify(typeRegistry, never()).getType("trino_table");
-        verify(atlasEntityStore, never()).deleteByUniqueAttributes(any(AtlasEntityType.class), any());
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
-    public void testIgnoredTypesAreRemovedFromDeleteV2() throws Exception {
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
-        AtlasEntityType hiveTableType = mock(AtlasEntityType.class);
-        List<AtlasObjectId> objectIds = new ArrayList<>(Arrays.asList(new AtlasObjectId("hive_table", "qualifiedName", "db.t1@cl1"), new AtlasObjectId("trino_table", "qualifiedName", "db.t1@cl1")));
-        EntityDeleteRequestV2 message = new EntityDeleteRequestV2("user", objectIds);
-
-        when(typeRegistry.getType("hive_table")).thenReturn(hiveTableType);
-        when(atlasEntityStore.deleteByUniqueAttributes(any(AtlasEntityType.class), any())).thenReturn(new EntityMutationResponse());
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(message, 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
-        assertEquals(message.getEntities().size(), 1);
-        assertEquals(message.getEntities().get(0).getTypeName(), "hive_table");
-        verify(atlasEntityStore, times(1)).deleteByUniqueAttributes(eq(hiveTableType), any());
-        verify(typeRegistry, never()).getType("trino_table");
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
-    public void testDeleteV2IsSkippedWhenAllTypesAreIgnored() throws Exception {
-        NotificationConsumer consumer = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer hookConsumer = createHookConsumerWithConfig(buildEntityTypeIgnoreConfig("trino_.*"), consumer);
-        List<AtlasObjectId> objectIds = new ArrayList<>(Collections.singletonList(new AtlasObjectId("trino_table", "qualifiedName", "db.t1@cl1")));
-
-        when(typeRegistry.getType("trino_table")).thenReturn(mock(AtlasEntityType.class));
-        when(atlasEntityStore.deleteByUniqueAttributes(any(AtlasEntityType.class), any())).thenReturn(new EntityMutationResponse());
-
-        hookConsumer.handleMessage(new AtlasKafkaMessage(new EntityDeleteRequestV2("user", objectIds), 5, KafkaNotification.ATLAS_HOOK_TOPIC, 0));
-
-        verify(typeRegistry, never()).getType("trino_table");
-        verify(atlasEntityStore, never()).deleteByUniqueAttributes(any(AtlasEntityType.class), any());
-        verify(consumer, times(1)).commit(any(TopicPartition.class), eq(6L));
-    }
-
-    @Test
     public void testConsumerProceedsWithFalseIfInterrupted() throws Exception {
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter, null);
         NotificationHookConsumer.HookConsumer hookConsumer = notificationHookConsumer.new HookConsumer(mock(NotificationConsumer.class));
@@ -2713,12 +2651,6 @@ public class NotificationHookConsumerTest {
         when(cacheConfig.getInt("atlas.notification.consumer.message.buffering.interval.seconds", 15)).thenReturn(10);
         when(cacheConfig.getInt("atlas.notification.consumer.message.buffering.batch.size", 100)).thenReturn(25);
         return cacheConfig;
-    }
-
-    private Configuration buildEntityTypeIgnoreConfig(String... patterns) {
-        Configuration ignoreConfig = buildFailedMsgCacheConfig(10);
-        when(ignoreConfig.getStringArray(NotificationHookConsumer.CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN)).thenReturn(patterns);
-        return ignoreConfig;
     }
 
     private NotificationHookConsumer.HookConsumer createHookConsumerWithConfig(Configuration config, NotificationConsumer consumer) throws Exception {

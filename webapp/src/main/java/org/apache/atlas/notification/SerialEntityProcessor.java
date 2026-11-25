@@ -311,7 +311,7 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
 
         LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, updateHiveProcessNameWithQualifiedName);
 
-        preprocessEnabled = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || sparkProcessAttributes || !entityTypesToIgnore.isEmpty() || !entitiesToIgnore.isEmpty();
+        preprocessEnabled = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || sparkProcessAttributes;
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, skipHiveColumnLineageHive20633InputsThreshold);
@@ -454,7 +454,7 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
 
             PreprocessorContext context = preProcessNotificationMessage(kafkaMsg);
 
-            if (isEmptyMessage(kafkaMsg) || filterIgnoredEntityIds(message)) {
+            if (isEmptyMessage(kafkaMsg)) {
                 return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
             }
 
@@ -1105,62 +1105,6 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
             default:
                 ret = false;
                 break;
-        }
-
-        return ret;
-    }
-
-    /**
-     * Applies the entity ignore patterns to messages that reference entities only by id, which
-     * preprocessEntities() does not see. Ignored ids are removed from delete requests.
-     *
-     * @return true if every entity the message targets is ignored, so the message can be skipped
-     */
-    private boolean filterIgnoredEntityIds(HookNotification message) {
-        if (!preprocessEnabled || (entityTypesToIgnore.isEmpty() && entitiesToIgnore.isEmpty())) {
-            return false;
-        }
-
-        GenericEntityPreprocessor genericEntityPreprocessor = new GenericEntityPreprocessor(this.entityTypesToIgnore, this.entitiesToIgnore);
-        boolean                   ret;
-
-        switch (message.getType()) {
-            case ENTITY_PARTIAL_UPDATE: {
-                HookNotificationV1.EntityPartialUpdateRequest request = (HookNotificationV1.EntityPartialUpdateRequest) message;
-
-                ret = genericEntityPreprocessor.isToBeIgnored(new AtlasObjectId(request.getTypeName(), request.getAttribute(), request.getAttributeValue()));
-            }
-            break;
-
-            case ENTITY_DELETE: {
-                HookNotificationV1.EntityDeleteRequest request = (HookNotificationV1.EntityDeleteRequest) message;
-
-                ret = genericEntityPreprocessor.isToBeIgnored(new AtlasObjectId(request.getTypeName(), request.getAttribute(), request.getAttributeValue()));
-            }
-            break;
-
-            case ENTITY_PARTIAL_UPDATE_V2: {
-                EntityPartialUpdateRequestV2 request = (EntityPartialUpdateRequestV2) message;
-                AtlasEntityWithExtInfo       entity  = request.getEntity();
-
-                ret = genericEntityPreprocessor.isToBeIgnored(request.getEntityId()) || (entity != null && genericEntityPreprocessor.isToBeIgnored(entity.getEntity()));
-            }
-            break;
-
-            case ENTITY_DELETE_V2: {
-                List<AtlasObjectId> entities = ((EntityDeleteRequestV2) message).getEntities();
-
-                ret = entities != null && entities.removeIf(genericEntityPreprocessor::isToBeIgnored) && entities.isEmpty();
-            }
-            break;
-
-            default:
-                ret = false;
-                break;
-        }
-
-        if (ret) {
-            LOG.debug("Skipping {} message: all target entities match the ignore patterns", message.getType());
         }
 
         return ret;
