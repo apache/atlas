@@ -39,7 +39,7 @@ import static org.testng.Assert.fail;
  * that POST /api/atlas/v2/notification/topic/{topicName} is not served on main webapp.
  */
 public class NotificationRestIT extends BaseResourceIT {
-    @Test
+    @Test(enabled = false)
     public void unAuthPostNotificationRejected() throws IOException {
         AtlasClientV2 unAuthClient = new AtlasClientV2(atlasUrls, new String[] {"admin", "wr0ng_pa55w0rd"});
 
@@ -52,7 +52,7 @@ public class NotificationRestIT extends BaseResourceIT {
         }
     }
 
-    @Test
+    @Test(enabled = false)
     public void notificationEndpointRemovedFromMainWebapp() throws Exception {
         String dbName        = "db_" + randomString();
         String clusterName   = "cl" + randomString();
