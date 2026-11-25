@@ -65,13 +65,9 @@ public class HBaseAtlasHookIT {
     private AtlasClientV2       atlasClient;
 
     @BeforeClass
-    public void setUp() {
-        try {
-            createHBaseCluster();
-            createAtlasClient();
-        } catch (Exception e) {
-            LOG.error("Unable to create Hbase Admin for Testing ", e);
-        }
+    public void setUp() throws Exception {
+        createHBaseCluster();
+        createAtlasClient();
     }
 
     @AfterClass
@@ -208,9 +204,15 @@ public class HBaseAtlasHookIT {
         hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
         hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
         hBaseTestingUtility.getConfiguration().set("hbase.table.sanity.checks", "false");
-        hBaseTestingUtility.getConfiguration().set("hbase.coprocessor.master.classes", "org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor");
+        // Bind master/RS to loopback so mini-cluster RPC works on macOS (avoids LAN IP timeouts).
+        hBaseTestingUtility.getConfiguration().set("hbase.master.hostname", "127.0.0.1");
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.hostname", "127.0.0.1");
 
         hBaseTestingUtility.startMiniCluster();
+
+        if (!hBaseTestingUtility.getHBaseCluster().waitForActiveAndReadyMaster(60000)) {
+            throw new IllegalStateException("HBase mini cluster master not ready");
+        }
     }
 
     public AtlasClientV2 getAtlasClient() {

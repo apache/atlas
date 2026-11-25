@@ -146,7 +146,7 @@
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.5.4</jettison.version>
-        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
+        <jetty-maven-plugin.stopWait>120</jetty-maven-plugin.stopWait>
         <jetty.version>9.4.56.v20240826</jetty.version>
         <joda-time.version>2.10.6</joda-time.version>
         <json-simple.version>1.1.1</json-simple.version>
@@ -1366,6 +1366,13 @@
                     <forkCount>0</forkCount>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-testng</artifactId>
+                        <version>${failsafe.version}</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <id>integration-test</id>
