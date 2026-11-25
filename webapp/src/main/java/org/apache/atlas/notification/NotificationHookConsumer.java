@@ -47,9 +47,9 @@ import org.apache.atlas.model.notification.ImportNotification.AtlasEntityImportN
 import org.apache.atlas.model.notification.ImportNotification.AtlasTypesDefImportNotification;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
-import org.apache.atlas.notification.preprocessor.NotificationPreProcessor;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.GenericEntityPreprocessor;
+import org.apache.atlas.notification.preprocessor.NotificationPreProcessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -121,7 +121,6 @@ import java.util.regex.Pattern;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
-import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
 import static org.apache.atlas.server.common.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
