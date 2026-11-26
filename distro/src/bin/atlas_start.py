@@ -51,11 +51,26 @@ def otel_javaagent_jvm_opts(web_app_dir):
     else:
         jar_for_java = jar_fs
     if not os.path.isfile(jar_fs):
-        raise RuntimeError(
-            "%s is true but agent JAR was not found at %s. "
-            "Ensure the web application was built with opentelemetry-javaagent in WEB-INF/lib."
-            % (mc.ATLAS_OTEL_JAVAAGENT_ENABLED, jar_fs)
-       )
+        atlas_war = os.path.join(mc.atlasDir(), "server", "webapp", "atlas.war")
+        sys.stderr.write(
+            "WARNING: %s is enabled but the OpenTelemetry agent JAR was not found at %s. "
+            "Skipping -javaagent and OTEL JVM options. "
+            "This often happens after an upgrade when an older expanded webapp is reused: "
+            "expandWebApp does not re-unpack atlas.war if %s already exists, "
+            "even when server/webapp/atlas.war contains a newer agent. "
+            "To enable the agent, remove the expanded directory and restart "
+            "(rm -rf %s), or set %s=false, or build the WAR with opentelemetry-javaagent in WEB-INF/lib. "
+            "New WAR path: %s\n"
+            % (
+                mc.ATLAS_OTEL_JAVAAGENT_ENABLED,
+                jar_fs,
+                os.path.join(web_app_dir, "atlas", "WEB-INF"),
+                os.path.join(web_app_dir, "atlas"),
+                mc.ATLAS_OTEL_JAVAAGENT_ENABLED,
+                atlas_war,
+            )
+        )
+        return []
     port = (os.environ.get(mc.ATLAS_OTEL_PROMETHEUS_PORT) or DEFAULT_OTEL_PROMETHEUS_PORT).strip()
     if not port:
         port = DEFAULT_OTEL_PROMETHEUS_PORT
