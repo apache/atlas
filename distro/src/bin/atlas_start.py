@@ -59,6 +59,16 @@ def otel_javaagent_jvm_opts(web_app_dir):
     port = (os.environ.get(mc.ATLAS_OTEL_PROMETHEUS_PORT) or DEFAULT_OTEL_PROMETHEUS_PORT).strip()
     if not port:
         port = DEFAULT_OTEL_PROMETHEUS_PORT
+    try:
+        port_num = int(port)
+    except ValueError:
+        port_num = -1
+    if port_num < 1 or port_num > 65535:
+        raise ValueError(
+            "%s must be an integer between 1 and 65535, got %r"
+            % (mc.ATLAS_OTEL_PROMETHEUS_PORT, port)
+        )
+    port = str(port_num)
     host = (os.environ.get(mc.ATLAS_OTEL_PROMETHEUS_HOST) or "127.0.0.1").strip()
     if not host:
         host = "127.0.0.1"
@@ -66,7 +76,9 @@ def otel_javaagent_jvm_opts(web_app_dir):
         "-javaagent:%s" % jar_for_java,
         "-Dotel.exporter.prometheus.port=%s" % port,
         "-Dotel.metrics.exporter=prometheus",
-        "-Dotel.exporter.prometheus.host=%s" % host
+        "-Dotel.exporter.prometheus.host=%s" % host,
+        "-Dotel.traces.exporter=none",
+        "-Dotel.logs.exporter=none",
     ]
 
 

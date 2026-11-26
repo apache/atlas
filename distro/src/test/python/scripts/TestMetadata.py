@@ -31,6 +31,10 @@ IS_WINDOWS = platform.system() == "Windows"
 logger = logging.getLogger()
 
 
+def _mock_otel_agent_jar_isfile(path):
+    return path.endswith(atlas.OTEL_JAVAAGENT_WEBINF_LIB_NAME)
+
+
 class TestMetadata(unittest.TestCase):
     # A map of mock values for the get_config calls
     mock_values = {
@@ -51,6 +55,16 @@ class TestMetadata(unittest.TestCase):
         print("get_default_config_mock_side_effect (" + args[3] + ")")
         return TestMetadata.mock_values.get(args[3])
 
+    def _expected_jvm_opts_with_otel(self):
+        opts = mc.get_base_jvm_opts()
+        opts.extend(mc.get_expected_jvm_opts(mc.get_java_version()))
+        heap_idx = opts.index('-Xmx1024m')
+        web_app_dir = mc.webAppDir('atlas_home')
+        otel_opts = atlas.otel_javaagent_jvm_opts(web_app_dir)
+        for i, opt in enumerate(otel_opts):
+            opts.insert(heap_idx + 1 + i, opt)
+        return opts
+
     @patch.object(mc, "runProcess")
     @patch.object(mc, "configure_hbase")
     @patch.object(mc, "getConfig")
@@ -66,7 +80,8 @@ class TestMetadata(unittest.TestCase):
     @patch.object(mc, "is_hbase_local")
     @patch.object(mc, "is_solr_local")
     @patch.object(mc, "wait_for_startup")
-    def test_main_embedded(self, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
+    @patch("os.path.isfile", side_effect=_mock_otel_agent_jar_isfile)
+    def test_main_embedded(self, isfile_mock, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
                            atlasDir_mock, executeEnvSh_mock, writePid_mock, exist_pid_mock, grep_mock,
                            getConfigWithDefault_mock, getConfig_mock, configure_hbase_mock, runProcess_mock):
         sys.argv = []
@@ -83,11 +98,10 @@ class TestMetadata(unittest.TestCase):
         getConfig_mock.side_effect = self.get_config_mock_side_effect
         getConfigWithDefault_mock.side_effect = self.get_default_config_mock_side_effect
 
+        expected_jvm_opts = self._expected_jvm_opts_with_otel()
+
         atlas.main()
         self.assertTrue(configure_hbase_mock.called)
-
-        expected_jvm_opts = mc.get_base_jvm_opts()
-        expected_jvm_opts.extend(mc.get_expected_jvm_opts(mc.get_java_version()))
 
         if IS_WINDOWS:
             calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'],
@@ -158,7 +172,8 @@ class TestMetadata(unittest.TestCase):
     @patch.object(mc, "is_hbase_local")
     @patch.object(mc, "is_solr_local")
     @patch.object(mc, "wait_for_startup")
-    def test_main_default(self, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
+    @patch("os.path.isfile", side_effect=_mock_otel_agent_jar_isfile)
+    def test_main_default(self, isfile_mock, wait_for_startup_mock, is_solr_local_mock, is_hbase_local_mock, java_mock, exists_mock, expandWebApp_mock,
                           atlasDir_mock, executeEnvSh_mock, writePid_mock, exist_pid_mock, grep_mock,
                           getConfigWithDefault_mock, getConfig_mock, configure_hbase_mock, runProcess_mock):
         sys.argv = []
@@ -175,11 +190,10 @@ class TestMetadata(unittest.TestCase):
         getConfig_mock.side_effect = self.get_config_mock_side_effect
         getConfigWithDefault_mock.side_effect = self.get_config_mock_side_effect
 
+        expected_jvm_opts = self._expected_jvm_opts_with_otel()
+
         atlas.main()
         self.assertFalse(configure_hbase_mock.called)
-
-        expected_jvm_opts = mc.get_base_jvm_opts()
-        expected_jvm_opts.extend(mc.get_expected_jvm_opts(mc.get_java_version()))
 
         if IS_WINDOWS:
             calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'],
