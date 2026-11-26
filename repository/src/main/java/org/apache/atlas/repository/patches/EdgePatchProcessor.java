@@ -51,6 +51,8 @@ public abstract class EdgePatchProcessor {
     private final AtlasGraph               graph;
     private final GraphBackedSearchIndexer indexer;
     private final AtlasTypeRegistry        typeRegistry;
+    private final AtomicLong               updatedCount = new AtomicLong(0);
+    private final AtomicLong               failedCount  = new AtomicLong(0);
 
     public EdgePatchProcessor(PatchContext context) {
         this.graph        = context.getGraph();
@@ -68,6 +70,14 @@ public abstract class EdgePatchProcessor {
 
     public AtlasTypeRegistry getTypeRegistry() {
         return typeRegistry;
+    }
+
+    public long getUpdatedCount() {
+        return updatedCount.get();
+    }
+
+    public long getFailedCount() {
+        return failedCount.get();
     }
 
     public void apply() throws AtlasBaseException {
@@ -151,26 +161,30 @@ public abstract class EdgePatchProcessor {
         protected void processItem(String edgeId) {
             counter.incrementAndGet();
 
-            AtlasEdge edge = graph.getEdge(edgeId);
-
-            if (edge == null) {
-                LOG.warn("processItem(edgeId={}): AtlasEdge not found!", edgeId);
-
-                return;
-            }
-
-            String                typeName         = edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
-            AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(typeName);
-
-            if (relationshipType == null) {
-                return;
-            }
-
             try {
+                AtlasEdge edge = graph.getEdge(edgeId);
+
+                if (edge == null) {
+                    LOG.warn("processItem(edgeId={}): AtlasEdge not found!", edgeId);
+
+                    return;
+                }
+
+                String                typeName         = edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+                AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(typeName);
+
+                if (relationshipType == null) {
+                    return;
+                }
+
                 individualItemProcessor.processEdgesItem(edgeId, edge, typeName, relationshipType);
 
+                individualItemProcessor.updatedCount.incrementAndGet();
+
                 doCommit();
-            } catch (AtlasBaseException e) {
+            } catch (AtlasBaseException | RuntimeException e) {
+                individualItemProcessor.failedCount.incrementAndGet();
+
                 LOG.error("Error processing: edgeId={}", edgeId, e);
             }
         }
