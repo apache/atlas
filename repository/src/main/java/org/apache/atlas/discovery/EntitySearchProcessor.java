@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.repository.Constants;
@@ -319,7 +320,8 @@ public class EntitySearchProcessor extends SearchProcessor {
         if (indexQuery != null) {
             return indexQuery.vertexTotals();
         } else if (graphQuery != null) {
-            return StreamSupport.stream(graphQuery.vertexIds().spliterator(), false).count();
+            // capped: counting every match reads the whole index row for the type, which can exceed the HBase row size limit
+            return StreamSupport.stream(graphQuery.vertexIds(AtlasConfiguration.SEARCH_MAX_LIMIT.getInt()).spliterator(), false).count();
         } else {
             return -1L;
         }

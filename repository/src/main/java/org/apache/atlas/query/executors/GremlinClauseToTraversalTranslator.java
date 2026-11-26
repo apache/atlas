@@ -57,6 +57,11 @@ public class GremlinClauseToTraversalTranslator {
 
         private final AtlasGraph graph;
 
+        // g.V() followed only by filter steps returns each vertex once. Skipping dedup() in that case lets
+        // JanusGraph push the limit into the index query, instead of reading every vertex of the type
+        // from the composite index row, which fails with HBase RowTooBigException for very large types.
+        private boolean mayHaveDuplicates;
+
         public ClauseTranslator(AtlasGraph graph) {
             this.graph = graph;
         }
@@ -162,10 +167,14 @@ public class GremlinClauseToTraversalTranslator {
 
                 case IN:
                     traversal.in(removeRedundantQuotes(values[0]));
+
+                    mayHaveDuplicates = true;
                     break;
 
                 case OUT:
                     traversal.out(removeRedundantQuotes(values[0]));
+
+                    mayHaveDuplicates = true;
                     break;
 
                 case ANY_TRAIT:
@@ -174,6 +183,8 @@ public class GremlinClauseToTraversalTranslator {
 
                 case TRAIT:
                     traversal.outE(EDGE_NAME_CLASSIFIED_AS).has(ATTR_PROPERTY_NAME, P.within(values[0])).outV();
+
+                    mayHaveDuplicates = true;
                     break;
 
                 case NO_TRAIT:
@@ -181,7 +192,9 @@ public class GremlinClauseToTraversalTranslator {
                     break;
 
                 case DEDUP:
-                    traversal.dedup();
+                    if (mayHaveDuplicates) {
+                        traversal.dedup();
+                    }
                     break;
 
                 case LIMIT:
@@ -206,6 +219,8 @@ public class GremlinClauseToTraversalTranslator {
 
                 case GROUP_BY:
                     traversal.has(values[0]).group().by(values[0]);
+
+                    mayHaveDuplicates = true;
                     break;
 
                 case ORDER_BY:
@@ -225,7 +240,9 @@ public class GremlinClauseToTraversalTranslator {
                     break;
 
                 case RANGE:
-                    traversal.dedup();
+                    if (mayHaveDuplicates) {
+                        traversal.dedup();
+                    }
 
                     long low = Long.parseLong(values[1]);
                     long high = low + Long.parseLong(values[2]);
@@ -250,6 +267,8 @@ public class GremlinClauseToTraversalTranslator {
 
                 default:
                     LOG.warn("Clause not translated: {}. Can potentially lead to incorrect results.", clause);
+
+                    mayHaveDuplicates = true;
                     break;
             }
 
