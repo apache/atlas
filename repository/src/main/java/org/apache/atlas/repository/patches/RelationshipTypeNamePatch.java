@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
+import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
 
 public class RelationshipTypeNamePatch extends AtlasPatchHandler {
@@ -52,18 +53,32 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
         LOG.info("RelationshipTypeNamePatch: Starting...");
 
-        EdgePatchProcessor patchProcessor = new RelationshipTypeNamePatchProcessor(context);
+        RelationshipTypeNamePatchProcessor patchProcessor = new RelationshipTypeNamePatchProcessor(context);
 
         patchProcessor.apply();
 
-        setStatus(APPLIED);
+        if (patchProcessor.getUnpatchedCount() > 0) {
+            LOG.error("RelationshipTypeNamePatch: failed to update {} edges; patch will be retried on next startup", patchProcessor.getUnpatchedCount());
+
+            setStatus(FAILED);
+        } else {
+            setStatus(APPLIED);
+        }
 
         LOG.info("EdgePatchProcessor.apply(): patchId={}, status={}", getPatchId(), getStatus());
     }
 
     public static class RelationshipTypeNamePatchProcessor extends EdgePatchProcessor {
+        private static final int ROUND_SIZE = BATCH_SIZE * 100;
+
+        private long unpatchedCount;
+
         public RelationshipTypeNamePatchProcessor(PatchContext context) {
             super(context);
+        }
+
+        public long getUnpatchedCount() {
+            return unpatchedCount;
         }
 
         @Override
@@ -73,7 +88,7 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void submitEdgesToUpdate(WorkItemManager manager) {
-            EdgePatchScanner.submitRelationshipEdgesWithEntityType(getGraph(), getTypeRegistry(), manager);
+            unpatchedCount = EdgePatchScanner.submitEdgesWithoutRelationshipType(getGraph(), this, manager, BATCH_SIZE, ROUND_SIZE);
         }
 
         @Override

@@ -25,7 +25,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -63,7 +63,13 @@ public class RelationshipTypeNamePatchTest {
     private AtlasGraph graph;
 
     @Mock
-    private AtlasGraphQuery graphQuery;
+    private AtlasIndexQuery indexQuery;
+
+    @Mock
+    private AtlasIndexQuery.Result result1;
+
+    @Mock
+    private AtlasIndexQuery.Result result2;
 
     @Mock
     private AtlasTypeRegistry typeRegistry;
@@ -125,7 +131,7 @@ public class RelationshipTypeNamePatchTest {
     public void testApplyWhenRelationshipSearchDisabled() throws AtlasBaseException {
         patch.apply();
 
-        verify(graph, never()).query();
+        verify(graph, never()).indexQuery(any(), any());
     }
 
     @Test
@@ -146,31 +152,24 @@ public class RelationshipTypeNamePatchTest {
 
     @Test
     public void testSubmitEdgesToUpdateWithNoEdges() {
-        when(typeRegistry.getAllRelationshipTypes()).thenReturn(Collections.singletonList(relationshipType));
-        when(relationshipType.getTypeName()).thenReturn("relationship_type_1");
-        when(graph.query()).thenReturn(graphQuery);
-        when(graphQuery.has(any(), any())).thenReturn(graphQuery);
-        when(graphQuery.edges(anyInt(), anyInt())).thenReturn(Collections.emptyList());
+        when(graph.indexQuery(eq(Constants.EDGE_INDEX), eq(EdgePatchScanner.EDGES_WITHOUT_RELATIONSHIP_TYPE_QUERY))).thenReturn(indexQuery);
+        when(indexQuery.edges(anyInt(), anyInt())).thenReturn(Collections.emptyIterator());
 
         RelationshipTypeNamePatch.RelationshipTypeNamePatchProcessor processor = new RelationshipTypeNamePatch.RelationshipTypeNamePatchProcessor(patchContext);
 
         processor.submitEdgesToUpdate(workItemManager);
 
         verify(workItemManager, times(0)).checkProduce(any());
+        verify(graph, never()).getEdges();
+        assertEquals(processor.getUnpatchedCount(), 0);
     }
 
     @Test
-    public void testSubmitEdgesToUpdateWithEdgesHavingTypeName() {
-        when(typeRegistry.getAllRelationshipTypes()).thenReturn(Collections.singletonList(relationshipType));
-        when(relationshipType.getTypeName()).thenReturn("relationship_type_1");
-        when(graph.query()).thenReturn(graphQuery);
-        when(graphQuery.has(any(), any())).thenReturn(graphQuery);
-        when(graphQuery.edges(anyInt(), anyInt())).thenReturn(Arrays.asList(edge1, edge2, edge3));
-
-        when(edge1.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn("relationship_type_1");
-        when(edge2.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn("relationship_type_2");
-        when(edge3.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn(null);
-
+    public void testSubmitEdgesToUpdateWithEdgesFromIndex() {
+        when(graph.indexQuery(eq(Constants.EDGE_INDEX), eq(EdgePatchScanner.EDGES_WITHOUT_RELATIONSHIP_TYPE_QUERY))).thenReturn(indexQuery);
+        when(indexQuery.edges(anyInt(), anyInt())).thenAnswer(inv -> ((int) inv.getArgument(0)) == 0 ? Arrays.asList(result1, result2).iterator() : Collections.emptyIterator());
+        when(result1.getEdge()).thenReturn(edge1);
+        when(result2.getEdge()).thenReturn(edge2);
         when(edge1.getId()).thenReturn("edge1");
         when(edge2.getId()).thenReturn("edge2");
 
@@ -178,29 +177,11 @@ public class RelationshipTypeNamePatchTest {
 
         processor.submitEdgesToUpdate(workItemManager);
 
-        // Should only produce work items for edges with non-null typeName
         verify(workItemManager, times(2)).checkProduce(any());
         verify(workItemManager, times(1)).checkProduce("edge1");
         verify(workItemManager, times(1)).checkProduce("edge2");
-    }
-
-    @Test
-    public void testSubmitEdgesToUpdateWithAllEdgesHavingNullTypeName() {
-        when(typeRegistry.getAllRelationshipTypes()).thenReturn(Collections.singletonList(relationshipType));
-        when(relationshipType.getTypeName()).thenReturn("relationship_type_1");
-        when(graph.query()).thenReturn(graphQuery);
-        when(graphQuery.has(any(), any())).thenReturn(graphQuery);
-        when(graphQuery.edges(anyInt(), anyInt())).thenReturn(Arrays.asList(edge1, edge2, edge3));
-
-        when(edge1.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn(null);
-        when(edge2.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn(null);
-        when(edge3.getProperty(eq(Constants.ENTITY_TYPE_PROPERTY_KEY), eq(String.class))).thenReturn(null);
-
-        RelationshipTypeNamePatch.RelationshipTypeNamePatchProcessor processor = new RelationshipTypeNamePatch.RelationshipTypeNamePatchProcessor(patchContext);
-        processor.submitEdgesToUpdate(workItemManager);
-
-        // Should not produce any work items when all edges have null typeName
-        verify(workItemManager, times(0)).checkProduce(any());
+        verify(graph, never()).getEdges();
+        verify(graph, never()).query();
     }
 
     @Test
