@@ -35,6 +35,8 @@
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
+        <!-- TrinoExtractorIT is a placeholder only (no @Test methods); skip until ITs are implemented -->
+        <skipITs>true</skipITs>
     </properties>
 
     <dependencies>

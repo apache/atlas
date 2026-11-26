@@ -201,6 +201,13 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <forkCount>1</forkCount>
+                </configuration>
+            </plugin>
+            <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>${jetty.version}</version>
@@ -299,6 +306,9 @@
                             <goal>stop</goal>
                         </goals>
                         <phase>post-integration-test</phase>
+                        <configuration>
+                            <stopWait>${jetty-maven-plugin.stopWait}</stopWait>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

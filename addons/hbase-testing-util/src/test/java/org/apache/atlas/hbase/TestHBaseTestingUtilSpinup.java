@@ -41,6 +41,8 @@ public class TestHBaseTestingUtilSpinup {
         hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
         hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
         hBaseTestingUtility.getConfiguration().set("hbase.table.sanity.checks", "false");
+        hBaseTestingUtility.getConfiguration().set("hbase.master.hostname", "127.0.0.1");
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.hostname", "127.0.0.1");
     }
 
     @Test

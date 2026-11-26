@@ -19,8 +19,10 @@
 package org.apache.atlas.storm.hook;
 
 import org.apache.storm.Config;
+import org.apache.storm.DaemonConfig;
 import org.apache.storm.ILocalCluster;
 import org.apache.storm.Testing;
+import org.apache.storm.metricstore.NoOpMetricStore;
 import org.apache.storm.generated.StormTopology;
 import org.apache.storm.testing.TestGlobalCount;
 import org.apache.storm.testing.TestWordCounter;
@@ -38,9 +40,13 @@ final class StormTestUtil {
     }
 
     public static ILocalCluster createLocalStormCluster() {
-        // start a local storm cluster
+        HashMap<String, Object> daemonConf = new HashMap<>();
+        // Avoid RocksDB JNI (x86_64-only in storm-core) on Apple Silicon during local Nimbus startup.
+        daemonConf.put(DaemonConfig.STORM_METRIC_STORE_CLASS, NoOpMetricStore.class.getName());
+
         HashMap<String, Object> localClusterConf = new HashMap<>();
-        localClusterConf.put("nimbus-daemon", true);
+        localClusterConf.put("daemon-conf", daemonConf);
+        // Leave nimbus-daemon at default (false) so NimbusClient uses in-process nimbus; needed for hook + local ITs.
         return Testing.getLocalCluster(localClusterConf);
     }
 
