@@ -20,9 +20,6 @@ package org.apache.atlas;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.GenericType;
-import com.sun.jersey.api.client.WebResource;
 import org.apache.atlas.AtlasBaseClient.API;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.model.audit.AuditReductionCriteria;
@@ -60,15 +57,21 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.http.HttpStatus;
-import org.mockito.ArgumentMatchers;
+import org.glassfish.jersey.media.multipart.FormDataBodyPart;
+import org.glassfish.jersey.media.multipart.file.StreamDataBodyPart;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Cookie;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
@@ -87,9 +90,9 @@ import java.util.function.Supplier;
 
 import static org.apache.atlas.AtlasBaseClient.PROP_REST_AUTH_TOKEN_SUPPLIER;
 import static org.apache.atlas.token.retriever.JwTokenRetrieverDefault.JWT_SOURCE;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -101,10 +104,10 @@ import static org.testng.Assert.fail;
 
 public class AtlasClientV2Test {
     @Mock
-    private WebResource service;
+    private WebTarget service;
 
     @Mock
-    private WebResource.Builder resourceBuilderMock;
+    private Invocation.Builder resourceBuilderMock;
 
     @Mock
     private Configuration configuration;
@@ -121,13 +124,14 @@ public class AtlasClientV2Test {
 
         atlasClassification.setEntityGuid("abb672b1-e4bd-402d-a98f-73cd8f775e2a");
 
-        WebResource.Builder builder = setupBuilder(AtlasClientV2.API_V2.UPDATE_CLASSIFICATIONS, service);
+        Invocation.Builder builder = setupBuilder(AtlasClientV2.API_V2.UPDATE_CLASSIFICATIONS, service);
 
-        ClientResponse response = mock(ClientResponse.class);
+        Response response = mock(Response.class);
 
         when(response.getStatus()).thenReturn(Response.Status.NO_CONTENT.getStatusCode());
 
-        when(builder.method(any(), ArgumentMatchers.<Class>any(), any())).thenReturn(response);
+        GenericType<AtlasClassification> t = mock(GenericType.class);
+        when(builder.method(anyString(), (Entity<?>) anyObject())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
@@ -143,12 +147,12 @@ public class AtlasClientV2Test {
 
         atlasClassification.setEntityGuid("abb672b1-e4bd-402d-a98f-73cd8f775e2a");
 
-        WebResource.Builder builder = setupBuilder(AtlasClientV2.API_V2.UPDATE_CLASSIFICATIONS, service);
+        Invocation.Builder builder = setupBuilder(AtlasClientV2.API_V2.UPDATE_CLASSIFICATIONS, service);
 
-        ClientResponse response = mock(ClientResponse.class);
+        Response response = mock(Response.class);
 
         when(response.getStatus()).thenReturn(Response.Status.OK.getStatusCode());
-        when(builder.method(any(), ArgumentMatchers.<Class>any(), any())).thenReturn(response);
+        when(builder.method(anyString(), (Entity<?>) anyObject())).thenReturn(response);
 
         try {
             atlasClient.updateClassifications("abb672b1-e4bd-402d-a98f-73cd8f775e2a", Collections.singletonList(atlasClassification));
@@ -187,21 +191,18 @@ public class AtlasClientV2Test {
         assertEquals(pathForEntityTypeDef, "entitydef");
     }
 
-    private WebResource.Builder setupBuilder(AtlasClientV2.API_V2 api, WebResource webResource) {
+    private Invocation.Builder setupBuilder(AtlasClientV2.API_V2 api, WebTarget webResource) {
         when(webResource.path(api.getPath())).thenReturn(service);
         when(webResource.path(api.getNormalizedPath())).thenReturn(service);
 
         return getBuilder(service);
     }
 
-    private WebResource.Builder getBuilder(WebResource resourceObject) {
-        when(resourceObject.getRequestBuilder()).thenReturn(resourceBuilderMock);
+    private Invocation.Builder getBuilder(WebTarget resourceObject) {
+        when(resourceObject.request()).thenReturn(resourceBuilderMock);
         when(resourceObject.path(anyString())).thenReturn(resourceObject);
         when(resourceBuilderMock.accept(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(resourceBuilderMock);
         when(resourceBuilderMock.accept(MediaType.APPLICATION_JSON)).thenReturn(resourceBuilderMock);
-        when(resourceBuilderMock.type(AtlasBaseClient.JSON_MEDIA_TYPE)).thenReturn(resourceBuilderMock);
-        when(resourceBuilderMock.type(MediaType.MULTIPART_FORM_DATA)).thenReturn(resourceBuilderMock);
-
         return resourceBuilderMock;
     }
 
@@ -825,7 +826,7 @@ public class AtlasClientV2Test {
         private javax.ws.rs.core.MultivaluedMap<String, String> lastQueryParams;
 
         public TestableAtlasClientV2() {
-            super(mock(WebResource.class), mock(Configuration.class));
+            super(mock(WebTarget.class), mock(Configuration.class));
         }
 
         public void setMockResponse(Object response, Class<?> returnType) {
@@ -1243,7 +1244,7 @@ public class AtlasClientV2Test {
         assertEquals("testType", result1.getFirst("attr:type"));
 
         // Test with existing queryParams
-        MultivaluedMap<String, String> existingParams = new com.sun.jersey.core.util.MultivaluedMapImpl();
+        MultivaluedMap<String, String> existingParams = new MultivaluedHashMap<>();
         existingParams.add("existing", "value");
         MultivaluedMap<String, String> result2 = (MultivaluedMap<String, String>) method.invoke(client, attributes, existingParams);
         assertNotNull(result2);
@@ -1385,7 +1386,7 @@ public class AtlasClientV2Test {
         // Execute the method - this tests JSON serialization logic
         Object result = method.invoke(client, request);
         assertNotNull(result);
-        assertTrue(result instanceof com.sun.jersey.multipart.FormDataBodyPart);
+        assertTrue(result instanceof FormDataBodyPart);
     }
 
     @Test
@@ -1418,14 +1419,12 @@ public class AtlasClientV2Test {
 
         // Test the performAsyncImport method using reflection
         java.lang.reflect.Method method = AtlasClientV2.class.getDeclaredMethod("performAsyncImport",
-                com.sun.jersey.multipart.BodyPart.class, com.sun.jersey.multipart.BodyPart.class);
+                FormDataBodyPart.class, StreamDataBodyPart.class);
         method.setAccessible(true);
 
         // Create test BodyParts
-        com.sun.jersey.multipart.FormDataBodyPart requestPart =
-                new com.sun.jersey.multipart.FormDataBodyPart("request", "{}", javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE);
-        com.sun.jersey.multipart.FormDataBodyPart filePart =
-                new com.sun.jersey.multipart.FormDataBodyPart("data", "test data", javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM_TYPE);
+        FormDataBodyPart requestPart = new FormDataBodyPart("request", "{}", javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE);
+        FormDataBodyPart filePart = new FormDataBodyPart("data", "test data", javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM_TYPE);
 
         // Execute method - this tests try-with-resources and multipart handling
         try {
@@ -2552,13 +2551,13 @@ public class AtlasClientV2Test {
     }
 
     private EntityMutationResponse invokePurgeWithMockedHttpResponse(int httpStatus, String responseJson) throws Exception {
-        AtlasClientV2       atlasClient = new AtlasClientV2(service, configuration);
-        WebResource.Builder builder     = setupBuilder(AtlasClientV2.API_V2.PURGE_ENTITIES_BY_GUIDS, service);
-        ClientResponse      response    = mock(ClientResponse.class);
+        AtlasClientV2      atlasClient = new AtlasClientV2(service, configuration);
+        Invocation.Builder builder     = setupBuilder(AtlasClientV2.API_V2.PURGE_ENTITIES_BY_GUIDS, service);
+        Response           response    = mock(Response.class);
 
         when(response.getStatus()).thenReturn(httpStatus);
-        when(response.getEntity(String.class)).thenReturn(responseJson);
-        when(builder.method(eq(javax.ws.rs.HttpMethod.PUT), eq(ClientResponse.class), any())).thenReturn(response);
+        when(response.readEntity(String.class)).thenReturn(responseJson);
+        when(builder.method(eq(javax.ws.rs.HttpMethod.PUT), (Entity<?>) anyObject())).thenReturn(response);
 
         return atlasClient.purgeEntitiesByGuids(Collections.singleton("purged-guid"));
     }

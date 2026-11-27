@@ -132,6 +132,12 @@ while [[ ${1} =~ ^\-D ]]; do
   shift
 done
 
+# JDK 17+ requires opening a few java.base packages for reflective access used by Atlas client libs
+JAVA_VERSION=$("${JAVA_BIN}" -version 2>&1 | awk -F'[".]' 'NR==1{print ($2=="1"?$3:$2)}')
+if [ -n "${JAVA_VERSION}" ] && [ "${JAVA_VERSION}" -gt 16 ]; then
+  JAVA_PROPERTIES="${JAVA_PROPERTIES} --add-opens java.base/java.net=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED"
+fi
+
 echo "Log file for import is $LOGFILE"
 
 "${JAVA_BIN}" ${JAVA_PROPERTIES} -cp "${CP}" org.apache.atlas.kafka.bridge.KafkaBridge $allargs

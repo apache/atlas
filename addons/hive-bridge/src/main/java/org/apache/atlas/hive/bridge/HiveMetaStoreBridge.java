@@ -19,7 +19,6 @@
 package org.apache.atlas.hive.bridge;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
@@ -72,6 +71,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.Response;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -893,7 +893,7 @@ public class HiveMetaStoreBridge {
         try {
             ret = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName), minExtInfo, ignoreRelationship);
         } catch (AtlasServiceException e) {
-            if(e.getStatus() == ClientResponse.Status.NOT_FOUND) {
+            if (e.getStatus() != null && e.getStatus().getStatusCode() == Response.Status.NOT_FOUND.getStatusCode()) {
                 return null;
             }
 
