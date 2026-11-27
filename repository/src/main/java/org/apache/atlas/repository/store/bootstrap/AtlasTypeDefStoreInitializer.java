@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -31,6 +32,7 @@ import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.patches.AtlasPatch.PatchStatus;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
@@ -52,6 +54,7 @@ import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
 import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
 import org.apache.atlas.store.AtlasTypeDefStore;
+import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
@@ -84,6 +87,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -91,6 +98,9 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
+import static org.apache.atlas.repository.store.bootstrap.TypeDefBootstrapTaskFactory.MODELS_FOLDER_PATH;
+import static org.apache.atlas.repository.store.bootstrap.TypeDefBootstrapTaskFactory.TYPEDEF_BOOTSTRAP_LOAD;
 
 /**
  * Class that handles initial loading of models and patches into typedef store
@@ -99,7 +109,8 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 @Order(2)
 public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     public static final Logger LOG                    = LoggerFactory.getLogger(AtlasTypeDefStoreInitializer.class);
-    public static final String PATCHES_FOLDER_NAME    = "patches";
+    public static final String PATCHES_FOLDER_NAME         = "patches";
+    public static final String BASE_MODELS_MODULE_FOLDER   = "0000-Area0";
     public static final String RELATIONSHIP_LABEL     = "relationshipLabel";
     public static final String RELATIONSHIP_CATEGORY  = "relationshipCategory";
     public static final String RELATIONSHIP_SWAP_ENDS = "swapEnds";
@@ -308,13 +319,11 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     /**
-     * This method is looking for folders in alphabetical order in the models directory. It loads each of these folders and their associated patches in order.
-     * It then loads any models in the top level folder and its patches.
-     *
-     * This allows models to be grouped into folders to help managability.
-     *
+     * Loads typedef models from the models directory. The {@value #BASE_MODELS_MODULE_FOLDER} folder is always loaded
+     * first (parent/base typedefs), then all other module subdirectories are loaded in parallel. Top-level model files
+     * and patches are loaded last.
      */
-    private void loadBootstrapTypeDefs() {
+    private void loadBootstrapTypeDefs() throws AtlasBaseException {
         LOG.info("==> AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
 
         String atlasHomeDir  = System.getProperty("atlas.home");
@@ -331,13 +340,38 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
             if (modelsDirContents != null && modelsDirContents.length > 0) {
                 Arrays.sort(modelsDirContents);
 
+                List<File> moduleFolders = new ArrayList<>();
+
                 for (File folder : modelsDirContents) {
                     if (folder.isFile()) {
-                        // ignore files
                         continue;
-                    } else if (!folder.getName().equals(PATCHES_FOLDER_NAME)) {
-                        // load the models alphabetically in the subfolders apart from patches
-                        loadModelsInFolder(folder, patchRegistry);
+                    }
+
+                    if (!folder.getName().equals(PATCHES_FOLDER_NAME)) {
+                        moduleFolders.add(folder);
+                    }
+                }
+
+                if (!moduleFolders.isEmpty()) {
+                    File       baseModelsFolder        = null;
+                    List<File> parallelModuleFolders = new ArrayList<>();
+
+                    for (File folder : moduleFolders) {
+                        if (BASE_MODELS_MODULE_FOLDER.equals(folder.getName())) {
+                            baseModelsFolder = folder;
+                        } else {
+                            parallelModuleFolders.add(folder);
+                        }
+                    }
+
+                    if (baseModelsFolder != null) {
+                        LOG.info("Loading parent typedefs from {} before addon module folders", BASE_MODELS_MODULE_FOLDER);
+
+                        loadModelsInFolder(baseModelsFolder, patchRegistry);
+                    }
+
+                    if (!parallelModuleFolders.isEmpty()) {
+                        loadModuleFoldersInParallel(parallelModuleFolders, patchRegistry);
                     }
                 }
             }
@@ -349,11 +383,58 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         LOG.info("<== AtlasTypeDefStoreInitializer.loadBootstrapTypeDefs()");
     }
 
+    private void loadModuleFoldersInParallel(List<File> moduleFolders, AtlasPatchRegistry patchRegistry) throws AtlasBaseException {
+        LOG.info("Loading {} module folders in parallel", moduleFolders.size());
+
+        ExecutorService executor = Executors.newFixedThreadPool(moduleFolders.size(),
+                new ThreadFactoryBuilder().setDaemon(true).setNameFormat("typedef-bootstrap-%d").build());
+
+        List<Future<AtlasTask.Status>> futures = new ArrayList<>(moduleFolders.size());
+
+        try {
+            for (File folder : moduleFolders) {
+                futures.add(executor.submit(() -> runBootstrapTaskForFolder(folder, patchRegistry)));
+            }
+
+            for (int i = 0; i < futures.size(); i++) {
+                File               folder = moduleFolders.get(i);
+                AtlasTask.Status   status = futures.get(i).get();
+
+                if (status != COMPLETE) {
+                    throw new AtlasBaseException("Failed to load typedef models from module folder " + folder.getAbsolutePath());
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            throw new AtlasBaseException(e);
+        } catch (ExecutionException e) {
+            throw new AtlasBaseException(e.getCause());
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    private AtlasTask.Status runBootstrapTaskForFolder(File folder, AtlasPatchRegistry patchRegistry) {
+        Map<String, Object> params = Collections.singletonMap(MODELS_FOLDER_PATH, folder.getAbsolutePath());
+        AtlasTask           task   = new AtlasTask(TYPEDEF_BOOTSTRAP_LOAD, "system", params);
+
+        AbstractTask bootstrapTask = TypeDefBootstrapTaskFactory.createBootstrapTask(task, patchRegistry, this::loadModelsInFolder);
+
+        try {
+            return bootstrapTask.perform();
+        } catch (Exception e) {
+            LOG.error("Error loading typedef models from folder {}", folder.getAbsolutePath(), e);
+
+            return AtlasTask.Status.FAILED;
+        }
+    }
+
     /**
      * Load all the model files in the supplied folder followed by the contents of the patches folder.
      * @param typesDir
      */
-    private void loadModelsInFolder(File typesDir, AtlasPatchRegistry patchRegistry) {
+    void loadModelsInFolder(File typesDir, AtlasPatchRegistry patchRegistry) {
         LOG.info("==> AtlasTypeDefStoreInitializer({})", typesDir);
 
         String typesDirName = typesDir.getName();
@@ -446,6 +527,12 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     }
 
     private void applyTypePatches(String typesDirName, AtlasPatchRegistry patchRegistry) {
+        synchronized (patchRegistry) {
+            applyTypePatchesInternal(typesDirName, patchRegistry);
+        }
+    }
+
+    private void applyTypePatchesInternal(String typesDirName, AtlasPatchRegistry patchRegistry) {
         String typePatchesDirName = typesDirName + File.separator + PATCHES_FOLDER_NAME;
         File   typePatchesDir     = new File(typePatchesDirName);
         File[] typePatchFiles     = typePatchesDir.exists() ? typePatchesDir.listFiles() : null;
