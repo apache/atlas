@@ -20,6 +20,7 @@ package org.apache.atlas.notification;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
@@ -347,6 +348,7 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
      * - IllegalStateException: Invalid application state
      * - NullPointerException: Programming errors
      * - AtlasBaseException with INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND: Entity not found (acceptable)
+     * - AtlasBaseException with UNKNOWN_TYPENAME, TYPE_NAME_INVALID or TYPE_NAME_NOT_FOUND: type is not registered
      *
      * @param e the exception to classify
      * @return true if the exception is retryable, false otherwise
@@ -371,8 +373,9 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
         // Non-retryable: Entity not found is acceptable in some scenarios
         if (e instanceof AtlasBaseException) {
             AtlasBaseException baseException = (AtlasBaseException) e;
-            if (baseException.getAtlasErrorCode().equals(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)) {
-                LOG.warn("Non-retryable exception: INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND");
+            AtlasErrorCode errorCode = baseException.getAtlasErrorCode();
+            if (errorCode.equals(INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) || isUnknownTypeError(baseException)) {
+                LOG.warn("Non-retryable exception: {}", errorCode);
                 return false;
             }
         }
@@ -696,6 +699,20 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
                             AtlasBaseException baseException = (AtlasBaseException) e;
                             LOG.warn("Error handling message: {}: {} - {} - {}",
                                     ticket.getMessage().getMessage().getType(), baseException.getAtlasErrorCode(), baseException.getMessage(), ticket.getQualifiedNamesSet());
+
+                            if (isUnknownTypeError(baseException)) {
+                                LOG.warn("Skipped message with an unregistered type at offset {}. If a hook keeps sending this type, add it to {} to drop such messages before processing",
+                                        kafkaMsg.getOffset(), CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN);
+
+                                stats.isFailedMsg = true;
+
+                                failedMessages.add(AbstractNotification.getMessageJson(message));
+
+                                if (failedMessages.size() >= failedMsgCacheSize) {
+                                    recordFailedMessages(kafkaMsg.getTopic(), failedMessages);
+                                }
+                            }
+
                             return new TopicPartitionOffsetResult(kafkaMsg.getTopicPartition(), kafkaMsg.getOffset());
                         } else {
                             LOG.error("Non-retryable exception: {}", exceptionClassName, e);
@@ -1091,6 +1108,12 @@ public class SerialEntityProcessor implements NotificationEntityProcessor {
         }
 
         return ret;
+    }
+
+    private static boolean isUnknownTypeError(AtlasBaseException excp) {
+        AtlasErrorCode errorCode = excp.getAtlasErrorCode();
+
+        return errorCode == AtlasErrorCode.UNKNOWN_TYPENAME || errorCode == AtlasErrorCode.TYPE_NAME_INVALID || errorCode == AtlasErrorCode.TYPE_NAME_NOT_FOUND;
     }
 
     private void recordProcessedEntities(EntityMutationResponse mutationResponse, NotificationStat stats, PreprocessorContext context) {
